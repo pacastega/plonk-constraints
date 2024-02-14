@@ -1,0 +1,5 @@
+.stack-work/
+*~
+/plonk-constraints.cabal
+/app/.liquid/
+/stack.yaml.lock
