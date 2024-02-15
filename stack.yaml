@@ -20,6 +20,7 @@ extra-deps:
       - liquid-vector
   - git: https://github.com/ucsd-progsys/liquid-fixpoint
     commit: 4cf7440449b00f3c6c0bb3dca7b1dcbd10942910 # 0.9.4.7
+  - finite-field-0.10.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
