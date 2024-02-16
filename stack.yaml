@@ -1,5 +1,5 @@
 # Resolver to choose a 'specific' stackage snapshot or a compiler version.
-resolver: lts-21.21 # ghc-9.4.7 (https://www.stackage.org/lts-21.21)
+resolver: lts-20.26 # ghc-9.2.8 (https://www.stackage.org/lts-20.26)
 
 # User packages to be built.
 packages:
@@ -12,14 +12,14 @@ extra-deps:
   - smtlib-backends-0.3
   - smtlib-backends-process-0.3
   - git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: bd6383a8a1ff4396c40ed7a8a3e4f55bed6f74af # 0.9.4.7
+    commit: fe1c99abf820d3f40ea435d70fc8a69f0f3206c0 # 0.9.2.8
     subdirs:
       - .
       - liquidhaskell-boot
       - liquid-prelude
       - liquid-vector
   - git: https://github.com/ucsd-progsys/liquid-fixpoint
-    commit: 4cf7440449b00f3c6c0bb3dca7b1dcbd10942910 # 0.9.4.7
+    commit: 1ccf4b3962b4c3a3f4c17537280ec70edfa85c3e # 0.9.2.8
   - finite-field-0.10.0
 
 # Override default flag values for local packages and extra-deps
