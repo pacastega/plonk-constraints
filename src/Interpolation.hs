@@ -1,4 +1,4 @@
-module Interpolation where
+module Interpolation (interpolate) where
 
 import Data.Poly
 import qualified Data.Vector as V

@@ -1,9 +1,12 @@
 module Constraints where
 
+import Interpolation (interpolate)
+
 import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)
+import Data.Poly
 
-import Data.Vector (Vector, (!))
+import Data.Vector (Vector, (!), enumFromN, generate)
 {-@ type VectorN a N = {v:Vector a | vlen v == N} @-}
 {-@ type Btwn t A B = {v:t | A <= v && v < B} @-} -- [A..B)
 
@@ -48,4 +51,32 @@ satisfies n m input ((a,b,c), (qL,qR,qO,qM,qC)) =
   checkGate x i = let xai = x!(a!i); xbi = x!(b!i); xci = x!(c!i) in
     (qL!i)*xai + (qR!i)*xbi + (qO!i)*xci + (qM!i)*xai*xbi + (qC!i) == 0
 
+-- FIXME: maybe these should include ‘Enum t => ...’ ?
 {-@ assume enumFromTo :: a:t -> b:t -> [{c:t | a <= c && c <= b}] @-}
+{-@ assume enumFromN :: a:t -> n:Nat ->
+           v:VectorN {c:t | a <= c && c < a+n} n @-}
+
+{-@ assume generate :: n:Nat -> ({v:Nat | v < n} -> t) -> VectorN t n @-}
+
+{-@ polyEncoding :: n:Nat -> m:Nat ->
+                    VectorN (F p) m ->
+                    Circuit p n m ->
+                    VPoly (F p) @-}
+polyEncoding :: KnownNat p => Int -> Int -> Vector (F p) -> Circuit p -> VPoly (F p)
+polyEncoding n m input ((a,b,c), (qL,qR,qO,qM,qC)) =
+  qL'*a' + qR'*b' + qO'*c' + qM'*a'*b' + qC'
+    where
+      xs = enumFromN 0 n :: KnownNat p => Vector (F p)
+
+      getInput gatePort i = input!(gatePort!i)
+      {-@ getInput :: VectorN (Wire m) n -> Btwn Int 0 n -> F p @-}
+
+      a' = interpolate n xs (generate n (getInput a))
+      b' = interpolate n xs (generate n (getInput b))
+      c' = interpolate n xs (generate n (getInput c))
+
+      qL' = interpolate n xs qL
+      qR' = interpolate n xs qR
+      qO' = interpolate n xs qO
+      qM' = interpolate n xs qM
+      qC' = interpolate n xs qC
