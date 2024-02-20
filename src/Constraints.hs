@@ -58,6 +58,8 @@ satisfies n m input ((a,b,c), (qL,qR,qO,qM,qC)) =
 
 {-@ assume generate :: n:Nat -> ({v:Nat | v < n} -> t) -> VectorN t n @-}
 
+-- The goal is to prove that this polynomial vanishes at 0...n-1. To do this, we
+-- show that (zH n) divides it evenly.
 {-@ polyEncoding :: n:Nat -> m:Nat ->
                     VectorN (F p) m ->
                     Circuit p n m ->
@@ -80,3 +82,7 @@ polyEncoding n m input ((a,b,c), (qL,qR,qO,qM,qC)) =
       qO' = interpolate n xs qO
       qM' = interpolate n xs qM
       qC' = interpolate n xs qC
+
+-- zH n = (x)(x-1)...(x-n+1)
+zH :: KnownNat p => Int -> VPoly (F p)
+zH n = product [X - fromIntegral x | x <- [0..n-1]]
