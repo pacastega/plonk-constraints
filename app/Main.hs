@@ -1,3 +1,4 @@
+{-@ embed GHC.Num.Natural.Natural as int @-}
 {-# LANGUAGE DataKinds #-}
 module Main (main) where
 
