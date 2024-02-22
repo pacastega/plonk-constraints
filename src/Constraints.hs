@@ -12,8 +12,6 @@ import RefinementTypes()
 -- n == # gates
 -- m == # wires
 
--- TODO: should use vectors/polynomials instead of lists?
-
 type F p = PrimeField p        -- prime field
 {-@ type Selector p N = VectorN (F p) N @-}
 type Selector p = Vector (F p) -- exactly n field elements
@@ -50,7 +48,6 @@ satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
   checkGate x i = let xai = x!(a!i); xbi = x!(b!i); xci = x!(c!i) in
     (qL!i)*xai + (qR!i)*xbi + (qO!i)*xci + (qM!i)*xai*xbi + (qC!i) == 0
 
--- FIXME: maybe these should include ‘Enum t => ...’ ?
 {-@ assume enumFromTo :: a:t -> b:t -> [{c:t | a <= c && c <= b}] @-}
 {-@ assume enumFromN :: a:t -> n:Nat ->
            v:VectorN {c:t | a <= c && c < a+n} n @-}

@@ -9,11 +9,10 @@ import RefinementTypes()
 
 type F p = PrimeField p
 
--- maybe generalise to a ring
--- maybe use a better algorithm (e.g. divide and conquer for the basis
+-- maybe use a better algorithm (e.g. divide and conquer for the basis)
 
 -- Naïve Lagrange interpolation algorithm
-{-@ interpolate :: KnownNat p -> n:Nat ->
+{-@ interpolate :: n:Nat ->
                    VectorN (F p) n -> VectorN (F p) n -> VPoly (F p) @-}
 interpolate :: KnownNat p => Int -> V.Vector (F p) -> V.Vector (F p) -> VPoly (F p)
 interpolate _ xs ys = V.sum $ V.zipWith interpolateAt xs ys where
