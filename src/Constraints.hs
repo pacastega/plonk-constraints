@@ -45,9 +45,9 @@ type Circuit p = (V, Q p)
                  Bool @-}
 -- Check that the input (values in wires) satisfies the circuit:
 satisfies :: KnownNat p => Int -> Int -> Vector (F p) -> Circuit p -> Bool
-satisfies n m input ((a,b,c), (qL,qR,qO,qM,qC)) =
+satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
   and $ [checkGate input i | i <- [0..n-1]] where
-  {-@ checkGate :: x:VectorN (F p) m -> Btwn Int 0 n -> Bool @-}
+  {-@ checkGate :: x:VectorN (F p) _m -> Btwn Int 0 n -> Bool @-}
   checkGate x i = let xai = x!(a!i); xbi = x!(b!i); xci = x!(c!i) in
     (qL!i)*xai + (qR!i)*xbi + (qO!i)*xci + (qM!i)*xai*xbi + (qC!i) == 0
 
@@ -65,13 +65,13 @@ satisfies n m input ((a,b,c), (qL,qR,qO,qM,qC)) =
                     Circuit p n m ->
                     VPoly (F p) @-}
 polyEncoding :: KnownNat p => Int -> Int -> Vector (F p) -> Circuit p -> VPoly (F p)
-polyEncoding n m input ((a,b,c), (qL,qR,qO,qM,qC)) =
+polyEncoding n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
   qL'*a' + qR'*b' + qO'*c' + qM'*a'*b' + qC'
     where
       xs = enumFromN 0 n :: KnownNat p => Vector (F p)
 
       getInput gatePort i = input!(gatePort!i)
-      {-@ getInput :: VectorN (Wire m) n -> Btwn Int 0 n -> F p @-}
+      {-@ getInput :: VectorN (Wire _m) n -> Btwn Int 0 n -> F p @-}
 
       a' = interpolate n xs (generate n (getInput a))
       b' = interpolate n xs (generate n (getInput b))
