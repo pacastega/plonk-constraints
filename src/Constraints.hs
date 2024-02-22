@@ -5,10 +5,9 @@ import Interpolation (interpolate)
 import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)
 import Data.Poly
-
 import Data.Vector (Vector, (!), enumFromN, generate)
-{-@ type VectorN a N = {v:Vector a | vlen v == N} @-}
-{-@ type Btwn t A B = {v:t | A <= v && v < B} @-} -- [A..B)
+
+import RefinementTypes()
 
 -- n == # gates
 -- m == # wires

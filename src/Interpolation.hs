@@ -5,8 +5,9 @@ import qualified Data.Vector as V
 import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)
 
+import RefinementTypes()
+
 type F p = PrimeField p
-{-@ type VectorN a N = {v:V.Vector a | vlen v == N} @-}
 
 -- maybe generalise to a ring
 -- maybe use a better algorithm (e.g. divide and conquer for the basis
