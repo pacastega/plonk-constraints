@@ -32,6 +32,13 @@ ghc-options:
 
 library:
   source-dirs: src
+  ghc-options:
+    - -fplugin=LiquidHaskell
+  dependencies:
+    - liquidhaskell
+    - liquidhaskell-boot
+    - liquid-prelude
+    - liquid-vector
 
 executables:
   plonk-constraints-exe:
