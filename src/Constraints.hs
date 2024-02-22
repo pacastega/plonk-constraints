@@ -1,4 +1,4 @@
-module Constraints where
+module Constraints (polyEncoding, zH) where
 
 import Interpolation (interpolate)
 
