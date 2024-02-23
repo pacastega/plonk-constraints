@@ -1,11 +1,13 @@
+{-# LANGUAGE FlexibleContexts #-}
 module Constraints (polyEncoding, zH) where
 
 import Interpolation (interpolate)
+import PrimitiveRoot
 
 import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)
 import Data.Poly
-import Data.Vector (Vector, (!), enumFromN, generate)
+import Data.Vector (Vector, (!), iterateN, generate)
 
 import RefinementTypes()
 
@@ -49,10 +51,9 @@ satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
     (qL!i)*xai + (qR!i)*xbi + (qO!i)*xci + (qM!i)*xai*xbi + (qC!i) == 0
 
 {-@ assume enumFromTo :: a:t -> b:t -> [{c:t | a <= c && c <= b}] @-}
-{-@ assume enumFromN :: a:t -> n:Nat ->
-           v:VectorN {c:t | a <= c && c < a+n} n @-}
 
 {-@ assume generate :: n:Nat -> ({v:Nat | v < n} -> t) -> VectorN t n @-}
+{-@ assume iterateN :: n:Nat -> (a -> a) -> a -> VectorN a n @-}
 
 -- The goal is to prove that this polynomial vanishes at 0...n-1. To do this, we
 -- show that (zH n) divides it evenly.
@@ -60,11 +61,12 @@ satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
                     VectorN (F p) m ->
                     Circuit p n m ->
                     VPoly (F p) @-}
-polyEncoding :: KnownNat p => Int -> Int -> Vector (F p) -> Circuit p -> VPoly (F p)
+polyEncoding :: (KnownNat p, PrimitiveRoot (F p)) =>
+                Int -> Int -> Vector (F p) -> Circuit p -> VPoly (F p)
 polyEncoding n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
   qL'*a' + qR'*b' + qO'*c' + qM'*a'*b' + qC'
     where
-      xs = enumFromN 0 n :: KnownNat p => Vector (F p)
+      xs = iterateN n (* primitiveRoot) 1
 
       getInput gatePort i = input!(gatePort!i)
       {-@ getInput :: VectorN (Wire _m) n -> Btwn Int 0 n -> F p @-}
@@ -79,6 +81,6 @@ polyEncoding n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
       qM' = interpolate n xs qM
       qC' = interpolate n xs qC
 
--- zH n = (x)(x-1)...(x-n+1)
-zH :: KnownNat p => Int -> VPoly (F p)
-zH n = product [X - fromIntegral x | x <- [0..n-1]]
+-- zH n is the polynomial that vanishes precisely on the n-th roots of unity
+zH :: KnownNat p => Word -> VPoly (F p)
+zH n = (monomial n 1) - (monomial 0 1) -- X^n - 1
