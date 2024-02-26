@@ -2,18 +2,19 @@
 {-# LANGUAGE DataKinds #-}
 module Main (main) where
 
-import Interpolation (interpolate)
+import Interpolation (interpolateRoots)
 import Data.FiniteField.PrimeField
-import qualified Data.Vector as V (fromList, zip)
+import PrimitiveRoot
+import qualified Data.Vector as V (fromList, zip, iterateN)
 import Data.Poly
 
 main :: IO ()
 main = do
 
-  let xs = V.fromList [1,2,3]
-  let ys = V.fromList [7,-2,3]
+  let xs = V.iterateN 4 (* (primitiveRoot ^ (16 `div` 4))) 1
+  let ys = V.fromList [7,-2,3,10]
 
-  let q = interpolate 3 xs ys :: VPoly (PrimeField 101)
+  let q = interpolateRoots 17 4 ys :: VPoly (PrimeField 17)
   print q
 
   putStrLn "Actual - Desired"
