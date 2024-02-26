@@ -13,6 +13,7 @@ type F17 = F 17
 -- because Liquid Haskell complains that ‘the Liquid component {17} is
 -- inconsistent with the Haskell component GHC.Types.Int’ if the liquid
 -- annotation below has (F 17) instead of F17.
+-- https://github.com/ucsd-progsys/liquidhaskell/issues/2080
 
 {-@ addGate :: Circuit F17 1 3 @-}
 addGate :: Circuit (F 17)
