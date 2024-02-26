@@ -7,7 +7,7 @@ import PrimitiveRoot
 import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)
 import Data.Poly
-import Data.Vector (Vector, (!), iterateN, generate)
+import Data.Vector (Vector, (!), generate)
 
 import RefinementTypes()
 
@@ -51,9 +51,7 @@ satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
     (qL!i)*xai + (qR!i)*xbi + (qO!i)*xci + (qM!i)*xai*xbi + (qC!i) == 0
 
 {-@ assume enumFromTo :: a:t -> b:t -> [{c:t | a <= c && c <= b}] @-}
-
 {-@ assume generate :: n:Nat -> ({v:Nat | v < n} -> t) -> VectorN t n @-}
-{-@ assume iterateN :: n:Nat -> (a -> a) -> a -> VectorN a n @-}
 
 -- The goal is to prove that this polynomial vanishes at 0...n-1. To do this, we
 -- show that (zH n) divides it evenly.
