@@ -15,8 +15,8 @@ import RefinementTypes()
 -- m == # wires
 
 type F p = PrimeField p        -- prime field
-{-@ type Selector p N = VectorN (F p) N @-}
-type Selector p = Vector (F p) -- exactly n field elements
+{-@ type Selector pf N = VectorN pf N @-}
+type Selector pf = Vector pf -- exactly n field elements
 
 {-@ type Wire M = Btwn Int 0 M @-}
 -- Gate wirings (each vector contains exactly ‘n’ integers in {0..m-1}):
@@ -40,10 +40,10 @@ type Circuit p = (V, Q p)
 
 {-@ satisfies :: n:Nat -> m:Nat ->
                  VectorN (F p) m ->
-                 Circuit p n m ->
+                 Circuit (F p) n m ->
                  Bool @-}
 -- Check that the input (values in wires) satisfies the circuit:
-satisfies :: KnownNat p => Int -> Int -> Vector (F p) -> Circuit p -> Bool
+satisfies :: KnownNat p => Int -> Int -> Vector (F p) -> Circuit (F p) -> Bool
 satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
   and $ [checkGate input i | i <- [0..n-1]] where
   {-@ checkGate :: x:VectorN (F p) _m -> Btwn Int 0 n -> Bool @-}
@@ -57,10 +57,10 @@ satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
 -- show that (zH n) divides it evenly.
 {-@ polyEncoding :: p:{v:Nat|v>=2} -> n:{v:Nat|v>0} -> m:Nat ->
                     VectorN (F p) m ->
-                    Circuit p n m ->
+                    Circuit (F p) n m ->
                     VPoly (F p) @-}
 polyEncoding :: (KnownNat p, PrimitiveRoot (F p)) =>
-                Int -> Int -> Int -> Vector (F p) -> Circuit p -> VPoly (F p)
+                Int -> Int -> Int -> Vector (F p) -> Circuit (F p) -> VPoly (F p)
 polyEncoding p n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
   qL'*a' + qR'*b' + qO'*c' + qM'*a'*b' + qC'
     where
