@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Constraints (polyEncoding, zH) where
+module Constraints (satisfies, polyEncoding, zH, F, Circuit, V, Q) where
 
 import Interpolation (interpolateRoots)
 import PrimitiveRoot
