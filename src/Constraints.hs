@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Constraints (polyEncoding, zH) where
 
-import Interpolation (interpolate)
+import Interpolation (interpolateRoots)
 import PrimitiveRoot
 
 import Data.FiniteField.PrimeField
@@ -57,29 +57,28 @@ satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
 
 -- The goal is to prove that this polynomial vanishes at 0...n-1. To do this, we
 -- show that (zH n) divides it evenly.
-{-@ polyEncoding :: n:Nat -> m:Nat ->
+{-@ polyEncoding :: p:{v:Nat|v>=2} -> n:{v:Nat|v>0} -> m:Nat ->
                     VectorN (F p) m ->
                     Circuit p n m ->
                     VPoly (F p) @-}
 polyEncoding :: (KnownNat p, PrimitiveRoot (F p)) =>
-                Int -> Int -> Vector (F p) -> Circuit p -> VPoly (F p)
-polyEncoding n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
+                Int -> Int -> Int -> Vector (F p) -> Circuit p -> VPoly (F p)
+polyEncoding p n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
   qL'*a' + qR'*b' + qO'*c' + qM'*a'*b' + qC'
     where
-      xs = iterateN n (* primitiveRoot) 1
 
       getInput gatePort i = input!(gatePort!i)
       {-@ getInput :: VectorN (Wire _m) n -> Btwn Int 0 n -> F p @-}
 
-      a' = interpolate n xs (generate n (getInput a))
-      b' = interpolate n xs (generate n (getInput b))
-      c' = interpolate n xs (generate n (getInput c))
+      a' = interpolateRoots p n (generate n (getInput a))
+      b' = interpolateRoots p n (generate n (getInput b))
+      c' = interpolateRoots p n (generate n (getInput c))
 
-      qL' = interpolate n xs qL
-      qR' = interpolate n xs qR
-      qO' = interpolate n xs qO
-      qM' = interpolate n xs qM
-      qC' = interpolate n xs qC
+      qL' = interpolateRoots p n qL
+      qR' = interpolateRoots p n qR
+      qO' = interpolateRoots p n qO
+      qM' = interpolateRoots p n qM
+      qC' = interpolateRoots p n qC
 
 -- zH n is the polynomial that vanishes precisely on the n-th roots of unity
 zH :: KnownNat p => Word -> VPoly (F p)
