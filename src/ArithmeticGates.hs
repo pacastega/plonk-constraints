@@ -7,7 +7,6 @@ import Constraints
 import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
 import Data.Vector (fromList)
--- import RefinementTypes
 
 type F17 = F 17
 -- TODO: it seems to be necessary to include this type alias in *plain* Haskell
@@ -17,17 +16,19 @@ type F17 = F 17
 -- https://github.com/ucsd-progsys/liquidhaskell/issues/2080
 
 {-@ addGate :: Circuit (F p) 1 3 @-}
-addGate :: (KnownNat p, PrimitiveRoot (F p)) => Circuit (F p)
+addGate :: PrimitiveRoot (F p) => Circuit (F p)
 addGate = (v, q) where
-  v = let f=fromList in (f [0], f [1], f [2])
-  q = let f=fromList in (f [1], f [1], f [-1], f [0], f [0])
+  f = fromList
+  v = (f [0], f [1], f [2])
+  q = (f [1], f [1], f [-1], f [0], f [0])
   -- a+b == c <=> a + b - c + 0*m + 0 == 0
 
 {-@ mulGate :: Circuit (F p) 1 3 @-}
-mulGate :: (KnownNat p, PrimitiveRoot (F p)) => Circuit (F p)
+mulGate :: PrimitiveRoot (F p) => Circuit (F p)
 mulGate = (v, q) where
-  v = let f=fromList in (f [0], f [1], f [2])
-  q = let f=fromList in (f [0], f [0], f [-1], f [1], f [0])
+  f = fromList
+  v = (f [0], f [1], f [2])
+  q = (f [0], f [0], f [-1], f [1], f [0])
   -- a*b == c <=> 0 + 0 - c + a*b + 0 == 0
 
 
