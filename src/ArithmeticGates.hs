@@ -6,7 +6,7 @@ module ArithmeticGates (addGate, mulGate) where
 import Constraints
 import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
-import Data.Vector (fromList)
+import Data.Vector (fromList, Vector, (!))
 
 type F17 = F 17
 -- TODO: it seems to be necessary to include this type alias in *plain* Haskell
@@ -23,6 +23,13 @@ addGate = (v, q) where
   q = (f [1], f [1], f [-1], f [0], f [0])
   -- a+b == c <=> a + b - c + 0*m + 0 == 0
 
+{-@ verifyAdd :: VectorN (F p) 3 -> {v:Bool | v} @-}
+verifyAdd :: (KnownNat p, PrimitiveRoot (F p)) => Vector (F p) -> Bool
+verifyAdd input = let ((a,b,c), q) = addGate;
+                      getInput port = input!(port!0) in
+  (getInput a + getInput b == getInput c) == (satisfies 1 3 input ((a,b,c), q))
+
+
 {-@ mulGate :: Circuit (F p) 1 3 @-}
 mulGate :: PrimitiveRoot (F p) => Circuit (F p)
 mulGate = (v, q) where
@@ -31,5 +38,8 @@ mulGate = (v, q) where
   q = (f [0], f [0], f [-1], f [1], f [0])
   -- a*b == c <=> 0 + 0 - c + a*b + 0 == 0
 
-
--- TODO: how to properly verify these work for all possible inputs?
+{-@ verifyMul :: VectorN (F p) 3 -> {v:Bool | v} @-}
+verifyMul :: (KnownNat p, PrimitiveRoot (F p)) => Vector (F p) -> Bool
+verifyMul input = let ((a,b,c), q) = mulGate;
+                      getInput port = input!(port!0) in
+  (getInput a * getInput b == getInput c) == (satisfies 1 3 input ((a,b,c), q))
