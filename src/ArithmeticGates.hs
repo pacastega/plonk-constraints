@@ -8,7 +8,7 @@ import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
 import Data.Vector (fromList, Vector, (!))
 
-{-@ addGate :: Circuit (F p) 1 3 @-}
+{-@ addGate :: Circuit (F p) 1 3 @-} -- 1 gate, 3 wires
 addGate :: PrimitiveRoot (F p) => Circuit (F p)
 addGate = (v, q) where
   f = fromList
@@ -23,7 +23,7 @@ verifyAdd input = let ((a,b,c), q) = addGate;
   (getInput a + getInput b == getInput c) == (satisfies 1 3 input ((a,b,c), q))
 
 
-{-@ mulGate :: Circuit (F p) 1 3 @-}
+{-@ mulGate :: Circuit (F p) 1 3 @-} -- 1 gate, 3 wires
 mulGate :: PrimitiveRoot (F p) => Circuit (F p)
 mulGate = (v, q) where
   f = fromList
