@@ -8,13 +8,6 @@ import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
 import Data.Vector (fromList, Vector, (!))
 
-type F17 = F 17
--- TODO: it seems to be necessary to include this type alias in *plain* Haskell
--- because Liquid Haskell complains that ‘the Liquid component {17} is
--- inconsistent with the Haskell component GHC.Types.Int’ if the liquid
--- annotation below has (F 17) instead of F17.
--- https://github.com/ucsd-progsys/liquidhaskell/issues/2080
-
 {-@ addGate :: Circuit (F p) 1 3 @-}
 addGate :: PrimitiveRoot (F p) => Circuit (F p)
 addGate = (v, q) where
