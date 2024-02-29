@@ -38,17 +38,25 @@ type Q p = (Selector p, -- (L)eft input
 {-@ type Circuit p N M = (V N M, Q p N) @-}
 type Circuit p = (V, Q p)
 
+
+{-@ checkGate :: n:Nat -> m:Nat ->
+                 VectorN (F p) m -> Circuit (F p) n m -> Btwn Int 0 n ->
+                 Bool @-}
+checkGate :: KnownNat p =>
+             Int -> Int -> Vector (F p) -> Circuit (F p) -> Int -> Bool
+checkGate _ _ x ((a,b,c), (qL,qR,qO,qM,qC)) i =
+  let xai = x!(a!i); xbi = x!(b!i); xci = x!(c!i) in
+    (qL!i)*xai + (qR!i)*xbi + (qO!i)*xci + (qM!i)*xai*xbi + (qC!i) == 0
+
+
 {-@ satisfies :: n:Nat -> m:Nat ->
                  VectorN (F p) m ->
                  Circuit (F p) n m ->
                  Bool @-}
 -- Check that the input (values in wires) satisfies the circuit:
 satisfies :: KnownNat p => Int -> Int -> Vector (F p) -> Circuit (F p) -> Bool
-satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
-  and $ [checkGate input i | i <- [0..n-1]] where
-  {-@ checkGate :: x:VectorN (F p) _m -> Btwn Int 0 n -> Bool @-}
-  checkGate x i = let xai = x!(a!i); xbi = x!(b!i); xci = x!(c!i) in
-    (qL!i)*xai + (qR!i)*xbi + (qO!i)*xci + (qM!i)*xai*xbi + (qC!i) == 0
+satisfies n m input circuit = all (checkGate n m input circuit) [0..n-1]
+
 
 {-@ assume enumFromTo :: a:t -> b:t -> [{c:t | a <= c && c <= b}] @-}
 {-@ assume generate :: n:Nat -> ({v:Nat | v < n} -> t) -> VectorN t n @-}
