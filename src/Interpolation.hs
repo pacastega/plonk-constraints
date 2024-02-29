@@ -12,12 +12,11 @@ import RefinementTypes()
 
 type F p = PF.PrimeField p
 
--- maybe use a better algorithm (e.g. divide and conquer for the basis)
-
 -- Naïve Lagrange interpolation algorithm
 {-@ interpolate :: n:Nat ->
                    VectorN (F p) n -> VectorN (F p) n -> VPoly (F p) @-}
-interpolate :: KnownNat p => Int -> V.Vector (F p) -> V.Vector (F p) -> VPoly (F p)
+interpolate :: KnownNat p => Int ->
+               V.Vector (F p) -> V.Vector (F p) -> VPoly (F p)
 interpolate _ xs ys = V.sum $ V.zipWith interpolateAt xs ys where
   term = monomial 0 -- independent term (monomial of degree 0)
   interpolateAt x y = term y * V.product (V.map (quotient x) (otherXs x))
@@ -25,8 +24,7 @@ interpolate _ xs ys = V.sum $ V.zipWith interpolateAt xs ys where
   otherXs x = V.filter (/= x) xs
 
 
--- TODO: is it possible to ensure that the argument p represents the same as the
--- type variable p?
+-- Interpolate at the order-n subgroup {x ∈ F_p : x^n == 1}
 {-@ interpolateRoots :: p:{v:Nat | v >= 2} ->
                         n:{v:Nat | v > 0 && (p-1) mod v == 0} ->
                         ys:VectorN (F p) n -> VPoly (F p) @-}
