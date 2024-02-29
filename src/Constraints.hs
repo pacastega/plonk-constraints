@@ -55,7 +55,9 @@ satisfies n _m input ((a,b,c), (qL,qR,qO,qM,qC)) =
 
 -- The goal is to prove that this polynomial vanishes at 0...n-1. To do this, we
 -- show that (zH n) divides it evenly.
-{-@ polyEncoding :: p:{v:Nat|v>=2} -> n:{v:Nat|v>0} -> m:Nat ->
+{-@ polyEncoding :: p:{v:Nat | v >= 2} ->
+                    n:{v:Nat | v > 0 && (p-1) mod v == 0} ->
+                    m:Nat ->
                     VectorN (F p) m ->
                     Circuit (F p) n m ->
                     VPoly (F p) @-}

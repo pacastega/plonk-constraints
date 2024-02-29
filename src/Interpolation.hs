@@ -25,10 +25,10 @@ interpolate _ xs ys = V.sum $ V.zipWith interpolateAt xs ys where
   otherXs x = V.filter (/= x) xs
 
 
--- FIXME: it would be nice to ensure that n divides p-1
 -- TODO: is it possible to ensure that the argument p represents the same as the
 -- type variable p?
-{-@ interpolateRoots :: p:{v:Nat | v >= 2} -> n:{v:Nat | v > 0} ->
+{-@ interpolateRoots :: p:{v:Nat | v >= 2} ->
+                        n:{v:Nat | v > 0 && (p-1) mod v == 0} ->
                         ys:VectorN (F p) n -> VPoly (F p) @-}
 interpolateRoots :: (KnownNat p, PrimitiveRoot (F p)) =>
                     Int -> Int -> V.Vector (F p) -> VPoly (F p)
