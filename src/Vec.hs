@@ -1,3 +1,4 @@
+-- {-@ LIQUID "--reflection" @-}
 module Vec (Vec (..), index, fromList) where
 
 data Vec a = Nil | Cons a (Vec a)
@@ -13,25 +14,14 @@ len (Cons _ xs) = 1 + len xs
 {-@ measure len @-}
 {-@ data Vec [len] @-}
 
--- TODO: Is this necessary to make LH realise Nil can’t be used in the
--- definitions below?
-{-@ impossible :: {s:String | False} -> a @-}
-impossible :: String -> a
-impossible = error
+-- {-@ impossible :: {v:String | False} -> a @-}
+-- impossible :: String -> a
+-- impossible = error
 
-{-@ head :: {v:Vec a | len v > 0} -> a @-}
-head :: Vec a -> a
-head Nil        = impossible "Nil has zero length"
-head (Cons x _) = x
-
-{-@ tail :: {v:Vec a | len v > 0} -> Vec a @-}
-tail :: Vec a -> Vec a
-tail Nil         = impossible "Nil has zero length"
-tail (Cons _ xs) = xs
-
+-- {-@ reflect index @-}
 {-@ index :: xs:Vec a -> {n:Nat | n < len xs} -> a @-}
 index :: Vec a -> Int -> a
-index Nil         _ = impossible "The list must be non-empty"
+-- index Nil         _ = impossible "The list must be non-empty"
 index (Cons x _)  0 = x
 index (Cons _ xs) n = index xs (n-1)
 

@@ -5,7 +5,8 @@ module LogicGates (andGate) where
 
 import Constraints
 import PrimitiveRoot
-import Data.Vector (fromList)
+-- import Data.Vector (fromList)
+import Vec
 
 {-@ notGate :: Circuit (F p) 2 3 @-} -- 2 gates, 3 wires
 notGate :: PrimitiveRoot (F p) => Circuit (F p)
