@@ -1,4 +1,4 @@
-module Vec (index) where
+module Vec (Vec (..), index) where
 
 data Vec a = Nil | Cons a (Vec a)
   deriving Show
