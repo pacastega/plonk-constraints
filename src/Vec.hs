@@ -1,4 +1,4 @@
-module Vec (Vec (..), index) where
+module Vec (Vec (..), index, fromList) where
 
 data Vec a = Nil | Cons a (Vec a)
   deriving Show
@@ -34,3 +34,8 @@ index :: Vec a -> Int -> a
 index Nil         _ = impossible "The list must be non-empty"
 index (Cons x _)  0 = x
 index (Cons _ xs) n = index xs (n-1)
+
+{-@ fromList :: xs:[a] -> {v:Vec a | len v == len xs} @-}
+fromList :: [a] -> Vec a
+fromList []     = Nil
+fromList (x:xs) = x `Cons` fromList xs
