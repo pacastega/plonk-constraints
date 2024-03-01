@@ -1,17 +1,17 @@
-module MyVector (index) where
+module Vec (index) where
 
-data MyVector a = Nil | Cons a (MyVector a)
+data Vec a = Nil | Cons a (Vec a)
   deriving Show
 
 infixr 5 `Cons`
 
-{-@ len :: MyVector a -> Nat @-}
-len :: MyVector a -> Int
+{-@ len :: Vec a -> Nat @-}
+len :: Vec a -> Int
 len Nil         = 0
 len (Cons _ xs) = 1 + len xs
 
 {-@ measure len @-}
-{-@ data MyVector [len] @-}
+{-@ data Vec [len] @-}
 
 -- TODO: Is this necessary to make LH realise Nil can’t be used in the
 -- definitions below?
@@ -19,18 +19,18 @@ len (Cons _ xs) = 1 + len xs
 impossible :: String -> a
 impossible = error
 
-{-@ head :: {v:MyVector a | len v > 0} -> a @-}
-head :: MyVector a -> a
+{-@ head :: {v:Vec a | len v > 0} -> a @-}
+head :: Vec a -> a
 head Nil        = impossible "Nil has zero length"
 head (Cons x _) = x
 
-{-@ tail :: {v:MyVector a | len v > 0} -> MyVector a @-}
-tail :: MyVector a -> MyVector a
+{-@ tail :: {v:Vec a | len v > 0} -> Vec a @-}
+tail :: Vec a -> Vec a
 tail Nil         = impossible "Nil has zero length"
 tail (Cons _ xs) = xs
 
-{-@ index :: xs:MyVector a -> {n:Nat | n < len xs} -> a @-}
-index :: MyVector a -> Int -> a
+{-@ index :: xs:Vec a -> {n:Nat | n < len xs} -> a @-}
+index :: Vec a -> Int -> a
 index Nil         _ = impossible "The list must be non-empty"
 index (Cons x _)  0 = x
 index (Cons _ xs) n = index xs (n-1)
