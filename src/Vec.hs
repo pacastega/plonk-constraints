@@ -12,7 +12,7 @@ len Nil         = 0
 len (Cons _ xs) = 1 + len xs
 
 {-@ measure len @-}
-{-@ data Vec [len] @-}
+{-@ data Vec [len] a = Nil | Cons a (Vec a) @-}
 
 -- {-@ impossible :: {v:String | False} -> a @-}
 -- impossible :: String -> a
