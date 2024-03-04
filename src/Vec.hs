@@ -1,4 +1,4 @@
--- {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--reflection" @-}
 module Vec (Vec (..), index, fromList) where
 
 data Vec a = Nil | Cons a (Vec a)
@@ -18,7 +18,7 @@ len (Cons _ xs) = 1 + len xs
 -- impossible :: String -> a
 -- impossible = error
 
--- {-@ reflect index @-}
+{-@ reflect index @-}
 {-@ index :: xs:Vec a -> {n:Nat | n < len xs} -> a @-}
 index :: Vec a -> Int -> a
 -- index Nil         _ = impossible "The list must be non-empty"
