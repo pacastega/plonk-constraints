@@ -1,4 +1,5 @@
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
 module Vec where
 
 data RVec a = Nil | Cons a (RVec a)

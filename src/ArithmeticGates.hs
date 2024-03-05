@@ -1,3 +1,4 @@
+{-@ LIQUID "--reflection" @-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DataKinds #-}
 {-@ embed GHC.Num.Natural.Natural as int @-}
