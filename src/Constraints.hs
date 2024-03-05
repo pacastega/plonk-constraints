@@ -1,25 +1,25 @@
 {-# LANGUAGE FlexibleContexts #-}
--- {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--reflection" @-}
 module Constraints (satisfies, F, Circuit, V, Q) where
 
 import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)
 
-import Vec (Vec, index)
-import RefinementTypes()
+import Vec 
+import RefinementTypes
 
 -- n == # gates
 -- m == # wires
 
 type F p = PrimeField p        -- prime field
 {-@ type Selector pf N = VecN pf N @-}
-type Selector pf = Vec pf -- exactly n field elements
+type Selector pf = RVec pf -- exactly n field elements
 
 {-@ type Wire M = Btwn Int 0 M @-}
 -- Gate wirings (each vector contains exactly ‘n’ integers in {0..m-1}):
 {-@ type V N M =
      (VecN (Wire M) N, VecN (Wire M) N, VecN (Wire M) N) @-}
-type V = (Vec Int, Vec Int, Vec Int)
+type V = (RVec Int, RVec Int, RVec Int)
 -- This should be thought of as 3 mappings from one of the ‘n’ gates to one of
 -- the ‘m’ wires (‘left input’ wire, ‘right input’ wire and ‘output’ wire)
 
@@ -41,7 +41,7 @@ type Circuit p = (V, Q p)
                  VecN (F p) m -> Circuit (F p) n m -> Btwn Int 0 n ->
                  Bool @-}
 checkGate :: KnownNat p =>
-             Int -> Int -> Vec (F p) -> Circuit (F p) -> Int -> Bool
+             Int -> Int -> RVec (F p) -> Circuit (F p) -> Int -> Bool
 checkGate _ _ x ((a,b,c), (qL,qR,qO,qM,qC)) i =
   let (!) = index;
       xai = x!(a!i); xbi = x!(b!i); xci = x!(c!i) in
@@ -53,7 +53,7 @@ checkGate _ _ x ((a,b,c), (qL,qR,qO,qM,qC)) i =
                  Circuit (F p) n m ->
                  Bool @-}
 -- Check that the input (values in wires) satisfies the circuit:
-satisfies :: KnownNat p => Int -> Int -> Vec (F p) -> Circuit (F p) -> Bool
+satisfies :: KnownNat p => Int -> Int -> RVec (F p) -> Circuit (F p) -> Bool
 satisfies n m input circuit = all (checkGate n m input circuit) [0..n-1]
 
 

@@ -1,31 +1,33 @@
--- {-@ LIQUID "--reflection" @-}
-module Vec (Vec (..), index, fromList) where
+{-@ LIQUID "--reflection" @-}
+module Vec where
 
-data Vec a = Nil | Cons a (Vec a)
+data RVec a = Nil | Cons a (RVec a)
   deriving Show
+
+
+{-@ data RVec [vvlen] a = Nil | Cons {xVec:: a, xsVec:: RVec a} @-}
 
 infixr 5 `Cons`
 
-{-@ len :: Vec a -> Nat @-}
-len :: Vec a -> Int
-len Nil         = 0
-len (Cons _ xs) = 1 + len xs
+{-@ vvlen :: RVec a -> Nat @-}
+vvlen :: RVec a -> Int
+vvlen Nil         = 0
+vvlen (Cons _ xs) = 1 + vvlen xs
 
-{-@ measure len @-}
-{-@ data Vec [len] @-}
+{-@ measure vvlen @-}
 
 -- {-@ impossible :: {v:String | False} -> a @-}
 -- impossible :: String -> a
 -- impossible = error
 
--- {-@ reflect index @-}
-{-@ index :: xs:Vec a -> {n:Nat | n < len xs} -> a @-}
-index :: Vec a -> Int -> a
+{-@ reflect index @-}
+{-@ index :: xs:RVec a -> {n:Nat | n < vvlen xs} -> a @-}
+index :: RVec a -> Int -> a
 -- index Nil         _ = impossible "The list must be non-empty"
 index (Cons x _)  0 = x
 index (Cons _ xs) n = index xs (n-1)
 
-{-@ fromList :: xs:[a] -> {v:Vec a | len v == len xs} @-}
-fromList :: [a] -> Vec a
+{-@ fromList :: xs:[a] -> {v:RVec a | vvlen v == len xs} @-}
+fromList :: [a] -> RVec a
 fromList []     = Nil
 fromList (x:xs) = x `Cons` fromList xs
