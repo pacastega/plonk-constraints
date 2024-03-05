@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DataKinds #-}
+{-@ LIQUID "--reflection" @-}
 {-@ embed GHC.Num.Natural.Natural as int @-}
 module LogicGates (andGate) where
 
