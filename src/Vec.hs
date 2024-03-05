@@ -13,15 +13,9 @@ vvlen :: Vec a -> Int
 vvlen Nil         = 0
 vvlen (Cons _ xs) = 1 + vvlen xs
 
-
--- {-@ impossible :: {v:String | False} -> a @-}
--- impossible :: String -> a
--- impossible = error
-
 {-@ reflect index @-}
 {-@ index :: xs:Vec a -> {n:Nat | n < vvlen xs} -> a @-}
 index :: Vec a -> Int -> a
--- index Nil         _ = impossible "The list must be non-empty"
 index (Cons x _)  0 = x
 index (Cons _ xs) n = index xs (n-1)
 
