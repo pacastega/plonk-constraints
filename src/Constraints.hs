@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
--- {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--reflection" @-}
 module Constraints (satisfies, F, Circuit, V, Q) where
 
 import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)
 
 import Vec (Vec, index)
-import RefinementTypes()
+import RefinementTypes
 
 -- n == # gates
 -- m == # wires
