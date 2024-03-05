@@ -1,3 +1,4 @@
+{-@ LIQUID "--reflection" @-}
 {-# LANGUAGE FlexibleContexts #-}
 module Interpolation (interpolate, interpolateRoots) where
 
@@ -8,7 +9,7 @@ import GHC.TypeNats (KnownNat)
 
 import PrimitiveRoot
 
-import RefinementTypes()
+import RefinementTypes
 
 type F p = PF.PrimeField p
 

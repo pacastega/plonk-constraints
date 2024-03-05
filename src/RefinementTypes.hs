@@ -1,5 +1,8 @@
+{-@ LIQUID "--reflection" @-}
+
 {-# OPTIONS -Wno-unused-imports -Wno-missing-export-lists #-}
 module RefinementTypes where
+
 
 import Data.Vector
 import Vec
