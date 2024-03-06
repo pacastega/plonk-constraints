@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--reflection" @-}
-module Constraints (satisfies, F, Circuit, V, Q) where
+module Constraints (checkGate, satisfies, F, Circuit, V, Q) where
 
 import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)

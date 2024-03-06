@@ -19,6 +19,7 @@ index :: Vec a -> Int -> a
 index (Cons x _)  0 = x
 index (Cons _ xs) n = index xs (n-1)
 
+{-@ reflect fromList @-}
 {-@ fromList :: xs:[a] -> {v:Vec a | vvlen v == len xs} @-}
 fromList :: [a] -> Vec a
 fromList []     = Nil
