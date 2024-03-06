@@ -49,15 +49,11 @@ checkGate _ _ x ((a,b,c), (qL,qR,qO,qM,qC)) i =
     (qL!i)*xai + (qR!i)*xbi + (qO!i)*xci + (qM!i)*xai*xbi + (qC!i) == 0
 
 
--- {-@ reflect satisfies @-}
+{-@ reflect satisfies @-}
 {-@ satisfies :: n:Nat1 -> m:Nat ->
                  VecN (F p) m ->
                  Circuit (F p) n m ->
                  Bool @-}
 -- Check that the input (values in wires) satisfies the circuit:
 satisfies :: KnownNat p => Int -> Int -> Vec (F p) -> Circuit (F p) -> Bool
--- satisfies n m input circuit = all' 0 (n-1) (checkGate n m input circuit) [0..n-1]
 satisfies n m input circuit = allRange 0 n (checkGate n m input circuit)
-
-
-{-@ assume enumFromTo :: a:t -> b:t -> [{c:t | a <= c && c <= b}] @-}
