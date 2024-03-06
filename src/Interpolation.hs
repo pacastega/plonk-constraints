@@ -1,3 +1,4 @@
+{-@ LIQUID "--reflection" @-}
 {-# LANGUAGE FlexibleContexts #-}
 module Interpolation (interpolate, interpolateRoots) where
 

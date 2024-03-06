@@ -25,11 +25,12 @@ ghc-options:
 - -Widentities
 - -Wincomplete-record-updates
 - -Wincomplete-uni-patterns
-- -Wmissing-export-lists
+- -Wno-missing-export-lists
 - -Wmissing-home-modules
 - -Wpartial-fields
 - -Wredundant-constraints
 - -Wno-unused-top-binds
+- -Wno-incomplete-patterns
 
 library:
   source-dirs: src
