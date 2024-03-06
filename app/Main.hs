@@ -1,4 +1,5 @@
 {-@ embed GHC.Num.Natural.Natural as int @-}
+-- {-@ embed Data.FiniteField.PrimeField * as FiniteField @-}
 {-# LANGUAGE DataKinds #-}
 module Main (main) where
 
