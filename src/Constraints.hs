@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
 module Constraints (checkGate, satisfies, F, Circuit, V, Q) where
 
 import Data.FiniteField.PrimeField

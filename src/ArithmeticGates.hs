@@ -36,8 +36,9 @@ mulGate = (v, q) where
   q = (f [0], f [0], f [-1], f [1], f [0])
   -- a*b == c <=> 0 + 0 - c + a*b + 0 == 0
 
--- {-@ verifyMul :: VecN (F p) 3 -> {v:Bool | v} @-}
--- verifyMul :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
--- verifyMul input = let ((a,b,c), q) = mulGate;
---                       getInput port = input!(port!0) in
---   (getInput a * getInput b == getInput c) == (satisfies 1 3 input ((a,b,c), q))
+{-@ verifyMul :: VecN (F p) 3 -> {v:Bool | v} @-}
+verifyMul :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
+verifyMul x = mulIsCorrect == checkGate 1 3 x gate 0 where
+  (!) = index
+  gate@((a,b,c), _) = mulGate
+  mulIsCorrect = x!(a!0) * x!(b!0) == x!(c!0)
