@@ -28,6 +28,7 @@ verifyAdd x = sumIsCorrect == checkGate 1 3 x gate 0 where
   sumIsCorrect = x!(a!0) + x!(b!0) == x!(c!0)
 
 
+{-@ reflect mulGate @-}
 {-@ mulGate :: Circuit (F p) 1 3 @-} -- 1 gate, 3 wires
 mulGate :: PrimitiveRoot (F p) => Circuit (F p)
 mulGate = (v, q) where
