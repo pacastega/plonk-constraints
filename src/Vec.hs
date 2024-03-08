@@ -13,11 +13,13 @@ vvlen :: Vec a -> Int
 vvlen Nil         = 0
 vvlen (Cons _ xs) = 1 + vvlen xs
 
-{-@ reflect index @-}
-{-@ index :: xs:Vec a -> {n:Nat | n < vvlen xs} -> a @-}
-index :: Vec a -> Int -> a
-index (Cons x _)  0 = x
-index (Cons _ xs) n = index xs (n-1)
+{-@ reflect ! @-}
+{-@ (!) :: xs:Vec a -> {n:Nat | n < vvlen xs} -> a @-}
+(!) :: Vec a -> Int -> a
+(!) (Cons x _)  0 = x
+(!) (Cons _ xs) n = (!) xs (n-1)
+
+infixl 9 !
 
 {-@ reflect fromList @-}
 {-@ fromList :: xs:[a] -> {v:Vec a | vvlen v == len xs} @-}

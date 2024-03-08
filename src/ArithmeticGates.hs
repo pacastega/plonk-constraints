@@ -24,7 +24,6 @@ addGate = (v, q) where
 {-@ verifyAdd :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyAdd :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyAdd x = sumIsCorrect == satisfies 1 3 x gate where
-  (!) = index
   gate@((a,b,c), _) = addGate
   sumIsCorrect = x!(a!0) + x!(b!0) == x!(c!0)
 
@@ -41,6 +40,5 @@ mulGate = (v, q) where
 {-@ verifyMul :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyMul :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyMul x = mulIsCorrect == satisfies 1 3 x gate where
-  (!) = index
   gate@((a,b,c), _) = mulGate
   mulIsCorrect = x!(a!0) * x!(b!0) == x!(c!0)

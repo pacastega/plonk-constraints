@@ -33,7 +33,6 @@ notGate = (v, q) where
 {-@ verifyNot :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyNot :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyNot x = notIsCorrect == satisfies 2 3 x gate where
-  (!) = index
   gate@((a,b,c), _) = notGate
   notIsCorrect = (1 - x!(a!0) == x!(c!0)) &&    -- ‘not’ holds
                  (x!(a!1) * x!(b!1) == x!(a!1)) -- boolean
@@ -62,7 +61,6 @@ andGate = (v, q) where
 {-@ verifyAnd :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyAnd :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyAnd x = andIsCorrect == satisfies 3 3 x gate where
-  (!) = index
   gate@((a,b,c), _) = andGate
   andIsCorrect = (x!(c!0) == if x!(a!0) == 0 || x!(b!0) == 0
                    then 0 else 1) &&               -- and holds
@@ -95,7 +93,6 @@ orGate = (v, q) where
 {-@ verifyOr :: VecN (F p) 5 -> {v:Bool | v} @-}
 verifyOr :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyOr x = orIsCorrect == satisfies 5 5 x gate where
-  (!) = index
   gate@((a,b,c), _) = orGate
   orIsCorrect = (x!(c!2) == if x!(a!0) == 1 || x!(b!0) == 1
                   then 1 else 0) &&               -- or holds
@@ -133,7 +130,6 @@ xorGate = (v, q) where
 {-@ verifyXor :: VecN (F p) 5 -> {v:Bool | v}@-}
 verifyXor :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyXor x = xorIsCorrect == satisfies 5 5 x gate where
-  (!) = index
   gate@((a,b,c), _) = xorGate
   xorIsCorrect = (x!(c!2) == if x!(a!0) /= x!(b!0)
                    then 1 else 0) &&               -- xor holds

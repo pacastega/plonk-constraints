@@ -6,7 +6,7 @@ module Constraints (checkGate, satisfies, F, Circuit, V, Q) where
 import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)
 
-import Vec (Vec, index)
+import Vec (Vec, (!))
 import Utils
 import RefinementTypes()
 
@@ -45,8 +45,7 @@ type Circuit p = (V, Q p)
 checkGate :: KnownNat p =>
              Int -> Int -> Vec (F p) -> Circuit (F p) -> Int -> Bool
 checkGate _ _ x ((a,b,c), (qL,qR,qO,qM,qC)) i =
-  let (!) = index;
-      xai = x!(a!i); xbi = x!(b!i); xci = x!(c!i) in
+  let xai = x!(a!i); xbi = x!(b!i); xci = x!(c!i) in
     (qL!i)*xai + (qR!i)*xbi + (qO!i)*xci + (qM!i)*xai*xbi + (qC!i) == 0
 
 
