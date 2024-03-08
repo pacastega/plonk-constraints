@@ -6,10 +6,9 @@ module LogicGates (andGate) where
 
 import Constraints
 import PrimitiveRoot
--- import Data.Vector (fromList)
 import Vec
 
-{-@ notGate :: Circuit (F p) 2 3 @-} -- 2 gates, 3 wires
+{-@ notGate :: Circuit (F p) 2 2 @-} -- 2 gates, 2 wires
 notGate :: PrimitiveRoot (F p) => Circuit (F p)
 notGate = (v, q) where
   f = fromList
@@ -48,7 +47,7 @@ andGate = (v, q) where
   -- Gate 3. w1 * w1 == w1 (w1 is boolean)
 
 
-{-@ orGate :: Circuit (F p) 5 5 @-} -- 3 gates, 5 wires
+{-@ orGate :: Circuit (F p) 5 5 @-} -- 5 gates, 5 wires
 orGate :: PrimitiveRoot (F p) => Circuit (F p)
 orGate = (v, q) where
   f = fromList
