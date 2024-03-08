@@ -5,6 +5,7 @@
 {-@ embed GHC.Num.Natural.Natural as int @-}
 module ArithmeticGates (addGate, mulGate) where
 
+import Utils (allRange) -- needed to use ‘satisfies’ in the reflection
 import Constraints
 import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
@@ -22,7 +23,7 @@ addGate = (v, q) where
 
 {-@ verifyAdd :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyAdd :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
-verifyAdd x = sumIsCorrect == checkGate 1 3 x gate 0 where
+verifyAdd x = sumIsCorrect == satisfies 1 3 x gate where
   (!) = index
   gate@((a,b,c), _) = addGate
   sumIsCorrect = x!(a!0) + x!(b!0) == x!(c!0)
@@ -39,7 +40,7 @@ mulGate = (v, q) where
 
 {-@ verifyMul :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyMul :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
-verifyMul x = mulIsCorrect == checkGate 1 3 x gate 0 where
+verifyMul x = mulIsCorrect == satisfies 1 3 x gate where
   (!) = index
   gate@((a,b,c), _) = mulGate
   mulIsCorrect = x!(a!0) * x!(b!0) == x!(c!0)
