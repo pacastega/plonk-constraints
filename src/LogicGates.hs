@@ -3,7 +3,7 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ embed GHC.Num.Natural.Natural as int @-}
-module LogicGates (andGate) where
+module LogicGates where
 
 import Utils (allRange) -- needed to use ‘satisfies’ in the reflection
 import Constraints

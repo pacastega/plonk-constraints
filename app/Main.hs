@@ -1,29 +1,22 @@
 {-@ embed GHC.Num.Natural.Natural as int @-}
--- {-@ embed Data.FiniteField.PrimeField * as FiniteField @-}
+{-@ LIQUID "--reflection" @-}
 {-# LANGUAGE DataKinds #-}
 module Main (main) where
 
-import qualified Data.Vector as V (fromList, zip, iterateN)
-
-import Interpolation (interpolateRoots)
 import Data.FiniteField.PrimeField
-import PrimitiveRoot
-import Data.Poly
-
--- import ArithmeticGates
--- import Constraints
+import Vec
+import Utils (allRange)
+import ArithmeticGates
+import LogicGates
+import Constraints
 
 main :: IO ()
 main = do
 
-  let xs = V.iterateN 4 (* (primitiveRoot ^ (16 `div` 4))) 1
-  let ys = V.fromList [7,-2,3,10]
-  let q = interpolateRoots 17 4 ys :: VPoly (PrimeField 17)
-  print q
-  putStrLn "Actual - Desired"
-  mapM_ (print . (\(x, y) -> (eval q x, y))) (V.zip xs ys)
-
-  -- print $ satisfies 1 3 (V.fromList [2,3,5]) addGate -- True
-  -- print $ satisfies 1 3 (V.fromList [2,3,6]) addGate -- False
-  -- print $ satisfies 1 3 (V.fromList [5,3,10]) mulGate -- False
-  -- print $ satisfies 1 3 (V.fromList [5,3,-2]) mulGate -- True
+  print $ satisfies 1 3 (fromList [2,3,5] :: Vec (PrimeField 17)) addGate -- True
+  print $ satisfies 1 3 (fromList [2,3,6] :: Vec (PrimeField 17)) addGate -- False
+  print $ satisfies 1 3 (fromList [5,3,10] :: Vec (PrimeField 17)) mulGate -- False
+  print $ satisfies 1 3 (fromList [5,3,-2] :: Vec (PrimeField 17)) mulGate -- True
+  putStrLn ""
+  print $ satisfies 5 5 (fromList [0, 1, 1, 1, 0] :: Vec (PrimeField 17)) orGate -- True
+  print $ satisfies 2 2 (fromList [2, 0] :: Vec (PrimeField 17)) notGate   -- False
