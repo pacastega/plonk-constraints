@@ -3,7 +3,12 @@ module Vec where
 
 {-@ data Vec  a  = Nil | Cons {vx :: a,  vxs :: Vec a} @-}
 data Vec a = Nil | Cons a (Vec a)
-  deriving Show
+
+instance Show a => Show (Vec a) where
+  show v = "<" ++ show_ v ++ ">" where
+    show_ (Nil)        = " "
+    show_ (Cons x Nil) = show x
+    show_ (Cons x xs)  = show x ++ "," ++ show_ xs
 
 infixr 5 `Cons`
 
@@ -26,3 +31,13 @@ infixl 9 !
 fromList :: [a] -> Vec a
 fromList []     = Nil
 fromList (x:xs) = x `Cons` fromList xs
+
+{-@ singleton :: a -> {v:Vec a | vvlen v == 1} @-}
+singleton :: a -> Vec a
+singleton = (`Cons` Nil)
+
+{-@ append :: xs:Vec a -> ys:Vec a ->
+              {v:Vec a | vvlen v == vvlen xs + vvlen ys} @-}
+append :: Vec a -> Vec a -> Vec a
+append Nil         ys = ys
+append (Cons x xs) ys = Cons x (append xs ys)
