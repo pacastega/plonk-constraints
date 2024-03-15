@@ -16,15 +16,15 @@ import Vec
 notGate :: PrimitiveRoot (F p) => Circuit (F p)
 notGate = (v, q) where
   f = fromList
-  v = (f [ 0,  0], -- left inputs
+  v = [f [ 0,  0], -- left inputs
        f [ 0,  0], -- right inputs
-       f [ 1,  0]) -- outputs
+       f [ 1,  0]] -- outputs
 
-  q = (f [-1, -1], -- qL
+  q = [f [-1, -1], -- qL
        f [ 0,  0], -- qR
        f [-1,  0], -- qO
        f [ 0,  1], -- qM
-       f [ 1,  0]) -- qC
+       f [ 1,  0]] -- qC
   --       1.  2.
 
   -- Gate 1. 1 - w0 == w1 (w1 = ¬ w0)
@@ -33,7 +33,7 @@ notGate = (v, q) where
 {-@ verifyNot :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyNot :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyNot x = notIsCorrect == satisfies 2 3 x gate where
-  gate@((a,b,c), _) = notGate
+  gate@([a,b,c], _) = notGate
   notIsCorrect = (1 - x!(a!0) == x!(c!0)) &&    -- ‘not’ holds
                  (x!(a!1) * x!(b!1) == x!(a!1)) -- boolean
 
@@ -43,15 +43,15 @@ verifyNot x = notIsCorrect == satisfies 2 3 x gate where
 andGate :: PrimitiveRoot (F p) => Circuit (F p)
 andGate = (v, q) where
   f = fromList
-  v = (f [0,   0,  1], -- left inputs
+  v = [f [0,   0,  1], -- left inputs
        f [1,   0,  1], -- right inputs
-       f [2,   0,  0]) -- outputs
+       f [2,   0,  0]] -- outputs
 
-  q = (f [ 0, -1, -1], -- qL
+  q = [f [ 0, -1, -1], -- qL
        f [ 0,  0,  0], -- qR
        f [-1,  0,  0], -- qO
        f [ 1,  1,  1], -- qM
-       f [ 0,  0,  0]) -- qC
+       f [ 0,  0,  0]] -- qC
   --      1.   2.  3.
 
   -- Gate 1. w0 * w1 == w2 (w2 = w0 ∧ w1)
@@ -61,7 +61,7 @@ andGate = (v, q) where
 {-@ verifyAnd :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyAnd :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyAnd x = andIsCorrect == satisfies 3 3 x gate where
-  gate@((a,b,c), _) = andGate
+  gate@([a,b,c], _) = andGate
   andIsCorrect = (x!(c!0) == if x!(a!0) == 0 || x!(b!0) == 0
                    then 0 else 1) &&               -- and holds
                  (x!(a!1) * x!(b!1) == x!(a!1)) && -- boolean
@@ -73,15 +73,15 @@ verifyAnd x = andIsCorrect == satisfies 3 3 x gate where
 orGate :: PrimitiveRoot (F p) => Circuit (F p)
 orGate = (v, q) where
   f = fromList
-  v = (f [ 0,  0,  1], -- left inputs
+  v = [f [ 0,  0,  1], -- left inputs
        f [ 1,  0,  1], -- right inputs
-       f [ 2,  0,  0]) -- outputs
+       f [ 2,  0,  0]] -- outputs
 
-  q = (f [ 1, -1, -1], -- qL
+  q = [f [ 1, -1, -1], -- qL
        f [ 1,  0,  0], -- qR
        f [-1,  0,  0], -- qO
        f [-1,  1,  1], -- qM
-       f [ 0,  0,  0]) -- qC
+       f [ 0,  0,  0]] -- qC
   --       1.  2.  3.
 
   -- Gate 1. w0 + w1 - w0*w1 == w2 (w2 = w0 ∨ w1)
@@ -91,7 +91,7 @@ orGate = (v, q) where
 {-@ verifyOr :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyOr :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyOr x = orIsCorrect == satisfies 3 3 x gate where
-  gate@((a,b,c), _) = orGate
+  gate@([a,b,c], _) = orGate
   orIsCorrect = (x!(c!0) == if x!(a!0) == 1 || x!(b!0) == 1
                   then 1 else 0) &&               -- or holds
                 (x!(a!1) * x!(b!1) == x!(a!1)) && -- boolean
@@ -103,15 +103,15 @@ verifyOr x = orIsCorrect == satisfies 3 3 x gate where
 xorGate :: PrimitiveRoot (F p) => Circuit (F p)
 xorGate = (v, q) where
   f = fromList
-  v = (f [ 0,  0,  1], -- left inputs
+  v = [f [ 0,  0,  1], -- left inputs
        f [ 1,  0,  1], -- right inputs
-       f [ 2,  0,  0]) -- outputs
+       f [ 2,  0,  0]] -- outputs
 
-  q = (f [ 1, -1, -1], -- qL
+  q = [f [ 1, -1, -1], -- qL
        f [ 1,  0,  0], -- qR
        f [-1,  0,  0], -- qO
        f [-2,  1,  1], -- qM
-       f [ 0,  0,  0]) -- qC
+       f [ 0,  0,  0]] -- qC
   --       1.  2.  3.
 
   -- Gate 1. w0 + w1 -2*w0*w1 == w2 (w2 = w0 ⊕ w1)
@@ -121,7 +121,7 @@ xorGate = (v, q) where
 {-@ verifyXor :: VecN (F p) 3 -> {v:Bool | v}@-}
 verifyXor :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyXor x = xorIsCorrect == satisfies 3 3 x gate where
-  gate@((a,b,c), _) = xorGate
+  gate@([a,b,c], _) = xorGate
   xorIsCorrect = (x!(c!0) == if x!(a!0) /= x!(b!0)
                    then 1 else 0) &&               -- xor holds
                  (x!(a!1) * x!(b!1) == x!(a!1)) && -- boolean

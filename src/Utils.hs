@@ -13,3 +13,7 @@ allRange :: Int -> Int -> (Int -> Bool) -> Bool
 allRange a b p
   | a == b    = True
   | otherwise = p a && allRange (a+1) b p
+
+{-@ reflect min' @-}
+min' :: Ord a => a -> a -> a
+min' x y = if x < y then x else y
