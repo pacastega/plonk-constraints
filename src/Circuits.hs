@@ -10,9 +10,9 @@ import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
 import Vec
 
-{-@ emptyCircuit :: Circuit (F p) 0 0 @-}
-emptyCircuit :: KnownNat p => Circuit (F p)
-emptyCircuit = ((Nil,Nil,Nil), (Nil,Nil,Nil,Nil,Nil))
+{-@ emptyCircuit :: m:Nat -> Circuit (F p) 0 m @-}
+emptyCircuit :: KnownNat p => Int -> Circuit (F p)
+emptyCircuit _ = ((Nil,Nil,Nil), (Nil,Nil,Nil,Nil,Nil))
 
 {-@ constGate :: m:Nat -> F p -> Btwn Int 0 m -> Circuit (F p) 1 m @-}
 constGate :: KnownNat p => Int -> F p -> Int -> Circuit (F p)
