@@ -5,7 +5,7 @@ module Main (main) where
 
 import Data.FiniteField.PrimeField
 import Vec
-import Utils (allRange)
+import Utils (allRange) -- needed to use ‘satisfies’ in the reflection
 import ArithmeticGates
 import LogicGates
 import Constraints

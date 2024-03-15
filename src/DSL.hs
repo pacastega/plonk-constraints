@@ -9,7 +9,7 @@ import RefinementTypes()
 import ArithmeticGates
 import Circuits
 
-import Vec
+import Vec (fromList) -- needed for the reflection
 
 import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
@@ -67,8 +67,8 @@ freshIndex m used = freshIndex_ [0..m-1] where
 {-@ measure nGates @-}
 {-@ nGates :: DSL p i -> Nat @-}
 nGates :: KnownNat p => DSL p i -> Int
-nGates (WIRE i)    = 0
-nGates (CONST x)   = 1
+nGates (WIRE _)    = 0
+nGates (CONST _)   = 1
 nGates (ADD p1 p2) = 1 + nGates p1 + nGates p2
 nGates (MUL p1 p2) = 1 + nGates p1 + nGates p2
 
@@ -80,7 +80,7 @@ nGates (MUL p1 p2) = 1 + nGates p1 + nGates p2
 compile :: (KnownNat p, PrimitiveRoot (F p)) =>
            Int -> DSL p Int -> (Circuit (F p), Int)
 compile m program = xy $ compile' program (wires program) where
-  xy (x,y,z) = (x,y)
+  xy (x,y,_) = (x,y)
   {-@ compile' :: c:DSL p (Btwn Int 0 m) -> S.Set (Btwn Int 0 m) ->
                   (Circuit (F p) (nGates c) m, Btwn Int 0 m, S.Set (Btwn Int 0 m)) @-}
   compile' :: (KnownNat p, PrimitiveRoot (F p)) =>
