@@ -45,7 +45,7 @@ checkGate _ _ x ([a,b,c], [qL,qR,qO,qM,qC]) i =
 
 
 {-@ reflect satisfies @-}
-{-@ satisfies :: n:Nat1 -> m:Nat ->
+{-@ satisfies :: n:Nat -> m:Nat ->
                  VecN (F p) m ->
                  Circuit (F p) n m ->
                  Bool @-}

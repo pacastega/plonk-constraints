@@ -9,11 +9,13 @@ import RefinementTypes()
 import ArithmeticGates
 import Circuits
 
-import Vec (fromList) -- needed for the reflection
+import Utils (allRange) -- needed to use ‘satisfies’ in the reflection
+import Vec
 
 import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
 
+-- The type variable ‘i’ should be understood as the set of wire indices
 data KnownNat p => DSL p i =
   WIRE  i                   | -- wire (i.e. variable)
   CONST (F p)               | -- constant
@@ -86,3 +88,26 @@ compile m program = xy $ compile' program (wires program) where
       c' = join n1 n2 (n1+n2) m c1 c2
       c = join 1 (n1+n2) (1+n1+n2) m (mulGate m [i1, i2, i]) c'
       is = S.singleton i `S.union` is1 `S.union` is2
+
+
+-- the semantics of a program is a function that, given a mapping from wire
+-- indices to field values (one for each wire), returns the result of running
+-- the program on said field values
+{-@ reflect semantics @-}
+{-@ semantics :: DSL p i -> (i -> F p) -> F p @-}
+semantics :: KnownNat p => DSL p i -> (i -> F p) -> F p
+semantics (WIRE i)    input = input i
+semantics (CONST x)   input = x
+semantics (ADD p1 p2) input = semantics p1 input + semantics p2 input
+semantics (MUL p1 p2) input = semantics p1 input * semantics p2 input
+
+
+{-@ verifyCompile :: m:{v:Int | v >= 3} ->
+                     DSL p (Btwn Int 0 m) -> VecN (F p) m -> Bool @-}
+verifyCompile :: (KnownNat p, PrimitiveRoot (F p)) =>
+                 Int -> DSL p Int -> Vec (F p) -> Bool
+verifyCompile m program input = semantics_ == satisfies_
+  where
+    (circuit, outputWire) = compile m program
+    semantics_ = semantics program (input !) == input ! outputWire
+    satisfies_ = satisfies (nGates program) m input circuit
