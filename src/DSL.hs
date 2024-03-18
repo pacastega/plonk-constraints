@@ -2,7 +2,7 @@
 {-@ LIQUID "--reflection" @-}
 module DSL where
 
-import qualified Data.Set as S --(empty, singleton, union, notMember)
+import qualified Data.Set as S
 
 import Constraints
 import RefinementTypes()
@@ -14,32 +14,12 @@ import Vec (fromList) -- needed for the reflection
 import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
 
--- {-@ data DSL p M =
---          WIRE  {i::Btwn Int 0 M}   |
---          CONST (F p)               |
---          ADD   (DSL p M) (DSL p M) |
---          MUL   (DSL p M) (DSL p M)
--- @-}
-
--- TODO: we should specify that WIRE takes an argument between 0 and m-1 (where
--- m is the maximum number of wires there can be in the circuit). This probably
--- requires including m as a parameter to DSL. Is there a simple way to do this?
--- Do we need GADTs?
---
--- Either way, we need to take into account that the wires used explicitly are
--- not all we need: we also need wires to connect the gates between themselves
--- (intermediate computations).
-
 data KnownNat p => DSL p i =
   WIRE  i                   | -- wire (i.e. variable)
   CONST (F p)               | -- constant
   ADD   (DSL p i) (DSL p i) | -- field addition
   MUL   (DSL p i) (DSL p i)   -- field multiplication
 
-
--- return the set of wire indices that appear in the program
--- FIXME: this specification needs including m in DSL
--- {-@ wires :: DSL p => Set (Btwn Int 0 m) @-}
 
 {-@ reflect wires @-}
 wires :: (KnownNat p, Ord i) => DSL p i -> S.Set i
