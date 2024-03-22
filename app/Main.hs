@@ -13,7 +13,7 @@ import DSL
 type V17 = Vec (PrimeField 17)
 
 
-{-@ testProgram :: DSL _ (Btwn Int 0 7) @-}
+{-@ testProgram :: {v:DSL _ (Btwn Int 0 7) | nGates v == 3 } @-}
 testProgram :: DSL 17 Int
 testProgram = ADD (ADD (WIRE 0) (WIRE 1)) (ADD (WIRE 2) (WIRE 3))
 
