@@ -5,7 +5,7 @@ module Vec where
 data Vec a = Nil | Cons a (Vec a)
 
 instance Show a => Show (Vec a) where
-  show v = "<" ++ show_ v ++ ">" where
+  show v = "⟨" ++ show_ v ++ "⟩" where
     show_ (Nil)        = " "
     show_ (Cons x Nil) = show x
     show_ (Cons x xs)  = show x ++ "," ++ show_ xs
