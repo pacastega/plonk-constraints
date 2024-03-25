@@ -23,6 +23,37 @@ data KnownNat p => DSL p i =
   MUL   (DSL p i) (DSL p i)   -- field multiplication
 
 
+-- Labeled DSL
+data KnownNat p => LDSL p i =
+  LWIRE  i                     i |
+  LCONST (F p)                 i |
+  LADD   (LDSL p i) (LDSL p i) i |
+  LMUL   (LDSL p i) (LDSL p i) i
+  deriving Show
+
+
+-- label each constructor with the index of the wire where its output will be
+{-@ label :: m:Nat1 -> DSL p (Btwn Int 0 m) -> LDSL p (Btwn Int 0 m) @-}
+label :: KnownNat p => Int -> DSL p Int -> LDSL p Int
+label m program = fst $ label' program (wires program) where
+  {-@ label' :: DSL p (Btwn Int 0 m) -> S.Set (Btwn Int 0 m) ->
+                (LDSL p (Btwn Int 0 m), S.Set (Btwn Int 0 m)) @-}
+  label' :: (KnownNat p) => DSL p Int -> S.Set Int -> (LDSL p Int, S.Set Int)
+  label' (WIRE i) usedWires = (LWIRE i i, S.singleton i)
+  label' (CONST x) usedWires = (LCONST x i, S.singleton i) where
+    i = freshIndex m usedWires
+  label' (ADD p1 p2) usedWires = (LADD p1' p2' i, is) where
+    i = freshIndex m usedWires
+    (p1', is1) = label' p1 (usedWires `S.union` S.singleton i)
+    (p2', is2) = label' p2 (usedWires `S.union` S.singleton i `S.union` is1)
+    is = S.singleton i `S.union` is1 `S.union` is2
+  label' (MUL p1 p2) usedWires = (LMUL p1' p2' i, is) where
+    i = freshIndex m usedWires
+    (p1', is1) = label' p1 (usedWires `S.union` S.singleton i)
+    (p2', is2) = label' p2 (usedWires `S.union` S.singleton i `S.union` is1)
+    is = S.singleton i `S.union` is1 `S.union` is2
+
+
 {-@ reflect wires @-}
 wires :: (KnownNat p, Ord i) => DSL p i -> S.Set i
 wires (WIRE n)    = S.singleton n

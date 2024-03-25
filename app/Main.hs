@@ -25,6 +25,12 @@ testInput = fromList [1,1,1,1, -- input wires
                                -- the ‘high-level’ specification, even though it
                                -- may not satisfy the circuit itself.
 
+
+{-@ testProgram2 :: {v:DSL _ (Btwn Int 0 7) | nGates v == 5} @-}
+testProgram2 :: DSL 17 Int
+testProgram2 = MUL (ADD (WIRE 0) (CONST 15)) (ADD (WIRE 1) (CONST 3))
+
+
 -- OPTION 2: hard-code the compiled circuit -----------------------------------
 -- A workaround is to hard-code the output of the compile function and do the
 -- type checking here (the type checking itself seems to work fine). The issue
@@ -83,3 +89,10 @@ main = do
     then "correct" else "incorrect"
   putStrLn $ "The given input " ++ if satisfies_
     then "satisfies" else "doesn't satisfy" ++ " the compiled circuit"
+
+  print $ label 7 testProgram
+
+  putStrLn $ replicate 80 '='
+
+  print $ compile 7 testProgram2
+  print $ label 7 testProgram2
