@@ -78,47 +78,41 @@ freshIndex m used = freshIndex_ [0..m-1] where
 
 -- the number of gates needed to compile the program into a circuit
 {-@ measure nGates @-}
-{-@ nGates :: DSL p i -> Nat @-}
-nGates :: KnownNat p => DSL p i -> Int
-nGates (WIRE _)    = 0
-nGates (CONST _)   = 1
-nGates (ADD p1 p2) = 1 + nGates p1 + nGates p2
-nGates (MUL p1 p2) = 1 + nGates p1 + nGates p2
+{-@ nGates :: LDSL p i -> Nat @-}
+nGates :: KnownNat p => LDSL p i -> Int
+nGates (LWIRE _)      = 0
+nGates (LCONST _ _)   = 1
+nGates (LADD p1 p2 _) = 1 + nGates p1 + nGates p2
+nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
 
 
 -- compile the program into a circuit including the output wire index
 {-@ compile :: m:{v:Int | v >= 3} ->
-               c:DSL p (Btwn Int 0 m) ->
+               c:LDSL p (Btwn Int 0 m) ->
                Circuit (F p) (nGates c) m @-}
 compile :: (KnownNat p, PrimitiveRoot (F p)) =>
-           Int -> DSL p Int -> Circuit (F p)
-compile m program = fst3 $ compile' program (wires program) where
-  fst3 (x,_,_) = x
-  {-@ compile' :: c:DSL p (Btwn Int 0 m) -> S.Set (Btwn Int 0 m) ->
-                  (Circuit (F p) (nGates c) m, Btwn Int 0 m, S.Set (Btwn Int 0 m)) @-}
+           Int -> LDSL p Int -> Circuit (F p)
+compile m program = fst $ compile' program where
+  {-@ compile' :: c:LDSL p (Btwn Int 0 m) ->
+                  (Circuit (F p) (nGates c) m, Btwn Int 0 m) @-}
   compile' :: (KnownNat p, PrimitiveRoot (F p)) =>
-              DSL p Int -> S.Set Int -> (Circuit (F p), Int, S.Set Int)
-  compile' (WIRE i) usedWires = (emptyCircuit m, i, S.singleton i)
-  compile' (CONST x) usedWires = (constGate m x i, i, S.singleton i)
-    where i = freshIndex m usedWires
-  compile' (ADD p1 p2) usedWires = (c, i, is)
+              LDSL p Int -> (Circuit (F p), Int)
+  compile' (LWIRE i)      = (emptyCircuit m, i)
+  compile' (LCONST x i)   = (constGate m x i, i)
+  compile' (LADD p1 p2 i) = (c, i)
     where
-      i = freshIndex m usedWires
-      (c1, i1, is1) = compile' p1 (usedWires `S.union` S.singleton i)
-      (c2, i2, is2) = compile' p2 (usedWires `S.union` S.singleton i `S.union` is1)
+      (c1, i1) = compile' p1
+      (c2, i2) = compile' p2
       n1 = nGates p1; n2 = nGates p2
       c' = join n1 n2 (n1+n2) m c1 c2
       c = join 1 (n1+n2) (1+n1+n2) m (addGate m [i1, i2, i]) c'
-      is = S.singleton i `S.union` is1 `S.union` is2
-  compile' (MUL p1 p2) usedWires = (c, i, is)
+  compile' (LMUL p1 p2 i) = (c, i)
     where
-      i = freshIndex m usedWires
-      (c1, i1, is1) = compile' p1 (usedWires `S.union` S.singleton i)
-      (c2, i2, is2) = compile' p2 (usedWires `S.union` S.singleton i `S.union` is1)
+      (c1, i1) = compile' p1
+      (c2, i2) = compile' p2
       n1 = nGates p1; n2 = nGates p2
       c' = join n1 n2 (n1+n2) m c1 c2
       c = join 1 (n1+n2) (1+n1+n2) m (mulGate m [i1, i2, i]) c'
-      is = S.singleton i `S.union` is1 `S.union` is2
 
 
 -- the semantics of a program is a function that, given a mapping from wire
@@ -160,5 +154,5 @@ verifyCompile m program input = semantics_ == satisfies_
     labeledProgram = label m program
     semantics_ = semanticsAreCorrect m labeledProgram input
 
-    circuit = compile m program
-    satisfies_ = satisfies (nGates program) m input circuit
+    circuit = compile m labeledProgram
+    satisfies_ = satisfies (nGates labeledProgram) m input circuit

@@ -13,7 +13,7 @@ import DSL
 type V17 = Vec (PrimeField 17)
 
 
-{-@ testProgram :: {v:DSL _ (Btwn Int 0 7) | nGates v == 3 } @-}
+{-@ testProgram :: v:DSL _ (Btwn Int 0 7) @-}
 testProgram :: DSL 17 Int
 testProgram = ADD (ADD (WIRE 0) (WIRE 1)) (ADD (WIRE 2) (WIRE 3))
 
@@ -30,7 +30,7 @@ testInput' = fromList [1,1,1,1, -- input wires
                        2,2]     -- correct intermediate wires
 
 
-{-@ testProgram2 :: {v:DSL _ (Btwn Int 0 7) | nGates v == 5} @-}
+{-@ testProgram2 :: v:DSL _ (Btwn Int 0 7) @-}
 testProgram2 :: DSL 17 Int
 testProgram2 = MUL (ADD (WIRE 0) (CONST 15)) (ADD (WIRE 1) (CONST 3))
 
@@ -58,14 +58,14 @@ red s = "\ESC[31m" ++ s ++ "\ESC[0m"
 test :: Int -> DSL 17 Int -> V17 -> IO ()
 test m program input = do
   let labeledProgram = label m program
-  let circuit = compile m program
+  let circuit = compile m labeledProgram
 
   -- putStrLn $ "The program needs " ++ show (nGates program) ++ " gates"
   print labeledProgram
   print circuit
 
   let semantics_ = semanticsAreCorrect m labeledProgram input
-  let satisfies_ = satisfies (nGates program) m input circuit
+  let satisfies_ = satisfies (nGates labeledProgram) m input circuit
 
   putStrLn $ "The given input is " ++ show input
 
