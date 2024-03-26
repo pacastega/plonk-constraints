@@ -58,7 +58,7 @@ red s = "\ESC[31m" ++ s ++ "\ESC[0m"
 test :: Int -> DSL 17 Int -> V17 -> IO ()
 test m program input = do
   let labeledProgram = label m program
-  let (circuit, outputWire) = compile m program
+  let circuit = compile m program
 
   -- putStrLn $ "The program needs " ++ show (nGates program) ++ " gates"
   print labeledProgram

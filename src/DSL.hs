@@ -89,11 +89,11 @@ nGates (MUL p1 p2) = 1 + nGates p1 + nGates p2
 -- compile the program into a circuit including the output wire index
 {-@ compile :: m:{v:Int | v >= 3} ->
                c:DSL p (Btwn Int 0 m) ->
-               (Circuit (F p) (nGates c) m, Btwn Int 0 m) @-}
+               Circuit (F p) (nGates c) m @-}
 compile :: (KnownNat p, PrimitiveRoot (F p)) =>
-           Int -> DSL p Int -> (Circuit (F p), Int)
-compile m program = xy $ compile' program (wires program) where
-  xy (x,y,_) = (x,y)
+           Int -> DSL p Int -> Circuit (F p)
+compile m program = fst3 $ compile' program (wires program) where
+  fst3 (x,_,_) = x
   {-@ compile' :: c:DSL p (Btwn Int 0 m) -> S.Set (Btwn Int 0 m) ->
                   (Circuit (F p) (nGates c) m, Btwn Int 0 m, S.Set (Btwn Int 0 m)) @-}
   compile' :: (KnownNat p, PrimitiveRoot (F p)) =>
@@ -160,5 +160,5 @@ verifyCompile m program input = semantics_ == satisfies_
     labeledProgram = label m program
     semantics_ = semanticsAreCorrect m labeledProgram input
 
-    (circuit, outputWire) = compile m program
+    circuit = compile m program
     satisfies_ = satisfies (nGates program) m input circuit
