@@ -10,7 +10,6 @@ import Utils (allRange) -- needed to use ‘satisfies’ in the reflection
 import Constraints
 import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
--- import Data.Vector (fromList, Vector, (!))
 import Vec
 
 {-@ reflect addGate @-}

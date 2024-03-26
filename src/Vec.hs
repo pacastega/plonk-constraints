@@ -1,7 +1,7 @@
 {-@ LIQUID "--reflection" @-}
 module Vec where
 
-{-@ data Vec  a  = Nil | Cons {vx :: a,  vxs :: Vec a} @-}
+{-@ data Vec a = Nil | Cons {vx :: a, vxs :: Vec a} @-}
 data Vec a = Nil | Cons a (Vec a)
 
 instance Show a => Show (Vec a) where

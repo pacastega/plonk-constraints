@@ -60,7 +60,6 @@ test m program input = do
   let labeledProgram = label m program
   let circuit = compile m labeledProgram
 
-  -- putStrLn $ "The program needs " ++ show (nGates program) ++ " gates"
   print labeledProgram
   print circuit
 
@@ -69,10 +68,11 @@ test m program input = do
 
   putStrLn $ "The given input is " ++ show input
 
-  putStrLn $ "The high-level semantics of the program are " ++ if semantics_
-    then green "correct" else red "incorrect"
-  putStrLn $ "The given input " ++ (if satisfies_
-    then green "satisfies" else red "doesn't satisfy") ++ " the compiled circuit"
+  putStrLn $ "The high-level semantics of the program are " ++
+    if semantics_ then green "correct" else red "incorrect"
+  putStrLn $ "The given input " ++
+    (if satisfies_ then green "satisfies" else red "doesn't satisfy") ++
+    " the compiled circuit"
   putStrLn $ if semantics_ == satisfies_
     then green "SUCCESS!" else red "FAILURE"
 
