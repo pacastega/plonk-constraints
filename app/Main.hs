@@ -25,10 +25,63 @@ testInput = fromList [1,1,1,1, -- input wires
                                -- the ‘high-level’ specification, even though it
                                -- may not satisfy the circuit itself.
 
+{-@ testInput' :: VecN _ 7 @-}
+testInput' :: V17
+testInput' = fromList [1,1,1,1, -- input wires
+                       4,       -- output wire
+                       2,2]     -- correct intermediate wires
+
 
 {-@ testProgram2 :: {v:DSL _ (Btwn Int 0 7) | nGates v == 5} @-}
 testProgram2 :: DSL 17 Int
 testProgram2 = MUL (ADD (WIRE 0) (CONST 15)) (ADD (WIRE 1) (CONST 3))
+
+{-@ testInput2 :: VecN _ 7 @-}
+testInput2 :: V17
+testInput2 = fromList [7,3,        -- input wires
+                       11,         -- output wire
+                       5,15,6,3]   -- icorrect intermediate wires
+
+{-@ testInput2' :: VecN _ 7 @-}
+testInput2' :: V17
+testInput2' = fromList [7,3,      -- input wires
+                        13,       -- output wire
+                        5,15,6,3] -- correct intermediate wires
+
+
+green :: String -> String
+green s = "\ESC[32m" ++ s ++ "\ESC[0m"
+
+red :: String -> String
+red s = "\ESC[31m" ++ s ++ "\ESC[0m"
+
+
+{-@ test :: m:{v:Int | v >= 3} -> DSL _ (Btwn Int 0 m) -> VecN _ m -> IO () @-}
+test :: Int -> DSL 17 Int -> V17 -> IO ()
+test m program input = do
+  let labeledProgram = label m program
+  let (circuit, outputWire) = compile m program
+
+  -- putStrLn $ "The program needs " ++ show (nGates program) ++ " gates"
+  print labeledProgram
+  print circuit
+
+  let semantics_ = semanticsAreCorrect m labeledProgram input
+  let satisfies_ = satisfies (nGates program) m input circuit
+
+  putStrLn $ "The given input is " ++ show input
+
+  putStrLn $ "The high-level semantics of the program are " ++ if semantics_
+    then green "correct" else red "incorrect"
+  putStrLn $ "The given input " ++ (if satisfies_
+    then green "satisfies" else red "doesn't satisfy") ++ " the compiled circuit"
+  putStrLn $ if semantics_ == satisfies_
+    then green "SUCCESS!" else red "FAILURE"
+
+  putStrLn $ replicate 80 '='
+
+
+
 
 
 -- OPTION 2: hard-code the compiled circuit -----------------------------------
@@ -76,23 +129,11 @@ main = do
   -- 84 and 85 must be commented out, so the code compiles).
 
 
-  let (circuit, outputWire) = compile 7 testProgram
   -----------------------------------------------------------------------------
 
-  let semantics_ = semantics testProgram (testInput !) == testInput ! outputWire
-  let satisfies_ = satisfies 3 7 testInput circuit
 
-  putStrLn $ "The program needs " ++ show (nGates testProgram) ++ " gates"
 
-  print (circuit, outputWire)
-  putStrLn $ "The high-level semantics of the program are " ++ if semantics_
-    then "correct" else "incorrect"
-  putStrLn $ "The given input " ++ if satisfies_
-    then "satisfies" else "doesn't satisfy" ++ " the compiled circuit"
-
-  print $ label 7 testProgram
-
-  putStrLn $ replicate 80 '='
-
-  print $ compile 7 testProgram2
-  print $ label 7 testProgram2
+  test 7 testProgram testInput
+  test 7 testProgram testInput'
+  test 7 testProgram2 testInput2
+  test 7 testProgram2 testInput2'
