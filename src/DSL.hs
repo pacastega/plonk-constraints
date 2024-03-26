@@ -25,7 +25,7 @@ data KnownNat p => DSL p i =
 
 -- Labeled DSL
 data KnownNat p => LDSL p i =
-  LWIRE  i                     i |
+  LWIRE  i                       |
   LCONST (F p)                 i |
   LADD   (LDSL p i) (LDSL p i) i |
   LMUL   (LDSL p i) (LDSL p i) i
@@ -39,7 +39,7 @@ label m program = fst $ label' program (wires program) where
   {-@ label' :: DSL p (Btwn Int 0 m) -> S.Set (Btwn Int 0 m) ->
                 (LDSL p (Btwn Int 0 m), S.Set (Btwn Int 0 m)) @-}
   label' :: (KnownNat p) => DSL p Int -> S.Set Int -> (LDSL p Int, S.Set Int)
-  label' (WIRE i) usedWires = (LWIRE i i, S.singleton i)
+  label' (WIRE i) usedWires = (LWIRE i, S.singleton i)
   label' (CONST x) usedWires = (LCONST x i, S.singleton i) where
     i = freshIndex m usedWires
   label' (ADD p1 p2) usedWires = (LADD p1' p2' i, is) where
@@ -133,12 +133,32 @@ semantics (ADD p1 p2) input = semantics p1 input + semantics p2 input
 semantics (MUL p1 p2) input = semantics p1 input * semantics p2 input
 
 
+{-@ semanticsAreCorrect :: m:Nat1 ->
+                           LDSL p (Btwn Int 0 m) -> VecN (F p) m ->
+                           Bool @-}
+semanticsAreCorrect :: KnownNat p => Int -> LDSL p Int -> Vec (F p) -> Bool
+semanticsAreCorrect m program input = fst $ aux program where
+  {-@ aux :: LDSL p (Btwn Int 0 m) -> (Bool, Btwn Int 0 m) @-}
+  aux (LWIRE i)      = (True, i)
+  aux (LCONST x i)   = (input!i == x, i)
+  aux (LADD p1 p2 i) = (correct, i) where
+    (correct1, i1) = aux p1
+    (correct2, i2) = aux p2
+    correct = correct1 && correct2 && input!i == input!i1 + input!i2
+  aux (LMUL p1 p2 i) = (correct, i) where
+    (correct1, i1) = aux p1
+    (correct2, i2) = aux p2
+    correct = correct1 && correct2 && input!i == input!i1 * input!i2
+
+
 {-@ verifyCompile :: m:{v:Int | v >= 3} ->
                      DSL p (Btwn Int 0 m) -> VecN (F p) m -> Bool @-}
 verifyCompile :: (KnownNat p, PrimitiveRoot (F p)) =>
                  Int -> DSL p Int -> Vec (F p) -> Bool
 verifyCompile m program input = semantics_ == satisfies_
   where
+    labeledProgram = label m program
+    semantics_ = semanticsAreCorrect m labeledProgram input
+
     (circuit, outputWire) = compile m program
-    semantics_ = semantics program (input !) == input ! outputWire
     satisfies_ = satisfies (nGates program) m input circuit
