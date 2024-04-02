@@ -143,16 +143,3 @@ semanticsAreCorrect m program input = fst $ aux program where
     (correct1, i1) = aux p1
     (correct2, i2) = aux p2
     correct = correct1 && correct2 && input!i == input!i1 * input!i2
-
-
-{-@ verifyCompile :: m:{v:Int | v >= 3} ->
-                     DSL p (Btwn Int 0 m) -> VecN (F p) m -> Bool @-}
-verifyCompile :: (KnownNat p, PrimitiveRoot (F p)) =>
-                 Int -> DSL p Int -> Vec (F p) -> Bool
-verifyCompile m program input = semantics_ == satisfies_
-  where
-    labeledProgram = label m program
-    semantics_ = semanticsAreCorrect m labeledProgram input
-
-    circuit = compile m labeledProgram
-    satisfies_ = satisfies (nGates labeledProgram) m input circuit
