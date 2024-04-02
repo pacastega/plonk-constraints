@@ -127,10 +127,30 @@ semantics (ADD p1 p2) input = semantics p1 input + semantics p2 input
 semantics (MUL p1 p2) input = semantics p1 input * semantics p2 input
 
 
+-- {-@ reflect checkProgram @-}
+{-@ checkProgram :: m:Nat ->
+                    LDSL p (Btwn Int 0 m) -> VecN (F p) m ->
+                    (Bool, Btwn Int 0 m) @-}
+checkProgram :: KnownNat p => Int -> LDSL p Int -> Vec (F p) -> (Bool, Int)
+checkProgram m (LWIRE i)      input = (True, i)
+checkProgram m (LCONST x i)   input = (input!i == x, i)
+checkProgram m (LADD p1 p2 i) input = (correct, i) where
+  (correct1, i1) = checkProgram m p1 input
+  (correct2, i2) = checkProgram m p2 input
+  correct = correct1 && correct2 && input!i == input!i1 + input!i2
+checkProgram m (LMUL p1 p2 i) input = (correct, i) where
+  (correct1, i1) = checkProgram m p1 input
+  (correct2, i2) = checkProgram m p2 input
+  correct = correct1 && correct2 && input!i == input!i1 * input!i2
+
+
+{-@ reflect semanticsAreCorrect @-}
 {-@ semanticsAreCorrect :: m:Nat1 ->
                            LDSL p (Btwn Int 0 m) -> VecN (F p) m ->
                            Bool @-}
 semanticsAreCorrect :: KnownNat p => Int -> LDSL p Int -> Vec (F p) -> Bool
+-- semanticsAreCorrect m program input = fst $ checkProgram m program input
+
 semanticsAreCorrect m program input = fst $ aux program where
   {-@ aux :: LDSL p (Btwn Int 0 m) -> (Bool, Btwn Int 0 m) @-}
   aux (LWIRE i)      = (True, i)
