@@ -37,6 +37,7 @@ fromList (x:xs) = x `Cons` fromList xs
 singleton :: a -> Vec a
 singleton x = x `Cons` Nil
 
+{-@ reflect append @-}
 {-@ append :: xs:Vec a -> ys:Vec a ->
               {v:Vec a | vvlen v == vvlen xs + vvlen ys} @-}
 append :: Vec a -> Vec a -> Vec a

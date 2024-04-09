@@ -5,7 +5,7 @@ module Main (main) where
 
 import Data.FiniteField.PrimeField
 import Vec
-import Utils (allRange) -- needed to use ‘satisfies’ in the reflection
+import Utils -- needed to use reflected functions
 import Constraints
 
 import DSL

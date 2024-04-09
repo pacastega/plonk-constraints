@@ -25,3 +25,11 @@ fst' (x, _) = x
 {-@ reflect snd' @-}
 snd' :: (a, b) -> b
 snd' (_, y) = y
+
+{-@ reflect zipWith' @-}
+{-@ zipWith' :: (a -> b -> c) ->
+                xs:[a] -> ys:{[b] | len ys = len xs} ->
+                zs:{[c] | len zs = len xs} @-}
+zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith' _ []     []     = []
+zipWith' f (x:xs) (y:ys) = f x y : zipWith' f xs ys

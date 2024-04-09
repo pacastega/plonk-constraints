@@ -87,32 +87,37 @@ nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
 
 
 -- compile the program into a circuit including the output wire index
+{-@ reflect compile @-}
 {-@ compile :: m:{v:Int | v >= 3} ->
                c:LDSL p (Btwn Int 0 m) ->
                Circuit (F p) (nGates c) m @-}
 compile :: (KnownNat p, PrimitiveRoot (F p)) =>
            Int -> LDSL p Int -> Circuit (F p)
-compile m program = fst $ compile' program where
-  {-@ compile' :: c:LDSL p (Btwn Int 0 m) ->
-                  (Circuit (F p) (nGates c) m, Btwn Int 0 m) @-}
-  compile' :: (KnownNat p, PrimitiveRoot (F p)) =>
-              LDSL p Int -> (Circuit (F p), Int)
-  compile' (LWIRE i)      = (emptyCircuit m, i)
-  compile' (LCONST x i)   = (constGate m x i, i)
-  compile' (LADD p1 p2 i) = (c, i)
-    where
-      (c1, i1) = compile' p1
-      (c2, i2) = compile' p2
-      n1 = nGates p1; n2 = nGates p2
-      c' = join n1 n2 (n1+n2) m c1 c2
-      c = join 1 (n1+n2) (1+n1+n2) m (addGate m [i1, i2, i]) c'
-  compile' (LMUL p1 p2 i) = (c, i)
-    where
-      (c1, i1) = compile' p1
-      (c2, i2) = compile' p2
-      n1 = nGates p1; n2 = nGates p2
-      c' = join n1 n2 (n1+n2) m c1 c2
-      c = join 1 (n1+n2) (1+n1+n2) m (mulGate m [i1, i2, i]) c'
+compile m program = fst' $ compile' m program
+
+
+{-@ reflect compile' @-}
+{-@ compile' :: m:{v:Int | v >= 3} ->
+                c:LDSL p (Btwn Int 0 m) ->
+                (Circuit (F p) (nGates c) m, Btwn Int 0 m) @-}
+compile' :: (KnownNat p, PrimitiveRoot (F p)) =>
+            Int -> LDSL p Int -> (Circuit (F p), Int)
+compile' m (LWIRE i)      = (emptyCircuit m, i)
+compile' m (LCONST x i)   = (constGate m x i, i)
+compile' m (LADD p1 p2 i) = (c, i)
+  where
+    (c1, i1) = compile' m p1
+    (c2, i2) = compile' m p2
+    n1 = nGates p1; n2 = nGates p2
+    c' = join n1 n2 (n1+n2) m c1 c2
+    c = join 1 (n1+n2) (1+n1+n2) m (addGate m [i1, i2, i]) c'
+compile' m (LMUL p1 p2 i) = (c, i)
+  where
+    (c1, i1) = compile' m p1
+    (c2, i2) = compile' m p2
+    n1 = nGates p1; n2 = nGates p2
+    c' = join n1 n2 (n1+n2) m c1 c2
+    c = join 1 (n1+n2) (1+n1+n2) m (mulGate m [i1, i2, i]) c'
 
 
 -- the semantics of a program is a function that, given a mapping from wire
