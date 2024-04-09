@@ -9,7 +9,7 @@ import RefinementTypes()
 import ArithmeticGates
 import Circuits
 
-import Utils (allRange) -- needed to use ‘satisfies’ in the reflection
+import Utils
 import Vec
 
 import GHC.TypeNats (KnownNat)
@@ -127,7 +127,7 @@ semantics (ADD p1 p2) input = semantics p1 input + semantics p2 input
 semantics (MUL p1 p2) input = semantics p1 input * semantics p2 input
 
 
--- {-@ reflect checkProgram @-}
+{-@ reflect checkProgram @-}
 {-@ checkProgram :: m:Nat ->
                     LDSL p (Btwn Int 0 m) -> VecN (F p) m ->
                     (Bool, Btwn Int 0 m) @-}
@@ -135,12 +135,16 @@ checkProgram :: KnownNat p => Int -> LDSL p Int -> Vec (F p) -> (Bool, Int)
 checkProgram m (LWIRE i)      input = (True, i)
 checkProgram m (LCONST x i)   input = (input!i == x, i)
 checkProgram m (LADD p1 p2 i) input = (correct, i) where
-  (correct1, i1) = checkProgram m p1 input
-  (correct2, i2) = checkProgram m p2 input
+  c1 = checkProgram m p1 input
+  c2 = checkProgram m p2 input
+  correct1 = fst' c1; i1 = snd' c1
+  correct2 = fst' c2; i2 = snd' c2
   correct = correct1 && correct2 && input!i == input!i1 + input!i2
 checkProgram m (LMUL p1 p2 i) input = (correct, i) where
-  (correct1, i1) = checkProgram m p1 input
-  (correct2, i2) = checkProgram m p2 input
+  c1 = checkProgram m p1 input
+  c2 = checkProgram m p2 input
+  correct1 = fst' c1; i1 = snd' c1
+  correct2 = fst' c2; i2 = snd' c2
   correct = correct1 && correct2 && input!i == input!i1 * input!i2
 
 
@@ -149,17 +153,4 @@ checkProgram m (LMUL p1 p2 i) input = (correct, i) where
                            LDSL p (Btwn Int 0 m) -> VecN (F p) m ->
                            Bool @-}
 semanticsAreCorrect :: KnownNat p => Int -> LDSL p Int -> Vec (F p) -> Bool
--- semanticsAreCorrect m program input = fst $ checkProgram m program input
-
-semanticsAreCorrect m program input = fst $ aux program where
-  {-@ aux :: LDSL p (Btwn Int 0 m) -> (Bool, Btwn Int 0 m) @-}
-  aux (LWIRE i)      = (True, i)
-  aux (LCONST x i)   = (input!i == x, i)
-  aux (LADD p1 p2 i) = (correct, i) where
-    (correct1, i1) = aux p1
-    (correct2, i2) = aux p2
-    correct = correct1 && correct2 && input!i == input!i1 + input!i2
-  aux (LMUL p1 p2 i) = (correct, i) where
-    (correct1, i1) = aux p1
-    (correct2, i2) = aux p2
-    correct = correct1 && correct2 && input!i == input!i1 * input!i2
+semanticsAreCorrect m program input = fst' $ checkProgram m program input

@@ -17,3 +17,11 @@ allRange a b p
 {-@ reflect min' @-}
 min' :: Ord a => a -> a -> a
 min' x y = if x < y then x else y
+
+{-@ reflect fst' @-}
+fst' :: (a, b) -> a
+fst' (x, _) = x
+
+{-@ reflect snd' @-}
+snd' :: (a, b) -> b
+snd' (_, y) = y
