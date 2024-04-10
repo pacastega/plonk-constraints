@@ -15,6 +15,16 @@ import Vec
 import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
 
+import Prelude hiding ((++))
+
+-- TODO: Move in a Data.List module 
+
+{-@ infix ++ @-}
+{-@ reflect ++ @-}
+(++) :: [a] -> [a] -> [a] 
+[]     ++ ys = ys
+(x:xs) ++ ys = x : (xs ++ ys)
+
 -- The type variable ‘i’ should be understood as the set of wire indices
 data KnownNat p => DSL p i =
   WIRE  i                   | -- wire (i.e. variable)
@@ -35,7 +45,7 @@ data KnownNat p => LDSL p i =
 -- label each constructor with the index of the wire where its output will be
 {-@ label :: m:Nat1 -> DSL p (Btwn Int 0 m) -> LDSL p (Btwn Int 0 m) @-}
 label :: KnownNat p => Int -> DSL p Int -> LDSL p Int
-label m program = fst $ label' program (wires program) where
+label m program = fst $ label' program (S.fromList $ wires program) where
   {-@ label' :: DSL p (Btwn Int 0 m) -> S.Set (Btwn Int 0 m) ->
                 (LDSL p (Btwn Int 0 m), S.Set (Btwn Int 0 m)) @-}
   label' :: (KnownNat p) => DSL p Int -> S.Set Int -> (LDSL p Int, S.Set Int)
@@ -55,11 +65,11 @@ label m program = fst $ label' program (wires program) where
 
 
 {-@ reflect wires @-}
-wires :: (KnownNat p, Ord i) => DSL p i -> S.Set i
-wires (WIRE n)    = S.singleton n
-wires (CONST _)   = S.empty
-wires (ADD p1 p2) = wires p1 `S.union` wires p2
-wires (MUL p1 p2) = wires p1 `S.union` wires p2
+wires :: (KnownNat p, Ord i) => DSL p i -> [i]
+wires (WIRE n)    = [n]
+wires (CONST _)   = []
+wires (ADD p1 p2) = wires p1 ++ wires p2
+wires (MUL p1 p2) = wires p1 ++ wires p2
 
 
 {-@ assume enumFromTo :: x:a -> y:a -> [{v:a | x <= v && v <= y}] @-}
