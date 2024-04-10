@@ -41,7 +41,7 @@ data KnownNat p => LDSL p i =
   LMUL   (LDSL p i) (LDSL p i) i
   deriving Show
 
-
+{- 
 -- label each constructor with the index of the wire where its output will be
 {-@ label :: m:Nat1 -> DSL p (Btwn Int 0 m) -> LDSL p (Btwn Int 0 m) @-}
 label :: KnownNat p => Int -> DSL p Int -> LDSL p Int
@@ -62,7 +62,7 @@ label m program = fst $ label' program (S.fromList $ wires program) where
     (p1', is1) = label' p1 (usedWires `S.union` S.singleton i)
     (p2', is2) = label' p2 (usedWires `S.union` S.singleton i `S.union` is1)
     is = S.singleton i `S.union` is1 `S.union` is2
-
+-}
 
 {-@ reflect wires @-}
 wires :: (KnownNat p, Ord i) => DSL p i -> [i]
@@ -75,6 +75,7 @@ wires (MUL p1 p2) = wires p1 ++ wires p2
 {-@ assume enumFromTo :: x:a -> y:a -> [{v:a | x <= v && v <= y}] @-}
 -- find a wire index that has not been used yet
 
+{- 
 -- TODO: ideally, this should only be called with sets strictly contained in
 -- {0..m-1}; otherwise, there will be no fresh index to return. Is it possible
 -- to specify that the second argument should have size < m?
@@ -84,7 +85,7 @@ freshIndex m used = freshIndex_ [0..m-1] where
   {-@ freshIndex_ :: [Btwn Int 0 m] -> Btwn Int 0 m @-}
   freshIndex_ []     = 0 -- FIXME: this should never be reached
   freshIndex_ (x:xs) = if x `S.notMember` used then x else freshIndex_ xs
-
+-}
 
 -- the number of gates needed to compile the program into a circuit
 {-@ measure nGates @-}
