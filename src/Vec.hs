@@ -43,3 +43,8 @@ singleton x = x `Cons` Nil
 append :: Vec a -> Vec a -> Vec a
 append Nil         ys = ys
 append (Cons x xs) ys = Cons x (append xs ys)
+
+{-@ reflect velem @-}
+velem :: Eq a => a -> Vec a -> Bool
+velem _ Nil         = False
+velem x (Cons y ys) = x == y || velem x ys

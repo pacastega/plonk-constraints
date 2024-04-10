@@ -2,8 +2,6 @@
 {-@ LIQUID "--reflection" @-}
 module DSL where
 
-import qualified Data.Set as S
-
 import Constraints
 import RefinementTypes()
 import ArithmeticGates
@@ -36,30 +34,30 @@ data KnownNat p => LDSL p i =
 {-@ label :: m:Nat1 -> DSL p (Btwn Int 0 m) -> LDSL p (Btwn Int 0 m) @-}
 label :: KnownNat p => Int -> DSL p Int -> LDSL p Int
 label m program = fst $ label' program (wires program) where
-  {-@ label' :: DSL p (Btwn Int 0 m) -> S.Set (Btwn Int 0 m) ->
-                (LDSL p (Btwn Int 0 m), S.Set (Btwn Int 0 m)) @-}
-  label' :: (KnownNat p) => DSL p Int -> S.Set Int -> (LDSL p Int, S.Set Int)
-  label' (WIRE i) usedWires = (LWIRE i, S.singleton i)
-  label' (CONST x) usedWires = (LCONST x i, S.singleton i) where
+  {-@ label' :: DSL p (Btwn Int 0 m) -> Vec (Btwn Int 0 m) ->
+                (LDSL p (Btwn Int 0 m), Vec (Btwn Int 0 m)) @-}
+  label' :: (KnownNat p) => DSL p Int -> Vec Int -> (LDSL p Int, Vec Int)
+  label' (WIRE i) usedWires = (LWIRE i, singleton i)
+  label' (CONST x) usedWires = (LCONST x i, singleton i) where
     i = freshIndex m usedWires
   label' (ADD p1 p2) usedWires = (LADD p1' p2' i, is) where
     i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `S.union` S.singleton i)
-    (p2', is2) = label' p2 (usedWires `S.union` S.singleton i `S.union` is1)
-    is = S.singleton i `S.union` is1 `S.union` is2
+    (p1', is1) = label' p1 (usedWires `append` singleton i)
+    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
+    is = singleton i `append` is1 `append` is2
   label' (MUL p1 p2) usedWires = (LMUL p1' p2' i, is) where
     i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `S.union` S.singleton i)
-    (p2', is2) = label' p2 (usedWires `S.union` S.singleton i `S.union` is1)
-    is = S.singleton i `S.union` is1 `S.union` is2
+    (p1', is1) = label' p1 (usedWires `append` singleton i)
+    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
+    is = singleton i `append` is1 `append` is2
 
 
-{-@ reflect wires @-}
-wires :: (KnownNat p, Ord i) => DSL p i -> S.Set i
-wires (WIRE n)    = S.singleton n
-wires (CONST _)   = S.empty
-wires (ADD p1 p2) = wires p1 `S.union` wires p2
-wires (MUL p1 p2) = wires p1 `S.union` wires p2
+{- reflect wires @-}
+wires :: KnownNat p => DSL p i -> Vec i
+wires (WIRE n)    = singleton n
+wires (CONST _)   = Nil
+wires (ADD p1 p2) = wires p1 `append` wires p2
+wires (MUL p1 p2) = wires p1 `append` wires p2
 
 
 {-@ assume enumFromTo :: x:a -> y:a -> [{v:a | x <= v && v <= y}] @-}
@@ -68,12 +66,12 @@ wires (MUL p1 p2) = wires p1 `S.union` wires p2
 -- TODO: ideally, this should only be called with sets strictly contained in
 -- {0..m-1}; otherwise, there will be no fresh index to return. Is it possible
 -- to specify that the second argument should have size < m?
-{-@ freshIndex :: m:Nat1 -> S.Set (Btwn Int 0 m) -> Btwn Int 0 m @-}
-freshIndex :: Int -> S.Set Int -> Int
+{-@ freshIndex :: m:Nat1 -> Vec (Btwn Int 0 m) -> Btwn Int 0 m @-}
+freshIndex :: Int -> Vec Int -> Int
 freshIndex m used = freshIndex_ [0..m-1] where
   {-@ freshIndex_ :: [Btwn Int 0 m] -> Btwn Int 0 m @-}
   freshIndex_ []     = 0 -- FIXME: this should never be reached
-  freshIndex_ (x:xs) = if x `S.notMember` used then x else freshIndex_ xs
+  freshIndex_ (x:xs) = if x `velem` used then freshIndex_ xs else x
 
 
 -- the number of gates needed to compile the program into a circuit
