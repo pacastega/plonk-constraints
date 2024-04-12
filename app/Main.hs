@@ -1,11 +1,16 @@
 {-@ embed GHC.Num.Natural.Natural as int @-}
 {-@ LIQUID "--reflection" @-}
+{-# OPTIONS -Wno-unused-imports #-}
 {-# LANGUAGE DataKinds #-}
 module Main (main) where
 
 import Data.FiniteField.PrimeField
 import Vec
-import Utils -- needed to use reflected functions
+
+import Utils           -- needed to use reflected functions
+import Circuits        -- needed to use reflected functions
+import ArithmeticGates -- needed to use reflected functions
+
 import Constraints
 
 import DSL
