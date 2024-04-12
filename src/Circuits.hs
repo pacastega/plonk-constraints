@@ -7,8 +7,6 @@ module Circuits where
 
 import Constraints
 import GHC.TypeNats (KnownNat)
-import Vec
-import Utils (zipWith')
 
 {-@ reflect emptyCircuit @-}
 {-@ emptyCircuit :: m:Nat -> Circuit (F p) 0 m @-}

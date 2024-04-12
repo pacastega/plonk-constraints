@@ -6,11 +6,8 @@
 {-@ embed GHC.Num.Natural.Natural as int @-}
 module ArithmeticGates (addGate, mulGate) where
 
-import Utils (allRange) -- needed to use ‘satisfies’ in the reflection
 import Constraints
-import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
-import Vec
 
 {-@ reflect addGate @-}
 {-@ addGate :: m:{v:Int | v >= 3} ->

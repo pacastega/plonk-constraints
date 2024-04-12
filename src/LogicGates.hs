@@ -6,11 +6,8 @@
 {-@ embed GHC.Num.Natural.Natural as int @-}
 module LogicGates where
 
-import Utils (allRange) -- needed to use ‘satisfies’ in the reflection
 import Constraints
-import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
-import Vec
 
 {-@ reflect notGate @-}
 {-@ notGate :: Circuit (F p) 2 2 @-} -- 2 gates, 2 wires
