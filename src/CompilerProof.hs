@@ -27,52 +27,20 @@ import Language.Haskell.Liquid.ProofCombinators
                      satisfies (nGates program) m input (compile m program)} @-}
 compileProof :: (KnownNat p, PrimitiveRoot (F p)) =>
                 Int -> LDSL p Int -> Vec (F p) -> Proof
-compileProof m (LWIRE i) input
-  =   semanticsAreCorrect m (LWIRE i) input
-  === True
-  === satisfies 0 m input (emptyCircuit m)
-  *** QED
-compileProof m (LCONST x i) input
-  =   semanticsAreCorrect m (LCONST x i) input
-  === input!i == x
-  === satisfies 1 m input (constGate m x i)
-  *** QED
+compileProof m (LWIRE i)      input = trivial
+compileProof m (LCONST x i)   input = trivial
 compileProof m (LADD p1 p2 i) input =
-  let i1 = outputWire p1; n1 = nGates p1
-      correct1 = semanticsAreCorrect m p1 input
-
-      i2 = outputWire p2; n2 = nGates p2
-      correct2 = semanticsAreCorrect m p2 input
-
-  in  semanticsAreCorrect m (LADD p1 p2 i) input
-  === (correct1 && correct2 && input!i == input!i1 + input!i2)
-      ? compileProof m p1 input ? compileProof m p2 input
-  === (satisfies n1 m input (compile m p1) &&
-       satisfies n2 m input (compile m p2) &&
-       input!i == input!i1 + input!i2)
-      ? satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-  === (satisfies (n1+n2) m input (append' (compile m p1) (compile m p2)) &&
-       input!i == input!i1 + input!i2)
-  === satisfies (1+n1+n2) m input (compile m (LADD p1 p2 i))
-  *** QED
+  let n1 = nGates p1
+      n2 = nGates p2
+  in compileProof m p1 input ?
+     compileProof m p2 input ?
+     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 compileProof m (LMUL p1 p2 i) input =
-  let i1 = outputWire p1; n1 = nGates p1
-      correct1 = semanticsAreCorrect m p1 input
-
-      i2 = outputWire p2; n2 = nGates p2
-      correct2 = semanticsAreCorrect m p2 input
-
-  in  semanticsAreCorrect m (LMUL p1 p2 i) input
-  === (correct1 && correct2 && input!i == input!i1 * input!i2)
-      ? compileProof m p1 input ? compileProof m p2 input
-  === (satisfies n1 m input (compile m p1) &&
-       satisfies n2 m input (compile m p2) &&
-       input!i == input!i1 * input!i2)
-      ? satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-  === (satisfies (n1+n2) m input (append' (compile m p1) (compile m p2)) &&
-       input!i == input!i1 * input!i2)
-  === satisfies (1+n1+n2) m input (compile m (LMUL p1 p2 i))
-  *** QED
+  let n1 = nGates p1
+      n2 = nGates p2
+  in compileProof m p1 input ?
+     compileProof m p2 input ?
+     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 
 
 {-@ satisfiesDistr :: n1:Nat -> n2:Nat -> m:Nat ->
