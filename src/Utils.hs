@@ -33,3 +33,11 @@ snd' (_, y) = y
 zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
 zipWith' _ []     []     = []
 zipWith' f (x:xs) (y:ys) = f x y : zipWith' f xs ys
+
+
+{-@ reflect append' @-}
+{-@ append' :: xs:[a] -> ys:[a] ->
+               {v:[a] | len v = len xs + len ys} @-}
+append' :: [a] -> [a] -> [a]
+append' [] ys     = ys
+append' (x:xs) ys = x : append' xs ys

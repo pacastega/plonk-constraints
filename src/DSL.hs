@@ -107,15 +107,15 @@ compile' m (LADD p1 p2 i) = (c, i)
     (c1, i1) = compile' m p1
     (c2, i2) = compile' m p2
     n1 = nGates p1; n2 = nGates p2
-    c' = join n1 n2 (n1+n2) m c1 c2
-    c = join 1 (n1+n2) (1+n1+n2) m (addGate m [i1, i2, i]) c'
+    c' = append' c1 c2
+    c = append' (addGate m [i1, i2, i]) c'
 compile' m (LMUL p1 p2 i) = (c, i)
   where
     (c1, i1) = compile' m p1
     (c2, i2) = compile' m p2
     n1 = nGates p1; n2 = nGates p2
-    c' = join n1 n2 (n1+n2) m c1 c2
-    c = join 1 (n1+n2) (1+n1+n2) m (mulGate m [i1, i2, i]) c'
+    c' = append' c1 c2
+    c = append' (mulGate m [i1, i2, i]) c'
 
 
 -- the semantics of a program is a function that, given a mapping from wire
