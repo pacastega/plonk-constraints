@@ -52,6 +52,14 @@ label m program = fst $ label' program (wires program) where
     is = singleton i `append` is1 `append` is2
 
 
+{-@ reflect outputWire @-}
+outputWire :: KnownNat p => LDSL p i -> i
+outputWire (LWIRE i)    = i
+outputWire (LCONST _ i) = i
+outputWire (LADD _ _ i) = i
+outputWire (LMUL _ _ i) = i
+
+
 {- reflect wires @-}
 wires :: KnownNat p => DSL p i -> Vec i
 wires (WIRE n)    = singleton n
@@ -91,28 +99,19 @@ nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
                Circuit (F p) (nGates c) m @-}
 compile :: (KnownNat p, PrimitiveRoot (F p)) =>
            Int -> LDSL p Int -> Circuit (F p)
-compile m program = fst' $ compile' m program
-
-
-{-@ reflect compile' @-}
-{-@ compile' :: m:{v:Int | v >= 3} ->
-                c:LDSL p (Btwn Int 0 m) ->
-                (Circuit (F p) (nGates c) m, Btwn Int 0 m) @-}
-compile' :: (KnownNat p, PrimitiveRoot (F p)) =>
-            Int -> LDSL p Int -> (Circuit (F p), Int)
-compile' m (LWIRE i)      = (emptyCircuit m, i)
-compile' m (LCONST x i)   = (constGate m x i, i)
-compile' m (LADD p1 p2 i) = (c, i)
+compile m (LWIRE i)      = emptyCircuit m
+compile m (LCONST x i)   = constGate m x i
+compile m (LADD p1 p2 i) = c
   where
-    (c1, i1) = compile' m p1
-    (c2, i2) = compile' m p2
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
     n1 = nGates p1; n2 = nGates p2
     c' = append' c1 c2
     c = append' (addGate m [i1, i2, i]) c'
-compile' m (LMUL p1 p2 i) = (c, i)
+compile m (LMUL p1 p2 i) = c
   where
-    (c1, i1) = compile' m p1
-    (c2, i2) = compile' m p2
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
     n1 = nGates p1; n2 = nGates p2
     c' = append' c1 c2
     c = append' (mulGate m [i1, i2, i]) c'
@@ -130,30 +129,20 @@ semantics (ADD p1 p2) input = semantics p1 input + semantics p2 input
 semantics (MUL p1 p2) input = semantics p1 input * semantics p2 input
 
 
-{-@ reflect checkProgram @-}
-{-@ checkProgram :: m:Nat ->
-                    LDSL p (Btwn Int 0 m) -> VecN (F p) m ->
-                    (Bool, Btwn Int 0 m) @-}
-checkProgram :: KnownNat p => Int -> LDSL p Int -> Vec (F p) -> (Bool, Int)
-checkProgram m (LWIRE i)      input = (True, i)
-checkProgram m (LCONST x i)   input = (input!i == x, i)
-checkProgram m (LADD p1 p2 i) input = (correct, i) where
-  c1 = checkProgram m p1 input
-  c2 = checkProgram m p2 input
-  correct1 = fst' c1; i1 = snd' c1
-  correct2 = fst' c2; i2 = snd' c2
-  correct = correct1 && correct2 && input!i == input!i1 + input!i2
-checkProgram m (LMUL p1 p2 i) input = (correct, i) where
-  c1 = checkProgram m p1 input
-  c2 = checkProgram m p2 input
-  correct1 = fst' c1; i1 = snd' c1
-  correct2 = fst' c2; i2 = snd' c2
-  correct = correct1 && correct2 && input!i == input!i1 * input!i2
-
-
 {-@ reflect semanticsAreCorrect @-}
 {-@ semanticsAreCorrect :: m:Nat1 ->
                            LDSL p (Btwn Int 0 m) -> VecN (F p) m ->
                            Bool @-}
 semanticsAreCorrect :: KnownNat p => Int -> LDSL p Int -> Vec (F p) -> Bool
-semanticsAreCorrect m program input = fst' $ checkProgram m program input
+semanticsAreCorrect m (LWIRE i)      input = True
+semanticsAreCorrect m (LCONST x i)   input = input!i == x
+semanticsAreCorrect m (LADD p1 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 && input!i == input!i1 + input!i2
+semanticsAreCorrect m (LMUL p1 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 && input!i == input!i1 * input!i2
