@@ -6,16 +6,15 @@
 module Circuits where
 
 import Constraints
-import GHC.TypeNats (KnownNat)
 
 {-@ reflect emptyCircuit @-}
-{-@ emptyCircuit :: m:Nat -> Circuit (F p) 0 m @-}
-emptyCircuit :: Int -> Circuit (F p)
+{-@ emptyCircuit :: m:Nat -> Circuit p 0 m @-}
+emptyCircuit :: Int -> Circuit p
 emptyCircuit _ = []
 
 {-@ reflect constGate @-}
-{-@ constGate :: m:Nat -> F p -> Btwn Int 0 m -> Circuit (F p) 1 m @-}
-constGate :: KnownNat p => Int -> F p -> Int -> Circuit (F p)
+{-@ constGate :: m:Nat -> p -> Btwn Int 0 m -> Circuit p 1 m @-}
+constGate :: Num p => Int -> p -> Int -> Circuit p
 constGate _ x n = [(v, q)] where
   v = [0, 0, n]
   q = [0, 0, -1, 0, x]

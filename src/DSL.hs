@@ -10,21 +10,18 @@ import Circuits
 import Utils
 import Vec
 
-import GHC.TypeNats (KnownNat)
-import PrimitiveRoot
-
 -- The type variable ‘i’ should be understood as the set of wire indices
-data KnownNat p => DSL p i =
+data DSL p i =
   WIRE  i                   | -- wire (i.e. variable)
-  CONST (F p)               | -- constant
+  CONST p                   | -- constant
   ADD   (DSL p i) (DSL p i) | -- field addition
   MUL   (DSL p i) (DSL p i)   -- field multiplication
 
 
 -- Labeled DSL
-data KnownNat p => LDSL p i =
+data LDSL p i =
   LWIRE  i                       |
-  LCONST (F p)                 i |
+  LCONST p                     i |
   LADD   (LDSL p i) (LDSL p i) i |
   LMUL   (LDSL p i) (LDSL p i) i
   deriving Show
@@ -32,11 +29,11 @@ data KnownNat p => LDSL p i =
 
 -- label each constructor with the index of the wire where its output will be
 {-@ label :: m:Nat1 -> DSL p (Btwn Int 0 m) -> LDSL p (Btwn Int 0 m) @-}
-label :: KnownNat p => Int -> DSL p Int -> LDSL p Int
+label :: Int -> DSL p Int -> LDSL p Int
 label m program = fst $ label' program (wires program) where
   {-@ label' :: DSL p (Btwn Int 0 m) -> Vec (Btwn Int 0 m) ->
                 (LDSL p (Btwn Int 0 m), Vec (Btwn Int 0 m)) @-}
-  label' :: (KnownNat p) => DSL p Int -> Vec Int -> (LDSL p Int, Vec Int)
+  label' :: DSL p Int -> Vec Int -> (LDSL p Int, Vec Int)
   label' (WIRE i)  _         = (LWIRE i, singleton i)
   label' (CONST x) usedWires = (LCONST x i, singleton i) where
     i = freshIndex m usedWires
@@ -53,15 +50,14 @@ label m program = fst $ label' program (wires program) where
 
 
 {-@ reflect outputWire @-}
-outputWire :: KnownNat p => LDSL p i -> i
+outputWire :: LDSL p i -> i
 outputWire (LWIRE i)    = i
 outputWire (LCONST _ i) = i
 outputWire (LADD _ _ i) = i
 outputWire (LMUL _ _ i) = i
 
 
-{- reflect wires @-}
-wires :: KnownNat p => DSL p i -> Vec i
+wires :: DSL p i -> Vec i
 wires (WIRE n)    = singleton n
 wires (CONST _)   = Nil
 wires (ADD p1 p2) = wires p1 `append` wires p2
@@ -85,7 +81,7 @@ freshIndex m used = freshIndex_ [0..m-1] where
 -- the number of gates needed to compile the program into a circuit
 {-@ measure nGates @-}
 {-@ nGates :: LDSL p i -> Nat @-}
-nGates :: KnownNat p => LDSL p i -> Int
+nGates :: LDSL p i -> Int
 nGates (LWIRE _)      = 0
 nGates (LCONST _ _)   = 1
 nGates (LADD p1 p2 _) = 1 + nGates p1 + nGates p2
@@ -96,9 +92,8 @@ nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
 {-@ reflect compile @-}
 {-@ compile :: m:{v:Int | v >= 3} ->
                c:LDSL p (Btwn Int 0 m) ->
-               Circuit (F p) (nGates c) m @-}
-compile :: (KnownNat p, PrimitiveRoot (F p)) =>
-           Int -> LDSL p Int -> Circuit (F p)
+               Circuit p (nGates c) m @-}
+compile :: Num p => Int -> LDSL p Int -> Circuit p
 compile m (LWIRE _)      = emptyCircuit m
 compile m (LCONST x i)   = constGate m x i
 compile m (LADD p1 p2 i) = c
@@ -118,9 +113,7 @@ compile m (LMUL p1 p2 i) = c
 -- the semantics of a program is a function that, given a mapping from wire
 -- indices to field values (one for each wire), returns the result of running
 -- the program on said field values
-{-@ reflect semantics @-}
-{-@ semantics :: DSL p i -> (i -> F p) -> F p @-}
-semantics :: KnownNat p => DSL p i -> (i -> F p) -> F p
+semantics :: (Eq p, Num p) => DSL p i -> (i -> p) -> p
 semantics (WIRE i)    input = input i
 semantics (CONST x)   _     = x
 semantics (ADD p1 p2) input = semantics p1 input + semantics p2 input
@@ -129,9 +122,9 @@ semantics (MUL p1 p2) input = semantics p1 input * semantics p2 input
 
 {-@ reflect semanticsAreCorrect @-}
 {-@ semanticsAreCorrect :: m:Nat1 ->
-                           LDSL p (Btwn Int 0 m) -> VecN (F p) m ->
+                           LDSL p (Btwn Int 0 m) -> VecN p m ->
                            Bool @-}
-semanticsAreCorrect :: KnownNat p => Int -> LDSL p Int -> Vec (F p) -> Bool
+semanticsAreCorrect :: (Eq p, Num p) => Int -> LDSL p Int -> Vec p -> Bool
 semanticsAreCorrect _ (LWIRE _)      _     = True
 semanticsAreCorrect _ (LCONST x i)   input = input!i == x
 semanticsAreCorrect m (LADD p1 p2 i) input = correct where
