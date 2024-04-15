@@ -7,7 +7,6 @@ import Data.FiniteField.PrimeField
 import GHC.TypeNats (KnownNat)
 
 import Vec
-import Utils
 import RefinementTypes()
 
 
@@ -34,7 +33,7 @@ checkGate _ x ([a,b,c], [qL,qR,qO,qM,qC]) =
 {-@ satisfies :: n:Nat -> m:Nat -> VecN (F p) m -> Circuit (F p) n m -> Bool @-}
 -- Check that the input (values in wires) satisfies the circuit:
 satisfies :: KnownNat p => Int -> Int -> Vec (F p) -> Circuit (F p) -> Bool
-satisfies _ m input []     = True
+satisfies _ _ _     []     = True
 satisfies n m input (g:gs) = checkGate m input g && satisfies (n-1) m input gs
 
 

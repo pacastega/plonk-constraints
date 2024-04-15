@@ -37,7 +37,7 @@ label m program = fst $ label' program (wires program) where
   {-@ label' :: DSL p (Btwn Int 0 m) -> Vec (Btwn Int 0 m) ->
                 (LDSL p (Btwn Int 0 m), Vec (Btwn Int 0 m)) @-}
   label' :: (KnownNat p) => DSL p Int -> Vec Int -> (LDSL p Int, Vec Int)
-  label' (WIRE i) usedWires = (LWIRE i, singleton i)
+  label' (WIRE i)  _         = (LWIRE i, singleton i)
   label' (CONST x) usedWires = (LCONST x i, singleton i) where
     i = freshIndex m usedWires
   label' (ADD p1 p2) usedWires = (LADD p1' p2' i, is) where
@@ -99,20 +99,18 @@ nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
                Circuit (F p) (nGates c) m @-}
 compile :: (KnownNat p, PrimitiveRoot (F p)) =>
            Int -> LDSL p Int -> Circuit (F p)
-compile m (LWIRE i)      = emptyCircuit m
+compile m (LWIRE _)      = emptyCircuit m
 compile m (LCONST x i)   = constGate m x i
 compile m (LADD p1 p2 i) = c
   where
     c1 = compile m p1; c2 = compile m p2
     i1 = outputWire p1; i2 = outputWire p2
-    n1 = nGates p1; n2 = nGates p2
     c' = append' c1 c2
     c = append' (addGate m [i1, i2, i]) c'
 compile m (LMUL p1 p2 i) = c
   where
     c1 = compile m p1; c2 = compile m p2
     i1 = outputWire p1; i2 = outputWire p2
-    n1 = nGates p1; n2 = nGates p2
     c' = append' c1 c2
     c = append' (mulGate m [i1, i2, i]) c'
 
@@ -124,7 +122,7 @@ compile m (LMUL p1 p2 i) = c
 {-@ semantics :: DSL p i -> (i -> F p) -> F p @-}
 semantics :: KnownNat p => DSL p i -> (i -> F p) -> F p
 semantics (WIRE i)    input = input i
-semantics (CONST x)   input = x
+semantics (CONST x)   _     = x
 semantics (ADD p1 p2) input = semantics p1 input + semantics p2 input
 semantics (MUL p1 p2) input = semantics p1 input * semantics p2 input
 
@@ -134,8 +132,8 @@ semantics (MUL p1 p2) input = semantics p1 input * semantics p2 input
                            LDSL p (Btwn Int 0 m) -> VecN (F p) m ->
                            Bool @-}
 semanticsAreCorrect :: KnownNat p => Int -> LDSL p Int -> Vec (F p) -> Bool
-semanticsAreCorrect m (LWIRE i)      input = True
-semanticsAreCorrect m (LCONST x i)   input = input!i == x
+semanticsAreCorrect _ (LWIRE _)      _     = True
+semanticsAreCorrect _ (LCONST x i)   input = input!i == x
 semanticsAreCorrect m (LADD p1 p2 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   correct2 = semanticsAreCorrect m p2 input

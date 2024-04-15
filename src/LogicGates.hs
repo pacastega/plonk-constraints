@@ -24,7 +24,7 @@ notGate = [([0, 0, 1], [-1,  0, -1,  0,  1]), -- 1.
 {-@ verifyNot :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyNot :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyNot x = notIsCorrect == satisfies 2 3 x gate where
-  gate@[([a0,b0,c0], _), ([a1,b1,c1], _)] = notGate
+  gate@[([a0,_,c0], _), ([a1,b1,_], _)] = notGate
   notIsCorrect = (1 - x!a0 == x!c0) &&    -- ‘not’ holds
                  (x!a1 * x!b1 == x!a1)    -- boolean
 
@@ -44,7 +44,7 @@ andGate = [([0, 1, 2], [ 0,  0, -1,  1,  0]), -- 1.
 {-@ verifyAnd :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyAnd :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyAnd x = andIsCorrect == satisfies 3 3 x gate where
-  gate@[([a0,b0,c0], _), ([a1,b1,c1], _), ([a2,b2,c2], _)] = andGate
+  gate@[([a0,b0,c0], _), ([a1,b1,_], _), ([a2,b2,_], _)] = andGate
   andIsCorrect = (x!c0 == if x!a0 == 0 || x!b0 == 0
                    then 0 else 1) &&               -- and holds
                  (x!a1 * x!b1 == x!a1) &&          -- boolean
@@ -66,7 +66,7 @@ orGate = [([0, 1, 2], [ 1,  1, -1, -1,  0]), -- 1.
 {-@ verifyOr :: VecN (F p) 3 -> {v:Bool | v} @-}
 verifyOr :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyOr x = orIsCorrect == satisfies 3 3 x gate where
-  gate@[([a0,b0,c0], _), ([a1,b1,c1], _), ([a2,b2,c2], _)] = orGate
+  gate@[([a0,b0,c0], _), ([a1,b1,_], _), ([a2,b2,_], _)] = orGate
   orIsCorrect = (x!c0 == if x!a0 == 1 || x!b0 == 1
                   then 1 else 0) &&               -- or holds
                 (x!a1 * x!b1 == x!a1) &&          -- boolean
@@ -88,7 +88,7 @@ xorGate = [([0, 1, 2], [ 1,  1, -1, -2,  0]), -- 1.
 {-@ verifyXor :: VecN (F p) 3 -> {v:Bool | v}@-}
 verifyXor :: (KnownNat p, PrimitiveRoot (F p)) => Vec (F p) -> Bool
 verifyXor x = xorIsCorrect == satisfies 3 3 x gate where
-  gate@[([a0,b0,c0], _), ([a1,b1,c1], _), ([a2,b2,c2], _)] = xorGate
+  gate@[([a0,b0,c0], _), ([a1,b1,_], _), ([a2,b2,_], _)] = xorGate
   xorIsCorrect = (x!c0 == if x!a0 /= x!b0
                    then 1 else 0) &&               -- xor holds
                  (x!a1 * x!b1 == x!a1) &&          -- boolean
