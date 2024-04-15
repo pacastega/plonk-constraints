@@ -11,7 +11,7 @@ import Vec
 
 {-@ reflect addGate @-}
 {-@ addGate :: m:{v:Int | v >= 3} ->
-               ListN (Btwn Int 0 m) 3 ->
+               ListN (Btwn 0 m) 3 ->
                Circuit p 1 m @-} -- 1 gate, m wires
 addGate :: Num p => Int -> [Int] -> Circuit p
 addGate _ indices = [(v, q)] where
@@ -28,7 +28,7 @@ verifyAdd x = sumIsCorrect == satisfies 1 3 x gate where
 
 {-@ reflect mulGate @-}
 {-@ mulGate :: m:{v:Int | v >= 3} ->
-               ListN (Btwn Int 0 m) 3 ->
+               ListN (Btwn 0 m) 3 ->
                Circuit p 1 m @-} -- 1 gate, m wires
 mulGate :: Num p => Int -> [Int] -> Circuit p
 mulGate _ indices = [(v, q)] where

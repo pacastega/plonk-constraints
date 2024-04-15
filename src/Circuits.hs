@@ -13,7 +13,7 @@ emptyCircuit :: Int -> Circuit p
 emptyCircuit _ = []
 
 {-@ reflect constGate @-}
-{-@ constGate :: m:Nat -> p -> Btwn Int 0 m -> Circuit p 1 m @-}
+{-@ constGate :: m:Nat -> p -> Btwn 0 m -> Circuit p 1 m @-}
 constGate :: Num p => Int -> p -> Int -> Circuit p
 constGate _ x n = [(v, q)] where
   v = [0, 0, n]

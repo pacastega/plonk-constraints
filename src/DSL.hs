@@ -28,11 +28,11 @@ data LDSL p i =
 
 
 -- label each constructor with the index of the wire where its output will be
-{-@ label :: m:Nat1 -> DSL p (Btwn Int 0 m) -> LDSL p (Btwn Int 0 m) @-}
+{-@ label :: m:Nat1 -> DSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) @-}
 label :: Int -> DSL p Int -> LDSL p Int
 label m program = fst $ label' program (wires program) where
-  {-@ label' :: DSL p (Btwn Int 0 m) -> Vec (Btwn Int 0 m) ->
-                (LDSL p (Btwn Int 0 m), Vec (Btwn Int 0 m)) @-}
+  {-@ label' :: DSL p (Btwn 0 m) -> Vec (Btwn 0 m) ->
+                (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
   label' :: DSL p Int -> Vec Int -> (LDSL p Int, Vec Int)
   label' (WIRE i)  _         = (LWIRE i, singleton i)
   label' (CONST x) usedWires = (LCONST x i, singleton i) where
@@ -70,10 +70,10 @@ wires (MUL p1 p2) = wires p1 `append` wires p2
 -- TODO: ideally, this should only be called with sets strictly contained in
 -- {0..m-1}; otherwise, there will be no fresh index to return. Is it possible
 -- to specify that the second argument should have size < m?
-{-@ freshIndex :: m:Nat1 -> Vec (Btwn Int 0 m) -> Btwn Int 0 m @-}
+{-@ freshIndex :: m:Nat1 -> Vec (Btwn 0 m) -> Btwn 0 m @-}
 freshIndex :: Int -> Vec Int -> Int
 freshIndex m used = freshIndex_ [0..m-1] where
-  {-@ freshIndex_ :: [Btwn Int 0 m] -> Btwn Int 0 m @-}
+  {-@ freshIndex_ :: [Btwn 0 m] -> Btwn 0 m @-}
   freshIndex_ []     = 0 -- FIXME: this should never be reached
   freshIndex_ (x:xs) = if x `velem` used then freshIndex_ xs else x
 
@@ -91,7 +91,7 @@ nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
 -- compile the program into a circuit including the output wire index
 {-@ reflect compile @-}
 {-@ compile :: m:{v:Int | v >= 3} ->
-               c:LDSL p (Btwn Int 0 m) ->
+               c:LDSL p (Btwn 0 m) ->
                Circuit p (nGates c) m @-}
 compile :: Num p => Int -> LDSL p Int -> Circuit p
 compile m (LWIRE _)      = emptyCircuit m
@@ -122,7 +122,7 @@ semantics (MUL p1 p2) input = semantics p1 input * semantics p2 input
 
 {-@ reflect semanticsAreCorrect @-}
 {-@ semanticsAreCorrect :: m:Nat1 ->
-                           LDSL p (Btwn Int 0 m) -> VecN p m ->
+                           LDSL p (Btwn 0 m) -> VecN p m ->
                            Bool @-}
 semanticsAreCorrect :: (Eq p, Num p) => Int -> LDSL p Int -> Vec p -> Bool
 semanticsAreCorrect _ (LWIRE _)      _     = True

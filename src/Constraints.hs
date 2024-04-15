@@ -10,7 +10,7 @@ import RefinementTypes()
 -- n == # gates
 -- m == # wires
 
-{-@ type Gate p M = (ListN (Btwn Int 0 M) 3, ListN p 5) @-}
+{-@ type Gate p M = (ListN (Btwn 0 M) 3, ListN p 5) @-}
 type Gate p = ([Int], [p])
 
 {-@ type Circuit p N M = ListN (Gate p M) N @-}
