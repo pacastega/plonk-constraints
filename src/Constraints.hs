@@ -1,3 +1,4 @@
+{-# OPTIONS -Wno-incomplete-uni-patterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
@@ -32,4 +33,14 @@ satisfies _ _ _     []     = True
 satisfies n m input (g:gs) = checkGate m input g && satisfies (n-1) m input gs
 
 
--- TODO: ‘transpose’ function to convert back to plonkish circuits
+{-@ transpose :: n:Nat -> m:Nat ->
+                 Circuit p n m ->
+                 (ListN (ListN (Btwn 0 m) n) 3, ListN (ListN p n) 5) @-}
+transpose :: Int -> Int -> Circuit p -> ([[Int]], [[p]])
+transpose _ _ [] = let
+    a = []; b = []; c = [];
+    qL = []; qR = []; qO = []; qM = []; qC = []
+  in ([a, b, c],  [qL, qR, qO, qM, qC])
+transpose n m (([a, b, c], [qL, qR, qO, qM, qC]) : gs) = let
+    ([as, bs, cs],  [qLs, qRs, qOs, qMs, qCs]) = transpose (n-1) m gs
+  in ([a:as, b:bs, c:cs],  [qL:qLs, qR:qRs, qO:qOs, qM:qMs, qC:qCs])
