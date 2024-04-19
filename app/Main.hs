@@ -14,6 +14,8 @@ import ArithmeticGates -- needed to use reflected functions
 import Constraints
 
 import DSL
+import WitnessGeneration
+import qualified Data.Map as Map
 
 type F17 = PrimeField 17
 type V17 = Vec F17
@@ -29,11 +31,11 @@ testInput = fromList [1,1,1,1, -- input wires
                       4,       -- output wire
                       5,8]     -- incorrect intermediate wires
 
+-- correct intermediate wires (automatically generated)
 {-@ testInput' :: VecN _ 7 @-}
 testInput' :: V17
-testInput' = fromList [1,1,1,1, -- input wires
-                       4,       -- output wire
-                       2,2]     -- correct intermediate wires
+testInput' = witnessGen 7 (label 7 testProgram) valuation where
+  valuation = Map.fromList [(0,1), (1,1), (2,1), (3,1)]
 
 
 {-@ testProgram2 :: v:DSL _ (Btwn 0 7) @-}
@@ -46,11 +48,11 @@ testInput2 = fromList [7,3,        -- input wires
                        11,         -- output wire
                        5,15,6,3]   -- icorrect intermediate wires
 
+-- correct intermediate wires (automatically generated)
 {-@ testInput2' :: VecN _ 7 @-}
 testInput2' :: V17
-testInput2' = fromList [7,3,      -- input wires
-                        13,       -- output wire
-                        5,15,6,3] -- correct intermediate wires
+testInput2' = witnessGen 7 (label  7 testProgram2) valuation where
+  valuation = Map.fromList [(0,7), (1,3)]
 
 
 green :: String -> String
