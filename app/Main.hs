@@ -15,7 +15,6 @@ import Constraints
 
 import DSL
 import WitnessGeneration
-import qualified Data.Map as Map
 
 type F17 = PrimeField 17
 type V17 = Vec F17
@@ -35,7 +34,7 @@ testInput = fromList [1,1,1,1, -- input wires
 {-@ testInput' :: VecN _ 7 @-}
 testInput' :: V17
 testInput' = witnessGen 7 (label 7 testProgram) valuation where
-  valuation = Map.fromList [(0,1), (1,1), (2,1), (3,1)]
+  valuation = (const 1)
 
 
 {-@ testProgram2 :: v:DSL _ (Btwn 0 7) @-}
@@ -51,8 +50,8 @@ testInput2 = fromList [7,3,        -- input wires
 -- correct intermediate wires (automatically generated)
 {-@ testInput2' :: VecN _ 7 @-}
 testInput2' :: V17
-testInput2' = witnessGen 7 (label  7 testProgram2) valuation where
-  valuation = Map.fromList [(0,7), (1,3)]
+testInput2' = witnessGen 7 (label 7 testProgram2) valuation where
+  valuation = (\x -> case x of 0 -> 7; 1 -> 3; _ -> 0)
 
 
 green :: String -> String

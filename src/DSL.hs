@@ -10,6 +10,8 @@ import Circuits
 import Utils
 import Vec
 
+import qualified Data.Set as S
+
 -- The type variable ‘i’ should be understood as the set of wire indices
 data DSL p i =
   WIRE  i                   | -- wire (i.e. variable)
@@ -62,6 +64,14 @@ wires (WIRE n)    = singleton n
 wires (CONST _)   = Nil
 wires (ADD p1 p2) = wires p1 `append` wires p2
 wires (MUL p1 p2) = wires p1 `append` wires p2
+
+
+{-@ reflect lwires @-}
+lwires :: Ord i => LDSL p i -> S.Set i
+lwires (LWIRE n)      = S.singleton n
+lwires (LCONST _ _)   = S.empty
+lwires (LADD p1 p2 _) = lwires p1 `S.union` lwires p2
+lwires (LMUL p1 p2 _) = lwires p1 `S.union` lwires p2
 
 
 {-@ assume enumFromTo :: x:a -> y:a -> [{v:a | x <= v && v <= y}] @-}
