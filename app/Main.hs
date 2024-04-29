@@ -54,6 +54,16 @@ testInput2' = witnessGen 7 (label 7 testProgram2) valuation where
   valuation = (\x -> case x of 0 -> 7; 1 -> 3; _ -> 0)
 
 
+{-@ testProgram3 :: DSL _ (Btwn 0 6) @-}
+testProgram3 :: DSL F17 Int
+testProgram3 = DIV (WIRE 5) (WIRE 1)
+
+{-@ testInput3 :: VecN _ 6 @-}
+testInput3 :: V17
+testInput3 = witnessGen 6 (label 6 testProgram3) valuation where
+  valuation = (\x -> case x of 5 -> 3; 1 -> 9; _ -> 0)
+
+
 green :: String -> String
 green s = "\ESC[32m" ++ s ++ "\ESC[0m"
 
@@ -92,3 +102,4 @@ main = do
   test 7 testProgram testInput'
   test 7 testProgram2 testInput2
   test 7 testProgram2 testInput2'
+  test 6 testProgram3 testInput3

@@ -18,7 +18,7 @@ updateWith (Just x) (Just y) = if x == y then Just x else Nothing
                   program:LDSL p (Btwn 0 m) ->
                   ({v : Btwn 0 m | S.member v (lwires program)} -> p) ->
                   VecN p m @-}
-witnessGen :: (Eq p, Num p) => Int -> LDSL p Int -> (Int -> p) -> Vec p
+witnessGen :: (Eq p, Fractional p) => Int -> LDSL p Int -> (Int -> p) -> Vec p
 witnessGen m program valuation = toVector m $ update program valuation' where
     valuation' = toMap (lwires program) valuation
 
@@ -36,6 +36,13 @@ witnessGen m program valuation = toVector m $ update program valuation' where
       x1 = M.lookup (outputWire p1) valuation'
       x2 = M.lookup (outputWire p2) valuation'
       mult = (*) <$> x1 <*> x2
+    update (LDIV p1 p2 i) valuation = M.alter (updateWith div) i valuation'
+      where
+      valuation' = update p2 $ update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation'
+      x2 = M.lookup (outputWire p2) valuation' >>=
+        (\x -> if x == 0 then Nothing else Just x)
+      div = (/) <$> x1 <*> x2
 
 
 {-@ toVector :: m:Nat -> M.Map (Btwn 0 m) p -> VecN p m @-}
