@@ -2,6 +2,7 @@
 {-@ LIQUID "--reflection" @-}
 {-# OPTIONS -Wno-unused-imports #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 module Main (main) where
 
 import Data.FiniteField.PrimeField
@@ -34,7 +35,7 @@ testInput = fromList [1,1,1,1, -- input wires
 {-@ testInput' :: VecN _ 7 @-}
 testInput' :: V17
 testInput' = witnessGen 7 (label 7 testProgram) valuation where
-  valuation = (const 1)
+  valuation = const 1
 
 
 {-@ testProgram2 :: v:DSL _ (Btwn 0 7) @-}
@@ -51,7 +52,7 @@ testInput2 = fromList [7,3,        -- input wires
 {-@ testInput2' :: VecN _ 7 @-}
 testInput2' :: V17
 testInput2' = witnessGen 7 (label 7 testProgram2) valuation where
-  valuation = (\x -> case x of 0 -> 7; 1 -> 3; _ -> 0)
+  valuation = \case 0 -> 7; 1 -> 3; _ -> 0
 
 
 {-@ testProgram3 :: DSL _ (Btwn 0 6) @-}
@@ -61,7 +62,7 @@ testProgram3 = DIV (WIRE 5) (WIRE 1)
 {-@ testInput3 :: VecN _ 6 @-}
 testInput3 :: V17
 testInput3 = witnessGen 6 (label 6 testProgram3) valuation where
-  valuation = (\x -> case x of 5 -> 3; 1 -> 9; _ -> 0)
+  valuation = \case 5 -> 3; 1 -> 9; _ -> 0
 
 
 green :: String -> String
