@@ -53,6 +53,6 @@ isZeroWitness _ [a, w, z, c] =
    ([c, c, 0], [-1,  0,  0,  1,  0]), -- 2.
    ([w, z, 0], [ 0,  0,  0, -1,  1])] -- 3.
 
-  -- Gate 1. 1 - a*b == c <=> 0 + 0 - c - a*b + 1 == 0
+  -- Gate 1. 1 - a*w == c <=> 0 + 0 - c - a*w + 1 == 0
   -- Gate 2. c*c == c (c is boolean)
   -- Gate 3. w*z == 1 (w is always non-zero)
