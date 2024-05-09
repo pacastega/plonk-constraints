@@ -31,7 +31,7 @@ data LDSL p i =
   LMUL   (LDSL p i) (LDSL p i) i |
   LDIV   (LDSL p i) (LDSL p i) i |
 
-  LISZERO (LDSL p i)       i i i
+  LISZERO (LDSL p i)         i i
   deriving Show
 
 
@@ -61,11 +61,10 @@ label m program = fst $ label' program (wires program) where
     (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
     is = singleton i `append` is1 `append` is2
 
-  label' (ISZERO p1) usedWires = (LISZERO p1' w z i, is) where
+  label' (ISZERO p1) usedWires = (LISZERO p1' w i, is) where
     i = freshIndex m usedWires
     w = freshIndex m (usedWires `append` singleton i)
-    z = freshIndex m (usedWires `append` fromList [i, w])
-    (p1', is1) = label' p1 (usedWires `append` fromList [i, w, z])
+    (p1', is1) = label' p1 (usedWires `append` fromList [i, w])
     is = singleton i `append` singleton w `append` is1
 
 
@@ -76,7 +75,7 @@ outputWire (LCONST _ i) = i
 outputWire (LADD _ _ i) = i
 outputWire (LMUL _ _ i) = i
 outputWire (LDIV _ _ i) = i
-outputWire (LISZERO _ _ _ i) = i
+outputWire (LISZERO _ _ i) = i
 
 
 wires :: DSL p i -> Vec i
@@ -95,7 +94,7 @@ lwires (LCONST _ _)   = S.empty
 lwires (LADD p1 p2 _) = lwires p1 `S.union` lwires p2
 lwires (LMUL p1 p2 _) = lwires p1 `S.union` lwires p2
 lwires (LDIV p1 p2 _) = lwires p1 `S.union` lwires p2
-lwires (LISZERO p1 _ _ _) = lwires p1
+lwires (LISZERO p1 _ _) = lwires p1
 
 
 {-@ assume enumFromTo :: x:a -> y:a -> [{v:a | x <= v && v <= y}] @-}
@@ -121,7 +120,7 @@ nGates (LCONST _ _)   = 1
 nGates (LADD p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LDIV p1 p2 _) = 1 + nGates p1 + nGates p2
-nGates (LISZERO p1 _ _ _) = 3 + nGates p1
+nGates (LISZERO p1 _ _) = 2 + nGates p1
 
 
 -- compile the program into a circuit including the output wire index
@@ -150,11 +149,11 @@ compile m (LDIV p1 p2 i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (mulGate m [i, i2, i1]) c'
-compile m (LISZERO p1 w z i) = c
+compile m (LISZERO p1 w i) = c
   where
     c1 = compile m p1
     i1 = outputWire p1
-    c = append' (isZeroWitness m [i1, w, z, i]) c1
+    c = append' (isZeroGate m [i1, w, i]) c1
 
 
 {-@ reflect semanticsAreCorrect @-}
@@ -179,11 +178,11 @@ semanticsAreCorrect m (LDIV p1 p2 i) input = correct where
   correct2 = semanticsAreCorrect m p2 input
   i1 = outputWire p1; i2 = outputWire p2
   correct = correct1 && correct2 && input!i * input!i2 == input!i1
-semanticsAreCorrect m (LISZERO p1 w z i) input = correct where
+semanticsAreCorrect m (LISZERO p1 w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
   correct = correct1 && (input!i * input!i == input!i) &&
-                        (input!w * input!z == 1) &&
+                        (input!i1 * input!i == 0) &&
                         (if input!i1 == 0
                          then input!i == 1
                          else input!i == 0 && input!w * input!i1 == 1)

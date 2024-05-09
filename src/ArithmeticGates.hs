@@ -4,7 +4,7 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ embed GHC.Num.Natural.Natural as int @-}
-module ArithmeticGates (addGate, mulGate, isZeroWitness) where
+module ArithmeticGates (addGate, mulGate, isZeroGate) where
 
 import Constraints
 import Vec
@@ -43,16 +43,14 @@ verifyMul x = mulIsCorrect == satisfies 1 3 x gate where
   mulIsCorrect = x!a * x!b == x!c
 
 
-{-@ reflect isZeroWitness @-}
-{-@ isZeroWitness :: m:{v:Int | v >= 3} ->
-                     ListN (Btwn 0 m) 4 ->
-                     Circuit p 3 m @-} -- 3 gate, m wires
-isZeroWitness :: Num p => Int -> [Int] -> Circuit p
-isZeroWitness _ [a, w, z, c] =
+{-@ reflect isZeroGate @-}
+{-@ isZeroGate :: m:{v:Int | v >= 3} ->
+                  ListN (Btwn 0 m) 3 ->
+                  Circuit p 2 m @-} -- 2 gate, m wires
+isZeroGate :: Num p => Int -> [Int] -> Circuit p
+isZeroGate _ [a, w, c] =
   [([a, w, c], [ 0,  0, -1, -1,  1]), -- 1.
-   ([c, c, 0], [-1,  0,  0,  1,  0]), -- 2.
-   ([w, z, 0], [ 0,  0,  0, -1,  1])] -- 3.
+   ([a, c, 0], [ 0,  0,  0, -1,  0])] -- 2.
 
   -- Gate 1. 1 - a*w == c <=> 0 + 0 - c - a*w + 1 == 0
-  -- Gate 2. c*c == c (c is boolean)
-  -- Gate 3. w*z == 1 (w is always non-zero)
+  -- Gate 2. a*c == 0 (a is 0, or c is false)
