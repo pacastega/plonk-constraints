@@ -5,6 +5,7 @@ module DSL where
 import Constraints
 import RefinementTypes()
 import ArithmeticGates
+import LogicGates
 import Circuits
 
 import Utils
@@ -20,6 +21,11 @@ data DSL p i =
   MUL   (DSL p i) (DSL p i) | -- field multiplication
   DIV   (DSL p i) (DSL p i) | -- field division
 
+  NOT   (DSL p i)           | -- logical not
+  AND   (DSL p i) (DSL p i) | -- logical and
+  OR    (DSL p i) (DSL p i) | -- logical or
+  XOR   (DSL p i) (DSL p i) | -- logical xor
+
   ISZERO (DSL p i)            -- zero check
 
 
@@ -30,6 +36,11 @@ data LDSL p i =
   LADD   (LDSL p i) (LDSL p i) i |
   LMUL   (LDSL p i) (LDSL p i) i |
   LDIV   (LDSL p i) (LDSL p i) i |
+
+  LNOT   (LDSL p i)            i |
+  LAND   (LDSL p i) (LDSL p i) i |
+  LOR    (LDSL p i) (LDSL p i) i |
+  LXOR   (LDSL p i) (LDSL p i) i |
 
   LISZERO (LDSL p i)         i i
   deriving Show
@@ -61,6 +72,26 @@ label m program = fst $ label' program (wires program) where
     (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
     is = singleton i `append` is1 `append` is2
 
+  label' (NOT p1) usedWires = (LNOT p1' i, is) where
+    i = freshIndex m usedWires
+    (p1', is1) = label' p1 (usedWires `append` singleton i)
+    is = singleton i `append` is1
+  label' (AND p1 p2) usedWires = (LAND p1' p2' i, is) where
+    i = freshIndex m usedWires
+    (p1', is1) = label' p1 (usedWires `append` singleton i)
+    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
+    is = singleton i `append` is1 `append` is2
+  label' (OR p1 p2) usedWires = (LOR p1' p2' i, is) where
+    i = freshIndex m usedWires
+    (p1', is1) = label' p1 (usedWires `append` singleton i)
+    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
+    is = singleton i `append` is1 `append` is2
+  label' (XOR p1 p2) usedWires = (LXOR p1' p2' i, is) where
+    i = freshIndex m usedWires
+    (p1', is1) = label' p1 (usedWires `append` singleton i)
+    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
+    is = singleton i `append` is1 `append` is2
+
   label' (ISZERO p1) usedWires = (LISZERO p1' w i, is) where
     i = freshIndex m usedWires
     w = freshIndex m (usedWires `append` singleton i)
@@ -68,6 +99,7 @@ label m program = fst $ label' program (wires program) where
     is = singleton i `append` singleton w `append` is1
 
 
+-- TODO: this could probably be avoided by using record syntax
 {-@ reflect outputWire @-}
 outputWire :: LDSL p i -> i
 outputWire (LWIRE i)    = i
@@ -75,6 +107,12 @@ outputWire (LCONST _ i) = i
 outputWire (LADD _ _ i) = i
 outputWire (LMUL _ _ i) = i
 outputWire (LDIV _ _ i) = i
+
+outputWire (LNOT _   i) = i
+outputWire (LAND _ _ i) = i
+outputWire (LOR  _ _ i) = i
+outputWire (LXOR _ _ i) = i
+
 outputWire (LISZERO _ _ i) = i
 
 
@@ -84,6 +122,12 @@ wires (CONST _)   = Nil
 wires (ADD p1 p2) = wires p1 `append` wires p2
 wires (MUL p1 p2) = wires p1 `append` wires p2
 wires (DIV p1 p2) = wires p1 `append` wires p2
+
+wires (NOT p1)    = wires p1
+wires (AND p1 p2) = wires p1 `append` wires p2
+wires (OR  p1 p2) = wires p1 `append` wires p2
+wires (XOR p1 p2) = wires p1 `append` wires p2
+
 wires (ISZERO p1) = wires p1
 
 
@@ -94,6 +138,12 @@ lwires (LCONST _ _)   = S.empty
 lwires (LADD p1 p2 _) = lwires p1 `S.union` lwires p2
 lwires (LMUL p1 p2 _) = lwires p1 `S.union` lwires p2
 lwires (LDIV p1 p2 _) = lwires p1 `S.union` lwires p2
+
+lwires (LNOT p1    _) = lwires p1
+lwires (LAND p1 p2 _) = lwires p1 `S.union` lwires p2
+lwires (LOR  p1 p2 _) = lwires p1 `S.union` lwires p2
+lwires (LXOR p1 p2 _) = lwires p1 `S.union` lwires p2
+
 lwires (LISZERO p1 _ _) = lwires p1
 
 
@@ -120,6 +170,12 @@ nGates (LCONST _ _)   = 1
 nGates (LADD p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LDIV p1 p2 _) = 1 + nGates p1 + nGates p2
+
+nGates (LNOT p1    _) = 2 + nGates p1
+nGates (LAND p1 p2 _) = 3 + nGates p1 + nGates p2
+nGates (LOR  p1 p2 _) = 3 + nGates p1 + nGates p2
+nGates (LXOR p1 p2 _) = 3 + nGates p1 + nGates p2
+
 nGates (LISZERO p1 _ _) = 2 + nGates p1
 
 
@@ -149,6 +205,29 @@ compile m (LDIV p1 p2 i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (mulGate m [i, i2, i1]) c'
+compile m (LNOT p1 i) = c
+  where
+    c1 = compile m p1
+    i1 = outputWire p1
+    c = append' (notGate m [i1, i]) c1
+compile m (LAND p1 p2 i) = c
+  where
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
+    c' = append' c1 c2
+    c = append' (andGate m [i1, i2, i]) c'
+compile m (LOR  p1 p2 i) = c
+  where
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
+    c' = append' c1 c2
+    c = append' (orGate m [i1, i2, i]) c'
+compile m (LXOR p1 p2 i) = c
+  where
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
+    c' = append' c1 c2
+    c = append' (xorGate m [i1, i2, i]) c'
 compile m (LISZERO p1 w i) = c
   where
     c1 = compile m p1
@@ -178,6 +257,31 @@ semanticsAreCorrect m (LDIV p1 p2 i) input = correct where
   correct2 = semanticsAreCorrect m p2 input
   i1 = outputWire p1; i2 = outputWire p2
   correct = correct1 && correct2 && input!i * input!i2 == input!i1
+semanticsAreCorrect m (LNOT p1 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  i1 = outputWire p1
+  correct = correct1 && input!i == 1 - input!i1 && boolean (input!i1)
+semanticsAreCorrect m (LAND p1 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 &&
+    (input!i == if input!i1 == 0 || input!i2 == 0 then 0 else 1) &&
+    boolean (input!i1) && boolean (input!i2)
+semanticsAreCorrect m (LOR  p1 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 &&
+    (input!i == if input!i1 == 1 || input!i2 == 1 then 1 else 0) &&
+    boolean (input!i1) && boolean (input!i2)
+semanticsAreCorrect m (LXOR p1 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 &&
+    (input!i == if input!i1 /= input!i2 then 1 else 0) &&
+    boolean (input!i1) && boolean (input!i2)
 semanticsAreCorrect m (LISZERO p1 w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1

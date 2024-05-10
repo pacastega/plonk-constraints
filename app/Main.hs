@@ -11,6 +11,7 @@ import Vec
 import Utils           -- needed to use reflected functions
 import Circuits        -- needed to use reflected functions
 import ArithmeticGates -- needed to use reflected functions
+import LogicGates      -- needed to use reflected functions
 
 import Constraints
 

@@ -2,6 +2,7 @@
 {-@ LIQUID "--reflection" @-}
 module WitnessGeneration (witnessGen) where
 
+import Utils (boolean)
 import Vec
 import DSL
 import qualified Data.Map as M
@@ -41,8 +42,31 @@ witnessGen m program valuation = toVector m $ update program valuation' where
       valuation' = update p2 $ update p1 valuation
       x1 = M.lookup (outputWire p1) valuation'
       x2 = M.lookup (outputWire p2) valuation' >>=
-        (\x -> if x == 0 then Nothing else Just x)
+        (\x -> if x /= 0 then Just x else Nothing)
       div = (/) <$> x1 <*> x2
+    update (LNOT p1 i) valuation = M.alter (updateWith neg) i valuation'
+      where
+      valuation' = update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation' >>= ensure boolean
+      neg = (1 -) <$> x1
+    update (LAND p1 p2 i) valuation = M.alter (updateWith and) i valuation'
+      where
+      valuation' = update p2 $ update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation' >>= ensure boolean
+      x2 = M.lookup (outputWire p2) valuation' >>= ensure boolean
+      and = (*) <$> x1 <*> x2
+    update (LOR  p1 p2 i) valuation = M.alter (updateWith or) i valuation'
+      where
+      valuation' = update p2 $ update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation' >>= ensure boolean
+      x2 = M.lookup (outputWire p2) valuation' >>= ensure boolean
+      or = (\x y -> x + y - x*y) <$> x1 <*> x2
+    update (LXOR p1 p2 i) valuation = M.alter (updateWith xor) i valuation'
+      where
+      valuation' = update p2 $ update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation' >>= ensure boolean
+      x2 = M.lookup (outputWire p2) valuation' >>= ensure boolean
+      xor = (\x y -> x + y - 2*x*y) <$> x1 <*> x2
 
     update (LISZERO p1 w i) valuation = valuation3
       where
@@ -68,3 +92,11 @@ toMap :: Ord a => S.Set a -> (a -> b) -> M.Map a b
 toMap xs f = M.fromList $ map (\x -> (x, f x)) $ S.toList xs
 
 {-@ assume S.toList :: xs:S.Set a -> [{v:a | S.member v xs}] @-}
+
+
+-- -- TODO: ‘ensure (/= 0)’ should work for ‘x2’ in the case of ‘LDIV’ above
+-- {-@ ensure :: p:(a -> Bool) -> x:a ->
+--               {v:Maybe {w:a | p w} | v = (if (p x) then (Just x)
+--                                                    else Nothing)} @-}
+ensure :: (a -> Bool) -> a -> Maybe a
+ensure p x = if p x then Just x else Nothing
