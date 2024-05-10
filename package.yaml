@@ -1,5 +1,6 @@
 name:                plonk-constraints
 version:             0.1.0.0
+github:              "pacastega/plonk-constraints"
 license:             GPL-3
 author:              "Pablo Castellanos"
 maintainer:          "p.cas.gar@gmail.com"
@@ -11,7 +12,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitLab at <https://gitlab.com/pacastega/plonk-constraints#readme>
+description:         Please see the README on GitHub at <https://github.com/pacastega/plonk-constraints#readme>
 
 dependencies:
 - base >= 4.7 && < 5
