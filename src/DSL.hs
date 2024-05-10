@@ -14,19 +14,19 @@ import Vec
 import qualified Data.Set as S
 
 -- The type variable ‘i’ should be understood as the set of wire indices
-data DSL p i =
-  WIRE  i                   | -- wire (i.e. variable)
-  CONST p                   | -- constant
-  ADD   (DSL p i) (DSL p i) | -- field addition
-  MUL   (DSL p i) (DSL p i) | -- field multiplication
-  DIV   (DSL p i) (DSL p i) | -- field division
+data DSL p i t where
+  WIRE  :: i -> DSL p i p                    -- wire (i.e. variable)
+  CONST :: p -> DSL p i p                    -- constant
+  ADD :: DSL p i p -> DSL p i p -> DSL p i p -- field addition
+  MUL :: DSL p i p -> DSL p i p -> DSL p i p -- field multiplication
+  DIV :: DSL p i p -> DSL p i p -> DSL p i p -- field division
 
-  NOT   (DSL p i)           | -- logical not
-  AND   (DSL p i) (DSL p i) | -- logical and
-  OR    (DSL p i) (DSL p i) | -- logical or
-  XOR   (DSL p i) (DSL p i) | -- logical xor
+  NOT :: DSL p i Bool -> DSL p i Bool                 -- logical not
+  AND :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical and
+  OR  :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical or
+  XOR :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical xor
 
-  ISZERO (DSL p i)            -- zero check
+  ISZERO :: DSL p i p -> DSL p i Bool -- zero check
 
 
 -- Labeled DSL
@@ -47,12 +47,12 @@ data LDSL p i =
 
 
 -- label each constructor with the index of the wire where its output will be
-{-@ label :: m:Nat1 -> DSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) @-}
-label :: Int -> DSL p Int -> LDSL p Int
+{-@ label :: m:Nat1 -> DSL p (Btwn 0 m) t -> LDSL p (Btwn 0 m) @-}
+label :: Int -> DSL p Int t -> LDSL p Int
 label m program = fst $ label' program (wires program) where
-  {-@ label' :: DSL p (Btwn 0 m) -> Vec (Btwn 0 m) ->
+  {-@ label' :: DSL p (Btwn 0 m) t -> Vec (Btwn 0 m) ->
                 (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
-  label' :: DSL p Int -> Vec Int -> (LDSL p Int, Vec Int)
+  label' :: DSL p Int t -> Vec Int -> (LDSL p Int, Vec Int)
   label' (WIRE i)  _         = (LWIRE i, singleton i)
   label' (CONST x) usedWires = (LCONST x i, singleton i) where
     i = freshIndex m usedWires
@@ -116,7 +116,7 @@ outputWire (LXOR _ _ i) = i
 outputWire (LISZERO _ _ i) = i
 
 
-wires :: DSL p i -> Vec i
+wires :: DSL p i t -> Vec i
 wires (WIRE n)    = singleton n
 wires (CONST _)   = Nil
 wires (ADD p1 p2) = wires p1 `append` wires p2

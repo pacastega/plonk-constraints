@@ -32,6 +32,7 @@ ghc-options:
 - -Wredundant-constraints
 - -Wno-unused-top-binds
 - -Wno-incomplete-patterns
+- -XGADTs
 
 library:
   source-dirs: src
