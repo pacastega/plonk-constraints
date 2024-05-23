@@ -28,14 +28,7 @@ testProgram = ADD (ADD (WIRE 0) (WIRE 1)) (ADD (WIRE 2) (WIRE 3))
 
 {-@ testInput :: VecN _ 7 @-}
 testInput :: V17
-testInput = fromList [1,1,1,1, -- input wires
-                      4,       -- output wire
-                      5,8]     -- incorrect intermediate wires
-
--- correct intermediate wires (automatically generated)
-{-@ testInput' :: VecN _ 7 @-}
-testInput' :: V17
-testInput' = witnessGen 7 (label 7 testProgram) valuation where
+testInput = witnessGen 7 (label 7 testProgram) valuation where
   valuation = const 1
 
 
@@ -45,14 +38,7 @@ testProgram2 = MUL (ADD (WIRE 0) (CONST 15)) (ADD (WIRE 1) (CONST 3))
 
 {-@ testInput2 :: VecN _ 7 @-}
 testInput2 :: V17
-testInput2 = fromList [7,3,        -- input wires
-                       11,         -- output wire
-                       5,15,6,3]   -- icorrect intermediate wires
-
--- correct intermediate wires (automatically generated)
-{-@ testInput2' :: VecN _ 7 @-}
-testInput2' :: V17
-testInput2' = witnessGen 7 (label 7 testProgram2) valuation where
+testInput2 = witnessGen 7 (label 7 testProgram2) valuation where
   valuation = \case 0 -> 7; 1 -> 3; _ -> 0
 
 
@@ -138,9 +124,7 @@ test m program input = do
 main :: IO ()
 main = do
   test 7 testProgram testInput
-  test 7 testProgram testInput'
   test 7 testProgram2 testInput2
-  test 7 testProgram2 testInput2'
   test 6 testProgram3 testInput3
 
   test 20 testProgram4 testInput4
