@@ -31,6 +31,12 @@ witnessGen m program valuation = toVector m $ update program valuation' where
       x1 = M.lookup (outputWire p1) valuation'
       x2 = M.lookup (outputWire p2) valuation'
       sum = (+) <$> x1 <*> x2
+    update (LSUB p1 p2 i) valuation = M.alter (updateWith sum) i valuation'
+      where
+      valuation' = update p2 $ update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation'
+      x2 = M.lookup (outputWire p2) valuation'
+      sum = (-) <$> x1 <*> x2
     update (LMUL p1 p2 i) valuation = M.alter (updateWith mult) i valuation'
       where
       valuation' = update p2 $ update p1 valuation

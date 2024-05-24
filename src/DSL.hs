@@ -18,6 +18,7 @@ data DSL p i t where
   WIRE  :: i -> DSL p i p                    -- wire (i.e. variable)
   CONST :: p -> DSL p i p                    -- constant
   ADD :: DSL p i p -> DSL p i p -> DSL p i p -- field addition
+  SUB :: DSL p i p -> DSL p i p -> DSL p i p -- field addition
   MUL :: DSL p i p -> DSL p i p -> DSL p i p -- field multiplication
   DIV :: DSL p i p -> DSL p i p -> DSL p i p -- field division
 
@@ -34,6 +35,7 @@ data LDSL p i =
   LWIRE  i                       |
   LCONST p                     i |
   LADD   (LDSL p i) (LDSL p i) i |
+  LSUB   (LDSL p i) (LDSL p i) i |
   LMUL   (LDSL p i) (LDSL p i) i |
   LDIV   (LDSL p i) (LDSL p i) i |
 
@@ -57,6 +59,11 @@ label m program = fst $ label' program (wires program) where
   label' (CONST x) usedWires = (LCONST x i, singleton i) where
     i = freshIndex m usedWires
   label' (ADD p1 p2) usedWires = (LADD p1' p2' i, is) where
+    i = freshIndex m usedWires
+    (p1', is1) = label' p1 (usedWires `append` singleton i)
+    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
+    is = singleton i `append` is1 `append` is2
+  label' (SUB p1 p2) usedWires = (LSUB p1' p2' i, is) where
     i = freshIndex m usedWires
     (p1', is1) = label' p1 (usedWires `append` singleton i)
     (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
@@ -105,6 +112,7 @@ outputWire :: LDSL p i -> i
 outputWire (LWIRE i)    = i
 outputWire (LCONST _ i) = i
 outputWire (LADD _ _ i) = i
+outputWire (LSUB _ _ i) = i
 outputWire (LMUL _ _ i) = i
 outputWire (LDIV _ _ i) = i
 
@@ -120,6 +128,7 @@ wires :: DSL p i t -> Vec i
 wires (WIRE n)    = singleton n
 wires (CONST _)   = Nil
 wires (ADD p1 p2) = wires p1 `append` wires p2
+wires (SUB p1 p2) = wires p1 `append` wires p2
 wires (MUL p1 p2) = wires p1 `append` wires p2
 wires (DIV p1 p2) = wires p1 `append` wires p2
 
@@ -136,6 +145,7 @@ lwires :: Ord i => LDSL p i -> S.Set i
 lwires (LWIRE n)      = S.singleton n
 lwires (LCONST _ _)   = S.empty
 lwires (LADD p1 p2 _) = lwires p1 `S.union` lwires p2
+lwires (LSUB p1 p2 _) = lwires p1 `S.union` lwires p2
 lwires (LMUL p1 p2 _) = lwires p1 `S.union` lwires p2
 lwires (LDIV p1 p2 _) = lwires p1 `S.union` lwires p2
 
@@ -168,6 +178,7 @@ nGates :: LDSL p i -> Int
 nGates (LWIRE _)      = 0
 nGates (LCONST _ _)   = 1
 nGates (LADD p1 p2 _) = 1 + nGates p1 + nGates p2
+nGates (LSUB p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LDIV p1 p2 _) = 1 + nGates p1 + nGates p2
 
@@ -193,6 +204,12 @@ compile m (LADD p1 p2 i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (addGate m [i1, i2, i]) c'
+compile m (LSUB p1 p2 i) = c
+  where
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
+    c' = append' c1 c2
+    c = append' (addGate m [i, i2, i1]) c'
 compile m (LMUL p1 p2 i) = c
   where
     c1 = compile m p1; c2 = compile m p2
@@ -247,6 +264,11 @@ semanticsAreCorrect m (LADD p1 p2 i) input = correct where
   correct2 = semanticsAreCorrect m p2 input
   i1 = outputWire p1; i2 = outputWire p2
   correct = correct1 && correct2 && input!i == input!i1 + input!i2
+semanticsAreCorrect m (LSUB p1 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 && input!i == input!i1 - input!i2
 semanticsAreCorrect m (LMUL p1 p2 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   correct2 = semanticsAreCorrect m p2 input
