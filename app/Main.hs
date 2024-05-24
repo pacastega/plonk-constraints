@@ -103,11 +103,8 @@ testInput6' = witnessGen 20 (label 20 testProgram6) valuation where
   valuation = \case 0 -> 3; _ -> 0
 
 
-green :: String -> String
-green s = "\ESC[32m" ++ s ++ "\ESC[0m"
-
-red :: String -> String
-red s = "\ESC[31m" ++ s ++ "\ESC[0m"
+cyan :: String -> String
+cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
 
 {-@ test :: m:{v:Int | v >= 3} -> DSL _ (Btwn 0 m) t -> VecN _ m -> IO () @-}
@@ -115,24 +112,12 @@ test :: Int -> DSL F17 Int t -> V17 -> IO ()
 test m program input = do
   let labeledProgram = label m program
   let circuit = compile m labeledProgram
+  let output = input ! outputWire labeledProgram
 
-  print labeledProgram
-  print circuit
-
-  let semantics_ = semanticsAreCorrect m labeledProgram input
-  let satisfies_ = satisfies (nGates labeledProgram) m input circuit
-
-  putStrLn $ "The given input is " ++ show input
-
-  putStrLn $ "The high-level semantics of the program are " ++
-    if semantics_ then green "correct" else red "incorrect"
-  putStrLn $ "The given input " ++
-    (if satisfies_ then green "satisfies" else red "doesn't satisfy") ++
-    " the compiled circuit"
-  putStrLn $ if semantics_ == satisfies_
-    then green "SUCCESS!" else red "FAILURE"
-
-  putStrLn $ "The final result is " ++ show (input ! outputWire labeledProgram)
+  putStrLn $ "Preprocessed program: " ++ show labeledProgram
+  putStrLn $ "Compiled circuit:     " ++ show circuit
+  putStrLn $ "Input:                " ++ show input
+  putStrLn $ "Final result: " ++ cyan (show output)
 
   putStrLn $ replicate 80 '='
 
