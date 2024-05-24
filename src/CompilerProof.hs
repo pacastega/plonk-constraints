@@ -19,7 +19,7 @@ import DSL
 
 import Language.Haskell.Liquid.ProofCombinators
 
-{-@ compileProof :: m:{v:Int | v >= 3} ->
+{-@ compileProof :: m:Nat ->
                     program:LDSL p (Btwn 0 m) ->
                     input:VecN p m ->
                     {semanticsAreCorrect m program input <=>

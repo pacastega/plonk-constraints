@@ -204,7 +204,7 @@ nGates (LISZERO p1 _ _) = 2 + nGates p1
 
 -- compile the program into a circuit including the output wire index
 {-@ reflect compile @-}
-{-@ compile :: m:{v:Int | v >= 3} ->
+{-@ compile :: m:Nat ->
                c:LDSL p (Btwn 0 m) ->
                Circuit p (nGates c) m @-}
 compile :: Fractional p => Int -> LDSL p Int -> Circuit p
@@ -265,7 +265,7 @@ compile m (LISZERO p1 w i) = c
 
 
 {-@ reflect semanticsAreCorrect @-}
-{-@ semanticsAreCorrect :: m:Nat1 ->
+{-@ semanticsAreCorrect :: m:Nat ->
                            LDSL p (Btwn 0 m) -> VecN p m ->
                            Bool @-}
 semanticsAreCorrect :: (Eq p, Fractional p) => Int -> LDSL p Int -> Vec p -> Bool

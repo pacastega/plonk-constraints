@@ -15,7 +15,7 @@ updateWith (Just x) Nothing  = Just x
 updateWith (Just x) (Just y) = if x == y then Just x else Nothing
 
 
-{-@ witnessGen :: m:Nat1 ->
+{-@ witnessGen :: m:Nat ->
                   program:LDSL p (Btwn 0 m) ->
                   ({v : Btwn 0 m | S.member v (lwires program)} -> p) ->
                   VecN p m @-}

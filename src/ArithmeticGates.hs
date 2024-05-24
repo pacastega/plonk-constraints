@@ -10,7 +10,7 @@ import Constraints
 import Vec
 
 {-@ reflect addGate @-}
-{-@ addGate :: m:{v:Int | v >= 3} ->
+{-@ addGate :: m:Nat ->
                ListN (Btwn 0 m) 3 ->
                Circuit p 1 m @-} -- 1 gate, m wires
 addGate :: Num p => Int -> [Int] -> Circuit p
@@ -27,7 +27,7 @@ verifyAdd x = sumIsCorrect == satisfies 1 3 x gate where
 
 
 {-@ reflect mulGate @-}
-{-@ mulGate :: m:{v:Int | v >= 3} ->
+{-@ mulGate :: m:Nat ->
                ListN (Btwn 0 m) 3 ->
                Circuit p 1 m @-} -- 1 gate, m wires
 mulGate :: Num p => Int -> [Int] -> Circuit p
@@ -44,7 +44,7 @@ verifyMul x = mulIsCorrect == satisfies 1 3 x gate where
 
 
 {-@ reflect isZeroGate @-}
-{-@ isZeroGate :: m:{v:Int | v >= 3} ->
+{-@ isZeroGate :: m:Nat ->
                   ListN (Btwn 0 m) 3 ->
                   Circuit p 2 m @-} -- 2 gate, m wires
 isZeroGate :: Num p => Int -> [Int] -> Circuit p

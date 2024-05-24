@@ -10,7 +10,7 @@ import Constraints
 import Vec
 
 {-@ reflect notGate @-}
-{-@ notGate :: m:{v:Int | v >= 2} ->
+{-@ notGate :: m:Nat ->
                ListN (Btwn 0 m) 2 ->
                Circuit p 2 m @-} -- 2 gates, m wires
 notGate :: Num p => Int -> [Int] -> Circuit p
@@ -31,7 +31,7 @@ verifyNot x = notIsCorrect == satisfies 2 3 x gate where
 
 
 {-@ reflect andGate @-}
-{-@ andGate :: m:{v:Int | v >= 3} ->
+{-@ andGate :: m:Nat ->
                ListN (Btwn 0 m) 3 ->
                Circuit p 3 m @-} -- 3 gates, m wires
 andGate :: Num p => Int -> [Int] -> Circuit p
@@ -56,7 +56,7 @@ verifyAnd x = andIsCorrect == satisfies 3 3 x gate where
 
 
 {-@ reflect orGate @-}
-{-@ orGate :: m:{v:Int | v >= 3} ->
+{-@ orGate :: m:Nat ->
               ListN (Btwn 0 m) 3 ->
               Circuit p 3 m @-} -- 3 gates, m wires
 orGate :: Num p => Int -> [Int] -> Circuit p
@@ -81,7 +81,7 @@ verifyOr x = orIsCorrect == satisfies 3 3 x gate where
 
 
 {-@ reflect xorGate @-}
-{-@ xorGate :: m:{v:Int | v >= 3} ->
+{-@ xorGate :: m:Nat ->
                ListN (Btwn 0 m) 3 ->
                Circuit p 3 m @-} -- 3 gates, m wires
 xorGate :: Num p => Int -> [Int] -> Circuit p

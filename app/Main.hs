@@ -51,8 +51,7 @@ cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
 
-{-@ test :: m:{v:Int | v >= 3} ->
-            DSL _ (Btwn 0 m) t -> (Btwn 0 m -> F17) -> IO () @-}
+{-@ test :: m:Nat1 -> DSL _ (Btwn 0 m) t -> (Btwn 0 m -> F17) -> IO () @-}
 test :: Int -> DSL F17 Int t -> (Int -> F17) -> IO ()
 test m program valuation = do
   let labeledProgram = label m program
