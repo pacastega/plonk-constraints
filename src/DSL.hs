@@ -27,6 +27,8 @@ data DSL p i t where
   OR  :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical or
   XOR :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical xor
 
+  EQL :: DSL p i t -> DSL p i t -> DSL p i Bool -- equality test
+
   ISZERO :: DSL p i p -> DSL p i Bool -- zero check
 
 
@@ -99,6 +101,14 @@ label m program = fst $ label' program (wires program) where
     (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
     is = singleton i `append` is1 `append` is2
 
+  label' (EQL p1 p2) usedWires = (LISZERO (LSUB p1' p2' j) w i, is) where
+    i = freshIndex m usedWires
+    j = freshIndex m (usedWires `append` singleton i)
+    w = freshIndex m (usedWires `append` fromList [i, j])
+    (p1', is1) = label' p1 (usedWires `append` fromList [i, j, w])
+    (p2', is2) = label' p2 (usedWires `append` fromList [i, j, w] `append` is1)
+    is = singleton i `append` is1 `append` is2
+
   label' (ISZERO p1) usedWires = (LISZERO p1' w i, is) where
     i = freshIndex m usedWires
     w = freshIndex m (usedWires `append` singleton i)
@@ -136,6 +146,8 @@ wires (NOT p1)    = wires p1
 wires (AND p1 p2) = wires p1 `append` wires p2
 wires (OR  p1 p2) = wires p1 `append` wires p2
 wires (XOR p1 p2) = wires p1 `append` wires p2
+
+wires (EQL p1 p2)  = wires p1 `append` wires p2
 
 wires (ISZERO p1) = wires p1
 

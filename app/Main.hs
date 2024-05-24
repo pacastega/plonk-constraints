@@ -87,6 +87,22 @@ testInput5' = witnessGen 20 (label 20 testProgram5) valuation where
   valuation = \case 0 -> 7; _ -> 8
 
 
+{-@ testProgram6 :: DSL _ (Btwn 0 20) _ @-}
+testProgram6 :: DSL F17 Int Bool
+testProgram6 = (WIRE 0 `ADD` CONST 2) `EQL` CONST 5
+
+{-@ testInput6 :: VecN _ 20 @-}
+testInput6 :: V17
+testInput6 = witnessGen 20 (label 20 testProgram6) valuation where
+  valuation = \case 0 -> 2; _ -> 0
+
+
+{-@ testInput6' :: VecN _ 20 @-}
+testInput6' :: V17
+testInput6' = witnessGen 20 (label 20 testProgram6) valuation where
+  valuation = \case 0 -> 3; _ -> 0
+
+
 green :: String -> String
 green s = "\ESC[32m" ++ s ++ "\ESC[0m"
 
@@ -133,3 +149,6 @@ main = do
 
   test 20 testProgram5 testInput5
   test 20 testProgram5 testInput5'
+
+  test 20 testProgram6 testInput6
+  test 20 testProgram6 testInput6'
