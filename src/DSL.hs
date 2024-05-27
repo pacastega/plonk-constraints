@@ -103,8 +103,8 @@ label m program = fst $ label' program (wires program) where
 
   label' (EQL p1 p2) usedWires = (LISZERO (LSUB p1' p2' j) w i, is) where
     i = freshIndex m usedWires
-    j = freshIndex m (usedWires `append` singleton i)
-    w = freshIndex m (usedWires `append` fromList [i, j])
+    w = freshIndex m (usedWires `append` singleton i)
+    j = freshIndex m (usedWires `append` fromList [i, w])
     (p1', is1) = label' p1 (usedWires `append` fromList [i, j, w])
     (p2', is2) = label' p2 (usedWires `append` fromList [i, j, w] `append` is1)
     is = singleton i `append` is1 `append` is2
