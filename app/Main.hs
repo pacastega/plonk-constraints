@@ -40,7 +40,7 @@ testProgram4 = ISZERO (WIRE 0) `OR` (NOT (ISZERO (WIRE 0)) `AND` (ISZERO (WIRE 1
 
 {-@ testProgram5 :: DSL _ (Btwn 0 20) _ @-}
 testProgram5 :: DSL F17 Int Bool
-testProgram5 = ISZERO ((CONST 7 `MUL` WIRE 0) `ADD` CONST (-1))
+testProgram5 = (CONST 7 `MUL` WIRE 0) `EQL` CONST 1
 
 {-@ testProgram6 :: DSL _ (Btwn 0 20) _ @-}
 testProgram6 :: DSL F17 Int Bool
