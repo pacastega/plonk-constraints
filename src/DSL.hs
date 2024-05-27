@@ -15,21 +15,25 @@ import qualified Data.Set as S
 
 -- The type variable ‘i’ should be understood as the set of wire indices
 data DSL p i t where
-  WIRE  :: i -> DSL p i p                    -- wire (i.e. variable)
-  CONST :: p -> DSL p i p                    -- constant
+  -- Basic operations
+  WIRE  :: i -> DSL p i p -- wire (i.e. variable)
+  CONST :: p -> DSL p i p -- constant
+
+  -- Arithmetic operations
   ADD :: DSL p i p -> DSL p i p -> DSL p i p -- field addition
-  SUB :: DSL p i p -> DSL p i p -> DSL p i p -- field addition
+  SUB :: DSL p i p -> DSL p i p -> DSL p i p -- field substraction
   MUL :: DSL p i p -> DSL p i p -> DSL p i p -- field multiplication
   DIV :: DSL p i p -> DSL p i p -> DSL p i p -- field division
 
+  -- Boolean operations
   NOT :: DSL p i Bool -> DSL p i Bool                 -- logical not
   AND :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical and
   OR  :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical or
   XOR :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical xor
 
-  EQL :: DSL p i t -> DSL p i t -> DSL p i Bool -- equality test
-
-  ISZERO :: DSL p i p -> DSL p i Bool -- zero check
+  -- Boolean constructors
+  EQL    :: DSL p i t -> DSL p i t -> DSL p i Bool -- equality check
+  ISZERO :: DSL p i p -> DSL p i Bool              -- zero check
 
 
 -- Labeled DSL
