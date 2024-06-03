@@ -54,7 +54,7 @@ cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 {-@ test :: m:Nat1 -> DSL _ (Btwn 0 m) t -> (Btwn 0 m -> F17) -> IO () @-}
 test :: Int -> DSL F17 Int t -> (Int -> F17) -> IO ()
 test m program valuation = do
-  let labeledProgram = label m program
+  let labeledProgram = label m (desugar program)
   let circuit = compile m labeledProgram
   let input = witnessGen m labeledProgram valuation
   let output = input ! outputWire labeledProgram

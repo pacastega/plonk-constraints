@@ -2,7 +2,6 @@
 {-@ LIQUID "--no-positivity-check" @-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-{-@ LIQUID "--no-termination" @-}
 module DSL where
 
 import Constraints
@@ -35,8 +34,8 @@ data DSL p i t where
   XOR :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical xor
 
   -- Boolean constructors
-  EQL    :: DSL p i p -> DSL p i p -> DSL p i Bool -- equality check
-  ISZERO :: DSL p i p -> DSL p i Bool              -- zero check
+  EQL    :: DSL p i p -> DSL p i p -> DSL p i t -- equality check
+  ISZERO :: DSL p i p -> DSL p i t              -- zero check
 
   -- -- Functional constructs: iterators
   -- ITER :: { start :: Int
@@ -46,12 +45,14 @@ data DSL p i t where
   --      -> DSL p i t
 
   -- Functional constructs: iterators
-  ITER :: { start :: Int
-          , end   :: Int
+  ITER :: { bounds :: Bound
           , body  :: Int -> DSL p i t -> DSL p i t
           , init  :: DSL p i t }
        -> DSL p i t
 
+
+{-@ data Bound = B {s::Int, e::{v:Int | s <= v}} @-}
+data Bound = B Int Int
 
 
 {-@ measure desugared @-}
@@ -74,21 +75,11 @@ desugared (XOR p1 p2) = desugared p1 && desugared p2
 
 desugared (ISZERO p)  = desugared p
 
+{-@ measure getSize @-}
+{-@ getSize :: v:{DSL i p t | isIter v} -> Nat @-}
+getSize :: DSL p i t -> Int
+getSize (ITER (B s e) _ _) = e - s
 
-{-@ inline getEnd @-}
-{-@ getEnd :: p:{DSL p i t | isIter p} -> Int @-}
-getEnd :: DSL p i t -> Int
-getEnd (ITER s e f p) = e
-
-{-@ inline getStart @-}
-{-@ getStart :: p:{DSL p i t | isIter p} -> Int @-}
-getStart :: DSL p i t -> Int
-getStart (ITER s e f p) = s
-
--- {-@ inline getVals @-}
--- {-@ getVals :: p:{DSL p i t | isIter p} -> [Int] @-}
--- getVals :: DSL p i t -> [Int]
--- getVals (ITER xs f p) = xs
 
 {-@ measure isIter @-}
 isIter :: DSL i p t -> Bool
@@ -106,11 +97,11 @@ isIter _         = False
 
 {-@ unfoldIter :: p:{DSL p i t | isIter p} ->
                   {v:DSL p i t | true}
-                  / [(getEnd p) - (getStart p)] @-}
+                  / [getSize p] @-}
 unfoldIter :: DSL p i t -> DSL p i t
-unfoldIter (ITER s e f a)
-  | s > e     = a
-  | otherwise = f s (unfoldIter (ITER (s+1) e f a))
+unfoldIter (ITER (B s e) f a)
+  | s >= e    = a
+  | otherwise = f s (unfoldIter (ITER (B (s+1) e) f a))
 
 
 -- {-@ unfoldIter :: p:{DSL p i t | isIter p} ->
@@ -121,13 +112,20 @@ unfoldIter (ITER s e f a)
 -- unfoldIter (ITER (x:xs) f a) = f x (unfoldIter (ITER xs f a))
 
 
+{-@ assert :: b:{v:Bool | v} -> x:a -> {v:a | v == x && b} @-}
+assert :: Bool -> a -> a
+assert _ x = x
+
+
+{-@ ignore desugar @-}
 {-@ desugar :: DSL p i t -> {v:DSL p i t | desugared v} @-}
 desugar :: DSL p i t -> DSL p i t
 -- desugar (EQL p1 p2) = undefined
-desugar (EQL p1 p2) = ISZERO (SUB (desugar p1) (desugar p2))
+desugar (EQL p1 p2) = assert (desugared $ ISZERO (SUB (desugar p1) (desugar p2)))
+                             (ISZERO (SUB (desugar p1) (desugar p2)))
 -- desugar (ITER s e f a) = undefined
 -- desugar (ITER xs f a) = undefined
-desugar p@(ITER s e f a) = desugar (unfoldIter p)
+desugar p@(ITER b f a) = desugar (unfoldIter p)
 
 desugar (ADD p1 p2) = ADD (desugar p1) (desugar p2)
 desugar (SUB p1 p2) = SUB (desugar p1) (desugar p2)
