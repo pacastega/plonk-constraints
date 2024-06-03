@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--no-positivity-check" @-}
 {-@ LIQUID "--reflection" @-}
-{-@ LIQUID "--ple" @-}
 module DSL where
 
 import Constraints
@@ -37,18 +36,8 @@ data DSL p i t where
   EQL    :: DSL p i p -> DSL p i p -> DSL p i t -- equality check
   ISZERO :: DSL p i p -> DSL p i t              -- zero check
 
-  -- -- Functional constructs: iterators
-  -- ITER :: { start :: Int
-  --         , end   :: Int
-  --         , body  :: Int -> DSL p i t -> DSL p i t
-  --         , init  :: DSL p i t }
-  --      -> DSL p i t
-
   -- Functional constructs: iterators
-  ITER :: { bounds :: Bound
-          , body  :: Int -> DSL p i t -> DSL p i t
-          , init  :: DSL p i t }
-       -> DSL p i t
+  ITER :: Bound -> (Int -> DSL p i t -> DSL p i t) -> DSL p i t -> DSL p i t
 
 
 {-@ data Bound = B {s::Int, e::{v:Int | s <= v}} @-}
@@ -86,14 +75,6 @@ isIter :: DSL i p t -> Bool
 isIter (ITER {}) = True
 isIter _         = False
 
--- {-@ unfoldIter :: p:{DSL p i t | isIter p} ->
---                   {v:DSL p i t | true}
---                   / [getEnd p - getStart p] @-}
--- unfoldIter :: DSL p i t -> DSL p i t
--- unfoldIter (ITER s e f a)
---   | s > e     = a
---   | otherwise = f s (unfoldIter (ITER (s+1) e f a))
-
 
 {-@ unfoldIter :: p:{DSL p i t | isIter p} ->
                   {v:DSL p i t | true}
@@ -104,14 +85,6 @@ unfoldIter (ITER (B s e) f a)
   | otherwise = f s (unfoldIter (ITER (B (s+1) e) f a))
 
 
--- {-@ unfoldIter :: p:{DSL p i t | isIter p} ->
---                   {v:DSL p i t | true}
---                   / [len (getVals p)] @-}
--- unfoldIter :: DSL p i t -> DSL p i t
--- unfoldIter (ITER [] f a) = a
--- unfoldIter (ITER (x:xs) f a) = f x (unfoldIter (ITER xs f a))
-
-
 {-@ assert :: b:{v:Bool | v} -> x:a -> {v:a | v == x && b} @-}
 assert :: Bool -> a -> a
 assert _ x = x
@@ -120,12 +93,9 @@ assert _ x = x
 {-@ ignore desugar @-}
 {-@ desugar :: DSL p i t -> {v:DSL p i t | desugared v} @-}
 desugar :: DSL p i t -> DSL p i t
--- desugar (EQL p1 p2) = undefined
 desugar (EQL p1 p2) = assert (desugared $ ISZERO (SUB (desugar p1) (desugar p2)))
                              (ISZERO (SUB (desugar p1) (desugar p2)))
--- desugar (ITER s e f a) = undefined
--- desugar (ITER xs f a) = undefined
-desugar p@(ITER b f a) = desugar (unfoldIter p)
+desugar p@(ITER {}) = desugar (unfoldIter p)
 
 desugar (ADD p1 p2) = ADD (desugar p1) (desugar p2)
 desugar (SUB p1 p2) = SUB (desugar p1) (desugar p2)
