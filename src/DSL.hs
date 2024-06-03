@@ -1,5 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-@ LIQUID "--no-positivity-check" @-}
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
+{-@ LIQUID "--no-termination" @-}
 module DSL where
 
 import Constraints
@@ -32,8 +35,113 @@ data DSL p i t where
   XOR :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical xor
 
   -- Boolean constructors
-  EQL    :: DSL p i t -> DSL p i t -> DSL p i Bool -- equality check
+  EQL    :: DSL p i p -> DSL p i p -> DSL p i Bool -- equality check
   ISZERO :: DSL p i p -> DSL p i Bool              -- zero check
+
+  -- -- Functional constructs: iterators
+  -- ITER :: { start :: Int
+  --         , end   :: Int
+  --         , body  :: Int -> DSL p i t -> DSL p i t
+  --         , init  :: DSL p i t }
+  --      -> DSL p i t
+
+  -- Functional constructs: iterators
+  ITER :: { start :: Int
+          , end   :: Int
+          , body  :: Int -> DSL p i t -> DSL p i t
+          , init  :: DSL p i t }
+       -> DSL p i t
+
+
+
+{-@ measure desugared @-}
+desugared :: DSL i p t -> Bool
+desugared (EQL {})  = False
+desugared (ITER {}) = False
+
+desugared (WIRE _)  = True
+desugared (CONST _) = True
+
+desugared (ADD p1 p2) = desugared p1 && desugared p2
+desugared (SUB p1 p2) = desugared p1 && desugared p2
+desugared (MUL p1 p2) = desugared p1 && desugared p2
+desugared (DIV p1 p2) = desugared p1 && desugared p2
+
+desugared (NOT p)     = desugared p
+desugared (AND p1 p2) = desugared p1 && desugared p2
+desugared (OR  p1 p2) = desugared p1 && desugared p2
+desugared (XOR p1 p2) = desugared p1 && desugared p2
+
+desugared (ISZERO p)  = desugared p
+
+
+{-@ inline getEnd @-}
+{-@ getEnd :: p:{DSL p i t | isIter p} -> Int @-}
+getEnd :: DSL p i t -> Int
+getEnd (ITER s e f p) = e
+
+{-@ inline getStart @-}
+{-@ getStart :: p:{DSL p i t | isIter p} -> Int @-}
+getStart :: DSL p i t -> Int
+getStart (ITER s e f p) = s
+
+-- {-@ inline getVals @-}
+-- {-@ getVals :: p:{DSL p i t | isIter p} -> [Int] @-}
+-- getVals :: DSL p i t -> [Int]
+-- getVals (ITER xs f p) = xs
+
+{-@ measure isIter @-}
+isIter :: DSL i p t -> Bool
+isIter (ITER {}) = True
+isIter _         = False
+
+-- {-@ unfoldIter :: p:{DSL p i t | isIter p} ->
+--                   {v:DSL p i t | true}
+--                   / [getEnd p - getStart p] @-}
+-- unfoldIter :: DSL p i t -> DSL p i t
+-- unfoldIter (ITER s e f a)
+--   | s > e     = a
+--   | otherwise = f s (unfoldIter (ITER (s+1) e f a))
+
+
+{-@ unfoldIter :: p:{DSL p i t | isIter p} ->
+                  {v:DSL p i t | true}
+                  / [(getEnd p) - (getStart p)] @-}
+unfoldIter :: DSL p i t -> DSL p i t
+unfoldIter (ITER s e f a)
+  | s > e     = a
+  | otherwise = f s (unfoldIter (ITER (s+1) e f a))
+
+
+-- {-@ unfoldIter :: p:{DSL p i t | isIter p} ->
+--                   {v:DSL p i t | true}
+--                   / [len (getVals p)] @-}
+-- unfoldIter :: DSL p i t -> DSL p i t
+-- unfoldIter (ITER [] f a) = a
+-- unfoldIter (ITER (x:xs) f a) = f x (unfoldIter (ITER xs f a))
+
+
+{-@ desugar :: DSL p i t -> {v:DSL p i t | desugared v} @-}
+desugar :: DSL p i t -> DSL p i t
+-- desugar (EQL p1 p2) = undefined
+desugar (EQL p1 p2) = ISZERO (SUB (desugar p1) (desugar p2))
+-- desugar (ITER s e f a) = undefined
+-- desugar (ITER xs f a) = undefined
+desugar p@(ITER s e f a) = desugar (unfoldIter p)
+
+desugar (ADD p1 p2) = ADD (desugar p1) (desugar p2)
+desugar (SUB p1 p2) = SUB (desugar p1) (desugar p2)
+desugar (MUL p1 p2) = MUL (desugar p1) (desugar p2)
+desugar (DIV p1 p2) = DIV (desugar p1) (desugar p2)
+
+desugar (NOT p)     = NOT (desugar p)
+desugar (AND p1 p2) = AND (desugar p1) (desugar p2)
+desugar (OR  p1 p2) = OR  (desugar p1) (desugar p2)
+desugar (XOR p1 p2) = XOR (desugar p1) (desugar p2)
+
+desugar (ISZERO p)  = ISZERO (desugar p)
+
+desugar p = p
 
 
 -- Labeled DSL
@@ -55,10 +163,11 @@ data LDSL p i =
 
 
 -- label each constructor with the index of the wire where its output will be
-{-@ label :: m:Nat1 -> DSL p (Btwn 0 m) t -> LDSL p (Btwn 0 m) @-}
+{-@ label :: m:Nat1 -> {v:DSL p (Btwn 0 m) t | desugared v} ->
+             LDSL p (Btwn 0 m) @-}
 label :: Int -> DSL p Int t -> LDSL p Int
 label m program = fst $ label' program (wires program) where
-  {-@ label' :: DSL p (Btwn 0 m) t -> Vec (Btwn 0 m) ->
+  {-@ label' :: {v:DSL p (Btwn 0 m) t | desugared v} -> Vec (Btwn 0 m) ->
                 (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
   label' :: DSL p Int t -> Vec Int -> (LDSL p Int, Vec Int)
   label' (WIRE i)  _         = (LWIRE i, singleton i)
@@ -105,14 +214,6 @@ label m program = fst $ label' program (wires program) where
     (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
     is = singleton i `append` is1 `append` is2
 
-  label' (EQL p1 p2) usedWires = (LISZERO (LSUB p1' p2' j) w i, is) where
-    i = freshIndex m usedWires
-    w = freshIndex m (usedWires `append` singleton i)
-    j = freshIndex m (usedWires `append` fromList [i, w])
-    (p1', is1) = label' p1 (usedWires `append` fromList [i, j, w])
-    (p2', is2) = label' p2 (usedWires `append` fromList [i, j, w] `append` is1)
-    is = singleton i `append` is1 `append` is2
-
   label' (ISZERO p1) usedWires = (LISZERO p1' w i, is) where
     i = freshIndex m usedWires
     w = freshIndex m (usedWires `append` singleton i)
@@ -138,6 +239,7 @@ outputWire (LXOR _ _ i) = i
 outputWire (LISZERO _ _ i) = i
 
 
+{-@ wires :: {v:DSL p i t | desugared v} -> Vec i @-}
 wires :: DSL p i t -> Vec i
 wires (WIRE n)    = singleton n
 wires (CONST _)   = Nil
