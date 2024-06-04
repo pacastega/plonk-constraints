@@ -82,7 +82,7 @@ isIter _         = False
 unfoldIter :: DSL p i t -> DSL p i t
 unfoldIter (ITER (B s e) f a)
   | s >= e    = a
-  | otherwise = f s (unfoldIter (ITER (B (s+1) e) f a))
+  | otherwise = unfoldIter (ITER (B (s+1) e) f (f s a))
 
 
 {-@ assert :: b:{v:Bool | v} -> x:a -> {v:a | v == x && b} @-}
