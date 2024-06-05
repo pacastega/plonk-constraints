@@ -18,6 +18,6 @@ append' :: [a] -> [a] -> [a]
 append' [] ys     = ys
 append' (x:xs) ys = x : append' xs ys
 
-{-@ inline boolean @-}
+{-@ reflect boolean @-}
 boolean :: (Num p, Eq p) => p -> Bool
 boolean x = x == 0 || x == 1
