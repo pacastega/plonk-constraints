@@ -12,15 +12,23 @@ extra-deps:
   - smtlib-backends-0.3
   - smtlib-backends-process-0.3
   - git: https://github.com/ucsd-progsys/liquidhaskell
-    commit: 2575ff5776ece057d8f51c73855923966274758e # 2024-06-04
+    commit: a6cdb9517db5166de80657ae08c6b9f3a0586b71 # 2024-06-04
     subdirs:
       - .
       - liquidhaskell-boot
       - liquid-prelude
       - liquid-vector
   - git: https://github.com/ucsd-progsys/liquid-fixpoint
-    commit: 7cd250dd7e7cf032bba4245547d960f718f116df # 2024-05-30
+    commit: ea23657696b16fed5042fc5db3a9d0f55aedf885 # 2024-05-30
   - finite-field-0.10.0
+
+#  - /Users/niki.vazou/liquidtypes/liquidhaskell
+#  - /Users/niki.vazou/liquidtypes/liquidhaskell/liquid-prelude
+#  - /Users/niki.vazou/liquidtypes/liquidhaskell/liquid-vector
+#  - /Users/niki.vazou/liquidtypes/liquidhaskell/liquidhaskell-boot
+#  - /Users/niki.vazou/liquidtypes/liquidhaskell/liquid-fixpoint
+
+
 
 allow-newer: true
 
