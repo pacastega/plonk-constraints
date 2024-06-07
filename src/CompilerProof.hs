@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-@ infix ! @-}
 {-# OPTIONS -Wno-unused-matches -Wno-unused-imports
             -Wno-redundant-constraints #-}

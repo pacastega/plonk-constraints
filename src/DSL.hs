@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--no-positivity-check" @-}
 {-@ LIQUID "--reflection" @-}

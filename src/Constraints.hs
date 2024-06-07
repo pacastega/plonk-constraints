@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-# OPTIONS -Wno-incomplete-uni-patterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--reflection" @-}

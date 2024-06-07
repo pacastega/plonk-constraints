@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-@ LIQUID "--reflection" @-}
 {-# LANGUAGE FlexibleContexts #-}
 module Interpolation (interpolate, interpolateRoots) where

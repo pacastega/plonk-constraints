@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-# OPTIONS -Wno-name-shadowing #-}
 {-@ LIQUID "--reflection" @-}
 module WitnessGeneration (witnessGen) where

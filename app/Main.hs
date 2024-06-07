@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-@ embed GHC.Num.Natural.Natural as int @-}
 {-@ LIQUID "--reflection" @-}
 {-# OPTIONS -Wno-unused-imports #-}
