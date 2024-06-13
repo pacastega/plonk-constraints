@@ -72,66 +72,28 @@ getSize :: DSL p i t -> Int
 getSize (ITER (B s e) _ _) = e - s
 
 
-{-@ measure dslSize @-}
-dslSize :: DSL p i t -> Int
-{-@ dslSize :: DSL p i t -> {v:Int | 0 < v} @-}
-dslSize (WIRE _)    = 1
-dslSize (CONST _)   = 1
-dslSize (ADD p1 p2) = 1 + dslSize p1 + dslSize p2
-dslSize (SUB p1 p2) = 1 + dslSize p1 + dslSize p2
-dslSize (MUL p1 p2) = 1 + dslSize p1 + dslSize p2
-dslSize (DIV p1 p2) = 1 + dslSize p1 + dslSize p2
-dslSize (NOT p)     = 1 + dslSize p
-dslSize (AND p1 p2) = 1 + dslSize p1 + dslSize p2
-dslSize (OR  p1 p2) = 1 + dslSize p1 + dslSize p2
-dslSize (XOR p1 p2) = 1 + dslSize p1 + dslSize p2
-dslSize (EQL p1 p2) = 1 + dslSize p1 + dslSize p2
-dslSize (ISZERO p)  = 1 + dslSize p
-dslSize p@(ITER (B s e) f a)   = 1 + ( (e - s + 1) `times` dslSize (f s a)) + dslSize a
---   | s >= e    = 1 + dslSize a
---   | otherwise = 1 +  dslSize (ITER (B (s+1) e) f (f s a))
-  
-
-{-@ reflect times @-}
-{-@ times :: {v:Int | 0 < v} -> {v:Int | 0 < v} -> {v:Int | 0 < v} @-}
-times :: Int -> Int -> Int 
-times x y = x * y   
-
-
-
-
-
 {-@ measure isIter @-}
 isIter :: DSL i p t -> Bool
 isIter (ITER {}) = True
 isIter _         = False
 
 
-
-
-
-{-@ unfoldIter :: p:{DSL p i t | isIter p} ->
-                  {v:DSL p i t | dslSize v < dslSize p }
+{-@ unfoldIter :: p:{DSL p i t | isIter p} -> DSL p i t
                   / [getSize p] @-}
 unfoldIter :: DSL p i t -> DSL p i t
 unfoldIter (ITER (B s e) f a)
-  | s == e    =  assert ((e - s + 1) `times` dslSize (f s a) > 0 ) a  
+  | s == e    = a
   | otherwise = unfoldIter (ITER (B (s+1) e) f (f s a))
 
 
--- dslSize v < dslSize p
-
-{-@ assert :: b:{v:Bool | v} -> x:a -> {v:a | v == x && b} @-}
-assert :: Bool -> a -> a
-assert _ x = x
-
-
-{- ignore desugar @-}
-{-@ desugar :: p:DSL p i t -> {v:DSL p i t | desugared v}  / [dslSize p]@-}
+{-@ lazy desugar @-}
+{-@ desugar :: p:DSL p i t -> {v:DSL p i t | desugared v} @-}
 desugar :: DSL p i t -> DSL p i t
-desugar (EQL p1 p2) = -- assert (desugared (ISZERO (SUB (desugar p1) (desugar p2))))
-                             (ISZERO (SUB (desugar p1) (desugar p2)))
-desugar (ITER b f p) =  desugar (unfoldIter (ITER b f p))  --  unfoldIter (ITER b (\i d -> desugar (f i d)) (desugar p))
+-- syntactic sugar:
+desugar (EQL p1 p2) = ISZERO (SUB (desugar p1) (desugar p2))
+desugar p@(ITER {}) = desugar (unfoldIter p)
+
+-- core language instructions:
 desugar (ADD p1 p2) = ADD (desugar p1) (desugar p2)
 desugar (SUB p1 p2) = SUB (desugar p1) (desugar p2)
 desugar (MUL p1 p2) = MUL (desugar p1) (desugar p2)
@@ -144,8 +106,8 @@ desugar (XOR p1 p2) = XOR (desugar p1) (desugar p2)
 
 desugar (ISZERO p)  = ISZERO (desugar p)
 
-desugar (WIRE i) = WIRE i 
-desugar (CONST x) = CONST x
+desugar (WIRE i)    = WIRE i
+desugar (CONST x)   = CONST x
 
 
 -- Labeled DSL
