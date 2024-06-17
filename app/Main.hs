@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-@ embed GHC.Num.Natural.Natural as int @-}
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
 {-# OPTIONS -Wno-unused-imports #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
@@ -20,7 +21,7 @@ import DSL
 import WitnessGeneration
 
 type F17 = PrimeField 17
-type V17 = Vec F17
+type F p = PrimeField p
 
 
 {-@ testProgram :: v:DSL _ (Btwn 0 7) _ @-}
@@ -46,6 +47,35 @@ testProgram5 = (CONST 7 `MUL` WIRE 0) `EQL` CONST 1
 {-@ testProgram6 :: DSL _ (Btwn 0 20) _ @-}
 testProgram6 :: DSL F17 Int Bool
 testProgram6 = (WIRE 0 `ADD` CONST 2) `EQL` CONST 5
+
+{-@ testProgram7 :: DSL _ (Btwn 0 20) _ @-}
+testProgram7 :: DSL (F 2131) Int (F 2131)
+testProgram7 = ITER (B 0 5) body (WIRE 1) where
+  {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
+  body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
+  body = (\i p -> MUL p (WIRE 0))
+
+{-@ testProgram8 :: DSL _ (Btwn 0 20) _ @-}
+testProgram8 :: DSL (F 2131) Int (F 2131)
+testProgram8 = ITER (B 2 6) body (CONST 1) where
+  {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
+  body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
+  body = \i p -> MUL p (CONST $ fromIntegral i)
+
+{-@ testProgram9 :: DSL _ (Btwn 0 20) _ @-}
+testProgram9 :: DSL (F 2131) Int (F 2131)
+testProgram9 = ITER (B 0 6) body (CONST 0) where
+  {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
+  body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
+  body = \i p -> ADD p (CONST $ fromIntegral i)
+
+{-@ testProgram10 :: Btwn 1 39 -> DSL _ (Btwn 0 40) _ @-}
+testProgram10 :: Int -> DSL (F 2131) Int (F 2131)
+testProgram10 nIters = ITER (B 1 (nIters+1)) body (CONST 0) where
+  body = \i p -> WIRE i `ADD` (p `MUL` WIRE 0)
+  {-@ body :: {v:Int | 1 <= v && v < 40} ->
+              DSL _ (Btwn 0 40) _ -> DSL _ (Btwn 0 40) _ @-}
+  body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
 
 
 cyan :: String -> String
@@ -84,3 +114,16 @@ main = do
 
   test 20 testProgram6 (\case 0 -> 2; _ -> 0)
   test 20 testProgram6 (\case 0 -> 3; _ -> 0)
+
+  test 20 testProgram7 (\case 0 -> 2; 1 -> 1; _ -> 0)
+  test 20 testProgram7 (\case 0 -> 4; 1 -> 2; _ -> 0)
+
+  test 20 testProgram8 (const 0)
+  test 20 testProgram9 (const 0)
+
+  test 40 (testProgram10 8) (\i -> if i == 0 then 2
+                                   else if i > 8 then 0
+                                   else [1,1,1,0,1,1,0,0] !! (i-1))
+  test 40 (testProgram10 2) (\i -> if i == 0 then 16
+                                   else if i > 2 then 0
+                                   else [14, 12] !! (i-1))
