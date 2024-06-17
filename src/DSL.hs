@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-@ LIQUID "--ple" @-}
 {-@ LIQUID "--no-positivity-check" @-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--max-case-expand=12" @-}
@@ -42,8 +43,35 @@ data DSL p i t where
   ITER :: Bound -> (Int -> DSL p i t -> DSL p i t) -> DSL p i t -> DSL p i t
 
 
+{-@
+data DSL p i t where
+  WIRE  :: i -> DSL p i p
+  CONST :: p -> DSL p i p
+
+  ADD :: DSL p i p -> DSL p i p -> DSL p i p
+  SUB :: DSL p i p -> DSL p i p -> DSL p i p
+  MUL :: DSL p i p -> DSL p i p -> DSL p i p
+  DIV :: DSL p i p -> DSL p i p -> DSL p i p
+
+  NOT :: DSL p i Bool -> DSL p i Bool
+  AND :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool
+  OR  :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool
+  XOR :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool
+
+  EQL    :: DSL p i p -> DSL p i p -> DSL p i t
+  ISZERO :: DSL p i p -> DSL p i t
+
+  ITER :: b:Bound -> ({v:Int | within b v} -> DSL p i t -> DSL p i t) ->
+          DSL p i t -> DSL p i t
+@-}
+
+
 {-@ data Bound = B {s::Int, e::{v:Int | s <= v}} @-}
 data Bound = B Int Int
+
+{-@ reflect within @-}
+within :: Bound -> Int -> Bool
+within (B s e) x = s <= x && x <= e
 
 
 {-@ measure desugared @-}
