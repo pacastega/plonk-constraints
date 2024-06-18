@@ -50,28 +50,28 @@ testProgram6 = (WIRE 0 `ADD` CONST 2) `EQL` CONST 5
 
 {-@ testProgram7 :: DSL _ (Btwn 0 20) _ @-}
 testProgram7 :: DSL (F 2131) Int (F 2131)
-testProgram7 = ITER (B 0 5) body (WIRE 1) where
+testProgram7 = ITER (B 1 5) body (WIRE 1) where
   {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
   body = (\i p -> MUL p (WIRE 0))
 
 {-@ testProgram8 :: DSL _ (Btwn 0 20) _ @-}
 testProgram8 :: DSL (F 2131) Int (F 2131)
-testProgram8 = ITER (B 2 6) body (CONST 1) where
+testProgram8 = ITER (B 2 5) body (CONST 1) where
   {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
   body = \i p -> MUL p (CONST $ fromIntegral i)
 
 {-@ testProgram9 :: DSL _ (Btwn 0 20) _ @-}
 testProgram9 :: DSL (F 2131) Int (F 2131)
-testProgram9 = ITER (B 0 6) body (CONST 0) where
+testProgram9 = ITER (B 1 6) body (CONST 0) where
   {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
   body = \i p -> ADD p (CONST $ fromIntegral i)
 
 {-@ testProgram10 :: Btwn 1 39 -> DSL _ (Btwn 0 40) _ @-}
 testProgram10 :: Int -> DSL (F 2131) Int (F 2131)
-testProgram10 nIters = ITER (B 1 (nIters+1)) body (CONST 0) where
+testProgram10 nIters = ITER (B 1 nIters) body (CONST 0) where
   body = \i p -> WIRE i `ADD` (p `MUL` WIRE 0)
   {-@ body :: {v:Int | 1 <= v && v < 40} ->
               DSL _ (Btwn 0 40) _ -> DSL _ (Btwn 0 40) _ @-}

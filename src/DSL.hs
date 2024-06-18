@@ -110,7 +110,7 @@ isIter _         = False
                   / [getSize p] @-}
 unfoldIter :: DSL p i t -> DSL p i t
 unfoldIter (ITER (B s e) f a)
-  | s == e    = a
+  | s == e    = f s a
   | otherwise = unfoldIter (ITER (B (s+1) e) f (f s a))
 
 
