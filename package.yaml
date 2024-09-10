@@ -39,7 +39,6 @@ library:
   source-dirs: src
   ghc-options:
     - -fplugin=LiquidHaskell
-    # - -fplugin-opt=LiquidHaskell:--smtsolver=cvc4
   dependencies:
     - liquidhaskell
     - liquidhaskell-boot
@@ -55,7 +54,6 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -fplugin=LiquidHaskell
-    # - -fplugin-opt=LiquidHaskell:--smtsolver=cvc4
     dependencies:
     - plonk-constraints
     - liquidhaskell
