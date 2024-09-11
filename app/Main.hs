@@ -131,9 +131,9 @@ main = do
 
   test 40 (testProgram10 8) (\i -> if i == 0 then 2
                                    else if i > 8 then 0
-                                   else [1,1,1,0,1,1,0,0] !! (i-1))
+                                   else [1,1,1,1,1,0,0,0] !! (i-1))
   test 40 (testProgram10 2) (\i -> if i == 0 then 16
                                    else if i > 2 then 0
-                                   else [14, 12] !! (i-1))
+                                   else [15, 8] !! (i-1))
 
   test 20 testProgram11 (const 627)
