@@ -79,7 +79,7 @@ testProgram10 nIters = ITER (B 1 nIters) body (CONST 0) where
 
 
 {-@ testProgram11 :: DSL _ (Btwn 0 20) _ @-}
-testProgram11 :: DSL (F 2131) Int (F 2131)
+testProgram11 :: DSL (F 2131) Int Bool
 testProgram11 = (ITER (B 2 4) body (WIRE 0)) `EQL` (CONST 42) where
   body = \i p -> MUL p (WIRE 0)
   {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}

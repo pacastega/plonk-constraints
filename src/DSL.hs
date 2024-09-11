@@ -36,8 +36,8 @@ data DSL p i t where
   XOR :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical xor
 
   -- Boolean constructors
-  EQL    :: DSL p i p -> DSL p i p -> DSL p i t -- equality check
-  ISZERO :: DSL p i p -> DSL p i t              -- zero check
+  EQL    :: DSL p i p -> DSL p i p -> DSL p i Bool -- equality check
+  ISZERO :: DSL p i p -> DSL p i Bool              -- zero check
 
   -- Functional constructs: iterators
   ITER :: Bound -> (Int -> DSL p i t -> DSL p i t) -> DSL p i t -> DSL p i t
@@ -58,8 +58,8 @@ data DSL p i t where
   OR  :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool
   XOR :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool
 
-  EQL    :: DSL p i p -> DSL p i p -> DSL p i t
-  ISZERO :: DSL p i p -> DSL p i t
+  EQL    :: DSL p i p -> DSL p i p -> DSL p i Bool
+  ISZERO :: DSL p i p -> DSL p i Bool
 
   ITER :: b:Bound -> ({v:Int | within b v} -> DSL p i t -> DSL p i t) ->
           DSL p i t -> DSL p i t
