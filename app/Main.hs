@@ -95,6 +95,13 @@ testProgram11 = (ITER (B 2 4) body (WIRE 0)) `EQL` (CONST 42) where
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
 
 
+{-@ testProgram12 :: DSL _ (Btwn 0 20) _ @-}
+testProgram12 :: DSL (F 2131) Int [F 2131]
+testProgram12 = (CONST 42)             `CONS`
+                (CONST 4 `SUB` WIRE 0) `CONS`
+                (WIRE 1 `ADD` CONST 5) `CONS` NIL
+
+
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
@@ -146,3 +153,5 @@ main = do
                                    else [15, 8] !! (i-1))
 
   test 20 testProgram11 (const 627)
+
+  test 20 testProgram12 (\i -> if i < 2 then [1,2] !! i else 0)

@@ -46,6 +46,8 @@ data DSL p i t where
   NIL  :: DSL p i [t]
   CONS :: DSL p i t -> DSL p i [t] -> DSL p i [t]
 
+infixr 5 `CONS`
+
 
 {-@
 data DSL p i t where
