@@ -270,7 +270,7 @@ label m programs = fst $ labelAll programs (fromList $ concatMap wires programs)
               ([LDSL p (Btwn 0 m)], Vec (Btwn 0 m)) @-}
     go :: ([LDSL p Int], Vec Int) -> DSL' p Int -> ([LDSL p Int], Vec Int)
     go (acc, ws) program = let (labeledProgram, ws') = label' program ws
-                           in (labeledProgram:acc, ws')
+                           in (acc ++ [labeledProgram], ws')
 
   -- combinator to label programs with 1 argument that needs recursive labelling
   {-@ label1 :: (LDSL p (Btwn 0 m) -> Btwn 0 m -> LDSL p (Btwn 0 m)) ->
