@@ -87,7 +87,7 @@ within (B s e) x = s <= x && x <= e
 
 
 {-@ measure desugared @-}
-desugared :: DSL i p t -> Bool
+desugared :: DSL p i t -> Bool
 desugared (EQL {})  = False
 desugared (ITER {}) = False
 
@@ -110,13 +110,13 @@ desugared (XOR p1 p2) = desugared p1 && desugared p2
 desugared (ISZERO p)  = desugared p
 
 {-@ measure getSize @-}
-{-@ getSize :: v:{DSL i p t | isIter v} -> Nat @-}
+{-@ getSize :: v:{DSL p i t | isIter v} -> Nat @-}
 getSize :: DSL p i t -> Int
 getSize (ITER (B s e) _ _) = e - s
 
 
 {-@ measure isIter @-}
-isIter :: DSL i p t -> Bool
+isIter :: DSL p i t -> Bool
 isIter (ITER {}) = True
 isIter _         = False
 
