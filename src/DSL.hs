@@ -279,10 +279,9 @@ label m programs = fst $ labelAll programs (fromList $ concatMap wires programs)
   label1 :: (LDSL p Int -> Int -> LDSL p Int) ->
             DSL' p Int ->
             Vec Int -> (LDSL p Int, Vec Int)
-  label1 ctor arg1 usedWires = (ctor arg1' i, is) where
+  label1 ctor arg1 usedWires = (ctor arg1' i, is1) where
     i = freshIndex m usedWires
     (arg1', is1) = label' arg1 (usedWires `append` singleton i)
-    is = singleton i `append` is1
 
   -- combinator to label programs with 2 arguments that need recursive labelling
   {-@ label2 :: (LDSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) -> Btwn 0 m ->
@@ -293,18 +292,17 @@ label m programs = fst $ labelAll programs (fromList $ concatMap wires programs)
   label2 :: (LDSL p Int -> LDSL p Int -> Int -> LDSL p Int) ->
             DSL' p Int -> DSL' p Int ->
             Vec Int -> (LDSL p Int, Vec Int)
-  label2 ctor arg1 arg2 usedWires = (ctor arg1' arg2' i, is) where
+  label2 ctor arg1 arg2 usedWires = (ctor arg1' arg2' i, is2) where
     i = freshIndex m usedWires
     (arg1', is1) = label' arg1 (usedWires `append` singleton i)
-    (arg2', is2) = label' arg2 (usedWires `append` singleton i `append` is1)
-    is = singleton i `append` is1 `append` is2
+    (arg2', is2) = label' arg2 is1
 
   {-@ label' :: DSL' p (Btwn 0 m) -> Vec (Btwn 0 m) ->
                 (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
   label' :: DSL' p Int -> Vec Int -> (LDSL p Int, Vec Int)
-  label' (WIRE' i)  _         = (LWIRE i, singleton i)
-  label' (CONST' x) usedWires = (LCONST x i, singleton i) where
-    i = freshIndex m usedWires
+  label' (WIRE' i)  usedWires = (LWIRE i, usedWires)
+  label' (CONST' x) usedWires = (LCONST x i, usedWires `append` singleton i)
+    where i = freshIndex m usedWires
   label' (ADD' p1 p2) usedWires = label2 LADD p1 p2 usedWires
   label' (SUB' p1 p2) usedWires = label2 LSUB p1 p2 usedWires
   label' (MUL' p1 p2) usedWires = label2 LMUL p1 p2 usedWires
@@ -315,11 +313,10 @@ label m programs = fst $ labelAll programs (fromList $ concatMap wires programs)
   label' (OR'  p1 p2) usedWires = label2 LOR  p1 p2 usedWires
   label' (XOR' p1 p2) usedWires = label2 LXOR p1 p2 usedWires
 
-  label' (ISZERO' p1) usedWires = (LISZERO p1' w i, is) where
+  label' (ISZERO' p1) usedWires = (LISZERO p1' w i, is1) where
     i = freshIndex m usedWires
     w = freshIndex m (usedWires `append` singleton i)
     (p1', is1) = label' p1 (usedWires `append` fromList [i, w])
-    is = singleton i `append` singleton w `append` is1
 
 
 -- TODO: this could probably be avoided by using record syntax
