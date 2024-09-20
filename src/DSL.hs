@@ -156,57 +156,55 @@ data LDSL p i =
   deriving Show
 
 
+{-@ lazy label @-}
 -- label each constructor with the index of the wire where its output will be
 {-@ label :: m:Nat1 -> {v:DSL p (Btwn 0 m) t | desugared v} ->
              LDSL p (Btwn 0 m) @-}
 label :: Int -> DSL p Int t -> LDSL p Int
 label m program = fst $ label' program (wires program) where
+
+  -- combinator to label programs with 1 argument that needs recursive labelling
+  {-@ label1 :: (LDSL p (Btwn 0 m) -> Btwn 0 m -> LDSL p (Btwn 0 m)) ->
+                {v:DSL p (Btwn 0 m) t | desugared v} ->
+                Vec (Btwn 0 m) -> (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
+  label1 :: (LDSL p Int -> Int -> LDSL p Int) ->
+            DSL p Int t ->
+            Vec Int -> (LDSL p Int, Vec Int)
+  label1 ctor arg1 usedWires = (ctor arg1' i, is) where
+    i = freshIndex m usedWires
+    (arg1', is1) = label' arg1 (usedWires `append` singleton i)
+    is = singleton i `append` is1
+
+  -- combinator to label programs with 2 arguments that need recursive labelling
+  {-@ label2 :: (LDSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) -> Btwn 0 m ->
+                        LDSL p (Btwn 0 m)) ->
+                {v:DSL p (Btwn 0 m) t | desugared v} ->
+                {v:DSL p (Btwn 0 m) t | desugared v} ->
+                Vec (Btwn 0 m) -> (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
+  label2 :: (LDSL p Int -> LDSL p Int -> Int -> LDSL p Int) ->
+            DSL p Int t -> DSL p Int t ->
+            Vec Int -> (LDSL p Int, Vec Int)
+  label2 ctor arg1 arg2 usedWires = (ctor arg1' arg2' i, is) where
+    i = freshIndex m usedWires
+    (arg1', is1) = label' arg1 (usedWires `append` singleton i)
+    (arg2', is2) = label' arg2 (usedWires `append` singleton i `append` is1)
+    is = singleton i `append` is1 `append` is2
+
   {-@ label' :: {v:DSL p (Btwn 0 m) t | desugared v} -> Vec (Btwn 0 m) ->
                 (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
   label' :: DSL p Int t -> Vec Int -> (LDSL p Int, Vec Int)
   label' (WIRE i)  _         = (LWIRE i, singleton i)
   label' (CONST x) usedWires = (LCONST x i, singleton i) where
     i = freshIndex m usedWires
-  label' (ADD p1 p2) usedWires = (LADD p1' p2' i, is) where
-    i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `append` singleton i)
-    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
-    is = singleton i `append` is1 `append` is2
-  label' (SUB p1 p2) usedWires = (LSUB p1' p2' i, is) where
-    i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `append` singleton i)
-    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
-    is = singleton i `append` is1 `append` is2
-  label' (MUL p1 p2) usedWires = (LMUL p1' p2' i, is) where
-    i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `append` singleton i)
-    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
-    is = singleton i `append` is1 `append` is2
-  label' (DIV p1 p2) usedWires = (LDIV p1' p2' i, is) where
-    i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `append` singleton i)
-    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
-    is = singleton i `append` is1 `append` is2
+  label' (ADD p1 p2) usedWires = label2 LADD p1 p2 usedWires
+  label' (SUB p1 p2) usedWires = label2 LSUB p1 p2 usedWires
+  label' (MUL p1 p2) usedWires = label2 LMUL p1 p2 usedWires
+  label' (DIV p1 p2) usedWires = label2 LDIV p1 p2 usedWires
 
-  label' (NOT p1) usedWires = (LNOT p1' i, is) where
-    i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `append` singleton i)
-    is = singleton i `append` is1
-  label' (AND p1 p2) usedWires = (LAND p1' p2' i, is) where
-    i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `append` singleton i)
-    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
-    is = singleton i `append` is1 `append` is2
-  label' (OR p1 p2) usedWires = (LOR p1' p2' i, is) where
-    i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `append` singleton i)
-    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
-    is = singleton i `append` is1 `append` is2
-  label' (XOR p1 p2) usedWires = (LXOR p1' p2' i, is) where
-    i = freshIndex m usedWires
-    (p1', is1) = label' p1 (usedWires `append` singleton i)
-    (p2', is2) = label' p2 (usedWires `append` singleton i `append` is1)
-    is = singleton i `append` is1 `append` is2
+  label' (NOT p1)    usedWires = label1 LNOT p1    usedWires
+  label' (AND p1 p2) usedWires = label2 LAND p1 p2 usedWires
+  label' (OR  p1 p2) usedWires = label2 LOR  p1 p2 usedWires
+  label' (XOR p1 p2) usedWires = label2 LXOR p1 p2 usedWires
 
   label' (ISZERO p1) usedWires = (LISZERO p1' w i, is) where
     i = freshIndex m usedWires
