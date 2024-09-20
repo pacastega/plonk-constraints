@@ -16,14 +16,21 @@ updateWith (Just x) Nothing  = Just x
 updateWith (Just x) (Just y) = if x == y then Just x else Nothing
 
 
-{-@ witnessGen :: m:Nat ->
-                  program:LDSL p (Btwn 0 m) ->
-                  ({v : Btwn 0 m | S.member v (lwires program)} -> p) ->
-                  VecN p m @-}
-witnessGen :: (Eq p, Fractional p) => Int -> LDSL p Int -> (Int -> p) -> Vec p
-witnessGen m program valuation = toVector m $ update program valuation' where
-    valuation' = toMap (lwires program) valuation
+setConcat :: Ord a => [S.Set a] -> S.Set a
+setConcat = foldl S.union S.empty
 
+{-@ witnessGen :: m:Nat ->
+                  [LDSL p (Btwn 0 m)] ->
+                  (Btwn 0 m -> p) ->
+                  VecN p m @-}
+witnessGen :: (Eq p, Fractional p) => Int -> [LDSL p Int] -> (Int -> p) -> Vec p
+witnessGen m programs valuation = toVector m valuation' where
+    neededWires   = setConcat (map lwires programs)
+    mapValuation = toMap neededWires valuation -- take only the needed values
+    valuation'   = foldl (flip update) mapValuation programs
+
+    {-@ update :: LDSL p (Btwn 0 m) -> M.Map (Btwn 0 m) p -> M.Map (Btwn 0 m) p @-}
+    update :: (Eq p, Fractional p) => LDSL p Int -> M.Map Int p -> M.Map Int p
     update (LWIRE _) valuation = valuation
     update (LCONST x i) valuation = M.alter (updateWith (Just x)) i valuation
     update (LADD p1 p2 i) valuation = M.alter (updateWith sum) i valuation'
@@ -93,13 +100,8 @@ toVector m valuation = aux m Nil where
   aux l acc = aux (l-1) (Cons (M.findWithDefault 0 (l-1) valuation) acc)
 
 
-{-@ toMap :: xs:S.Set a -> ({v:a | S.member v xs} -> b) ->
-             M.Map {v:a | S.member v xs} b @-}
 toMap :: Ord a => S.Set a -> (a -> b) -> M.Map a b
 toMap xs f = M.fromList $ map (\x -> (x, f x)) $ S.toList xs
-
-{-@ assume S.toList :: xs:S.Set a -> [{v:a | S.member v xs}] @-}
-
 
 -- -- TODO: ‘ensure (/= 0)’ should work for ‘x2’ in the case of ‘LDIV’ above
 -- {-@ ensure :: p:(a -> Bool) -> x:a ->
