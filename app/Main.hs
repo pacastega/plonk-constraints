@@ -51,21 +51,27 @@ testProgram6 = (WIRE 0 `ADD` CONST 2) `EQL` CONST 5
 {-@ testProgram7 :: DSL _ (Btwn 0 20) _ @-}
 testProgram7 :: DSL (F 2131) Int (F 2131)
 testProgram7 = ITER (B 1 5) body (WIRE 1) where
-  {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
+  {-@ body :: Int ->
+              {v:DSL _ (Btwn 0 20) _ | unpacked v} ->
+              {v:DSL _ (Btwn 0 20) _ | unpacked v} @-}
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
   body = (\i p -> MUL p (WIRE 0))
 
 {-@ testProgram8 :: DSL _ (Btwn 0 20) _ @-}
 testProgram8 :: DSL (F 2131) Int (F 2131)
 testProgram8 = ITER (B 2 5) body (CONST 1) where
-  {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
+  {-@ body :: Int ->
+              {v:DSL _ (Btwn 0 20) _ | unpacked v} ->
+              {v:DSL _ (Btwn 0 20) _ | unpacked v} @-}
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
   body = \i p -> MUL p (CONST $ fromIntegral i)
 
 {-@ testProgram9 :: DSL _ (Btwn 0 20) _ @-}
 testProgram9 :: DSL (F 2131) Int (F 2131)
 testProgram9 = ITER (B 1 6) body (CONST 0) where
-  {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
+  {-@ body :: Int ->
+              {v:DSL _ (Btwn 0 20) _ | unpacked v} ->
+              {v:DSL _ (Btwn 0 20) _ | unpacked v} @-}
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
   body = \i p -> ADD p (CONST $ fromIntegral i)
 
@@ -73,8 +79,9 @@ testProgram9 = ITER (B 1 6) body (CONST 0) where
 testProgram10 :: Int -> DSL (F 2131) Int (F 2131)
 testProgram10 nIters = ITER (B 1 nIters) body (CONST 0) where
   body = \i p -> WIRE i `ADD` (p `MUL` WIRE 0)
-  {-@ body :: {v:Int | 1 <= v && v < 40} ->
-              DSL _ (Btwn 0 40) _ -> DSL _ (Btwn 0 40) _ @-}
+  {-@ body :: Btwn 1 40 ->
+              {v:DSL _ (Btwn 0 40) _ | unpacked v} ->
+              {v:DSL _ (Btwn 0 40) _ | unpacked v} @-}
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
 
 
@@ -82,7 +89,9 @@ testProgram10 nIters = ITER (B 1 nIters) body (CONST 0) where
 testProgram11 :: DSL (F 2131) Int Bool
 testProgram11 = (ITER (B 2 4) body (WIRE 0)) `EQL` (CONST 42) where
   body = \i p -> MUL p (WIRE 0)
-  {-@ body :: Int -> DSL _ (Btwn 0 20) _ -> DSL _ (Btwn 0 20) _ @-}
+  {-@ body :: Int ->
+              {v:DSL _ (Btwn 0 20) _ | unpacked v} ->
+              {v:DSL _ (Btwn 0 20) _ | unpacked v} @-}
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
 
 
@@ -94,12 +103,12 @@ cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 test :: (Eq p, Fractional p, Show p) =>
         Int -> DSL p Int t -> (Int -> p) -> IO ()
 test m program valuation = do
-  let labeledProgram = label m (desugar program)
-  let circuit = compile m labeledProgram
-  let input = witnessGen m labeledProgram valuation
-  let output = input ! outputWire labeledProgram
+  let labeledPrograms = label m (unpack $ desugar program)
+  let circuit = concatMap (compile m) labeledPrograms
+  let input = witnessGen m labeledPrograms valuation
+  let output = map (\p -> input ! outputWire p) labeledPrograms
 
-  putStrLn $ "Preprocessed program: " ++ show labeledProgram
+  putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   putStrLn $ "Compiled circuit:     " ++ show circuit
   putStrLn $ "Input:                " ++ show input
   putStrLn $ "Final result: " ++ cyan (show output)
