@@ -260,48 +260,48 @@ data LDSL p i =
 {-@ label :: m:Nat1 -> [DSL' p (Btwn 0 m)] ->
              [LDSL p (Btwn 0 m)] @-}
 label :: Int -> [DSL' p Int] -> [LDSL p Int]
-label m programs = fst $ labelAll programs (fromList $ concatMap wires programs) where
-  {-@ labelAll :: [DSL' p (Btwn 0 m)] -> Vec (Btwn 0 m) ->
-                  ([LDSL p (Btwn 0 m)], Vec (Btwn 0 m)) @-}
-  labelAll :: [DSL' p Int] -> Vec Int -> ([LDSL p Int], Vec Int)
+label m programs = fst $ labelAll programs (concatMap wires programs) where
+  {-@ labelAll :: [DSL' p (Btwn 0 m)] -> [Btwn 0 m] ->
+                  ([LDSL p (Btwn 0 m)], [Btwn 0 m]) @-}
+  labelAll :: [DSL' p Int] -> [Int] -> ([LDSL p Int], [Int])
   labelAll programs usedWires = foldl go ([], usedWires) programs where
-    {-@ go :: ([LDSL p (Btwn 0 m)], Vec (Btwn 0 m)) ->
+    {-@ go :: ([LDSL p (Btwn 0 m)], [Btwn 0 m]) ->
               DSL' p (Btwn 0 m) ->
-              ([LDSL p (Btwn 0 m)], Vec (Btwn 0 m)) @-}
-    go :: ([LDSL p Int], Vec Int) -> DSL' p Int -> ([LDSL p Int], Vec Int)
+              ([LDSL p (Btwn 0 m)], [Btwn 0 m]) @-}
+    go :: ([LDSL p Int], [Int]) -> DSL' p Int -> ([LDSL p Int], [Int])
     go (acc, ws) program = let (labeledProgram, ws') = label' program ws
                            in (acc ++ [labeledProgram], ws')
 
   -- combinator to label programs with 1 argument that needs recursive labelling
   {-@ label1 :: (LDSL p (Btwn 0 m) -> Btwn 0 m -> LDSL p (Btwn 0 m)) ->
                 DSL' p (Btwn 0 m) ->
-                Vec (Btwn 0 m) -> (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
+                [Btwn 0 m] -> (LDSL p (Btwn 0 m), [Btwn 0 m]) @-}
   label1 :: (LDSL p Int -> Int -> LDSL p Int) ->
             DSL' p Int ->
-            Vec Int -> (LDSL p Int, Vec Int)
+            [Int] -> (LDSL p Int, [Int])
   label1 ctor arg1 usedWires = (ctor arg1' i, is1) where
     i = freshIndex m usedWires
-    (arg1', is1) = label' arg1 (usedWires `append` singleton i)
+    (arg1', is1) = label' arg1 (i:usedWires)
 
   -- combinator to label programs with 2 arguments that need recursive labelling
   {-@ label2 :: (LDSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) -> Btwn 0 m ->
                         LDSL p (Btwn 0 m)) ->
                 DSL' p (Btwn 0 m) ->
                 DSL' p (Btwn 0 m) ->
-                Vec (Btwn 0 m) -> (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
+                [Btwn 0 m] -> (LDSL p (Btwn 0 m), [Btwn 0 m]) @-}
   label2 :: (LDSL p Int -> LDSL p Int -> Int -> LDSL p Int) ->
             DSL' p Int -> DSL' p Int ->
-            Vec Int -> (LDSL p Int, Vec Int)
+            [Int] -> (LDSL p Int, [Int])
   label2 ctor arg1 arg2 usedWires = (ctor arg1' arg2' i, is2) where
     i = freshIndex m usedWires
-    (arg1', is1) = label' arg1 (usedWires `append` singleton i)
+    (arg1', is1) = label' arg1 (i:usedWires)
     (arg2', is2) = label' arg2 is1
 
-  {-@ label' :: DSL' p (Btwn 0 m) -> Vec (Btwn 0 m) ->
-                (LDSL p (Btwn 0 m), Vec (Btwn 0 m)) @-}
-  label' :: DSL' p Int -> Vec Int -> (LDSL p Int, Vec Int)
+  {-@ label' :: DSL' p (Btwn 0 m) -> [Btwn 0 m] ->
+                (LDSL p (Btwn 0 m), [Btwn 0 m]) @-}
+  label' :: DSL' p Int -> [Int] -> (LDSL p Int, [Int])
   label' (WIRE' i)  usedWires = (LWIRE i, usedWires)
-  label' (CONST' x) usedWires = (LCONST x i, usedWires `append` singleton i)
+  label' (CONST' x) usedWires = (LCONST x i, i:usedWires)
     where i = freshIndex m usedWires
   label' (ADD' p1 p2) usedWires = label2 LADD p1 p2 usedWires
   label' (SUB' p1 p2) usedWires = label2 LSUB p1 p2 usedWires
@@ -315,8 +315,8 @@ label m programs = fst $ labelAll programs (fromList $ concatMap wires programs)
 
   label' (ISZERO' p1) usedWires = (LISZERO p1' w i, is1) where
     i = freshIndex m usedWires
-    w = freshIndex m (usedWires `append` singleton i)
-    (p1', is1) = label' p1 (usedWires `append` fromList [i, w])
+    w = freshIndex m (i:usedWires)
+    (p1', is1) = label' p1 (i:w:usedWires)
 
 
 -- TODO: this could probably be avoided by using record syntax
@@ -377,12 +377,12 @@ lwires (LISZERO p1 _ _) = lwires p1
 -- TODO: ideally, this should only be called with sets strictly contained in
 -- {0..m-1}; otherwise, there will be no fresh index to return. Is it possible
 -- to specify that the second argument should have size < m?
-{-@ freshIndex :: m:Nat1 -> Vec (Btwn 0 m) -> Btwn 0 m @-}
-freshIndex :: Int -> Vec Int -> Int
+{-@ freshIndex :: m:Nat1 -> [Btwn 0 m] -> Btwn 0 m @-}
+freshIndex :: Int -> [Int] -> Int
 freshIndex m used = freshIndex_ [0..m-1] where
   {-@ freshIndex_ :: [Btwn 0 m] -> Btwn 0 m @-}
   freshIndex_ []     = 0 -- FIXME: this should never be reached
-  freshIndex_ (x:xs) = if x `velem` used then freshIndex_ xs else x
+  freshIndex_ (x:xs) = if x `elem` used then freshIndex_ xs else x
 
 
 -- the number of gates needed to compile the program into a circuit
