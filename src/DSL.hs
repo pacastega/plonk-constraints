@@ -3,7 +3,6 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--no-positivity-check" @-}
 {-@ LIQUID "--reflection" @-}
-{-@ LIQUID "--max-case-expand=12" @-}
 module DSL where
 
 import Constraints
