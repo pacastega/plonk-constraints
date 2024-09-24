@@ -95,7 +95,7 @@ testProgram11 = (ITER (B 2 4) body (WIRE 0)) `EQL` (CONST 42) where
   body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
 
 
-{-@ testProgram12 :: DSL _ (Btwn 0 20) _ @-}
+{-@ testProgram12 :: {v:DSL _ (Btwn 0 20) _ | vlength v = 3} @-}
 testProgram12 :: DSL (F 2131) Int [F 2131]
 testProgram12 = (CONST 42)             `CONS`
                 (CONST 4 `SUB` WIRE 0) `CONS`
