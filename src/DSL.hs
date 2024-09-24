@@ -183,8 +183,8 @@ data DSL' p i =
 unpacked :: DSL p i t -> Bool
 unpacked (EQL p1 p2) = unpacked p1 && unpacked p2
 
-unpacked (WIRE _)  = True
-unpacked (CONST _) = True
+unpacked (WIRE _)    = True
+unpacked (CONST _)   = True
 
 unpacked (NIL)       = False
 unpacked (CONS _ _)  = False
@@ -200,7 +200,7 @@ unpacked (OR  p1 p2) = unpacked p1 && unpacked p2
 unpacked (XOR p1 p2) = unpacked p1 && unpacked p2
 
 unpacked (ISZERO p)  = unpacked p
-unpacked (ITER {}) = False
+unpacked (ITER {})   = False
 
 
 {-@ lazy unpack @-}
