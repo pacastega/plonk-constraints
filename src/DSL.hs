@@ -43,7 +43,7 @@ data DSL p i t where
 
   -- Vectors
   NIL  :: DSL p i [t]
-  CONS :: DSL p i t -> DSL p i [t] -> DSL p i [t]
+  CONS :: Int -> DSL p i t -> DSL p i [t] -> DSL p i [t]
 
 infixr 5 `CONS`
 
@@ -71,8 +71,9 @@ data DSL p i t where
               {v:DSL p i t | unpacked v}) ->
           {v:DSL p i t | unpacked v} -> {v:DSL p i t | unpacked v}
 
-  NIL  :: DSL _ _ [t]
-  CONS :: DSL _ _ t -> DSL _ _ [t] -> DSL _ _ [t]
+  NIL  :: DSL _ _ {v:[t] | len v = 0}
+  CONS :: n:Int -> DSL _ _ t -> DSL _ _ {v:[t] | len v = n} ->
+          DSL _ _ {v:[t] | len v = n+1}
 
 @-}
 
@@ -94,7 +95,7 @@ desugared (WIRE _)  = True
 desugared (CONST _) = True
 
 desugared (NIL)       = True
-desugared (CONS p ps) = desugared p  && desugared ps
+desugared (CONS _ p ps) = desugared p  && desugared ps
 
 desugared (ADD p1 p2) = desugared p1 && desugared p2
 desugared (SUB p1 p2) = desugared p1 && desugared p2
@@ -153,7 +154,7 @@ desugar (WIRE i)    = WIRE i
 desugar (CONST x)   = CONST x
 
 desugar (NIL)       = NIL
-desugar (CONS p ps) = CONS (desugar p) (desugar ps)
+desugar (CONS n p ps) = CONS n (desugar p) (desugar ps)
 
 -- Simplified & Untyped DSL (core language)
 data DSL' p i =
@@ -181,7 +182,7 @@ unpacked (WIRE _)  = True
 unpacked (CONST _) = True
 
 unpacked (NIL)       = False
-unpacked (CONS _ _ ) = False
+unpacked (CONS _ _ _ ) = False
 
 unpacked (ADD p1 p2) = unpacked p1 && unpacked p2
 unpacked (SUB p1 p2) = unpacked p1 && unpacked p2
@@ -218,7 +219,7 @@ unpack program = case program of
   ISZERO p  -> unpack1 ISZERO' p
 
   NIL       -> []
-  CONS p ps -> unpack p ++ unpack ps
+  CONS _ p ps -> unpack p ++ unpack ps
 
   where
   {-@ lazy unpack1 @-}
