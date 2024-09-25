@@ -44,6 +44,8 @@ data DSL p i t where
   -- Vectors
   NIL  :: DSL p i [t]
   CONS :: DSL p i t -> DSL p i [t] -> DSL p i [t]
+  GET  :: DSL p i [t] -> Int -> DSL p i t
+  SET  :: DSL p i [t] -> Int -> DSL p i t -> DSL p i [t]
 
 infixr 5 `CONS`
 
@@ -73,6 +75,8 @@ data DSL p i t where
 
   NIL  :: DSL _ _ [t]
   CONS :: DSL _ _ t -> DSL _ _ [t] -> DSL _ _ [t]
+  GET  :: l:DSL _ _ [t] -> Btwn 0 (vlength l) -> DSL _ _ t
+  SET  :: l:DSL _ _ [t] -> Btwn 0 (vlength l) -> DSL _ _ t -> DSL _ _ [t]
 
 @-}
 
@@ -101,6 +105,8 @@ desugared (CONST _) = True
 
 desugared (NIL)       = True
 desugared (CONS p ps) = desugared p  && desugared ps
+desugared (GET v i)   = False -- should be desugared to use only NIL and CONS
+desugared (SET v i x) = False -- should be desugared to use only NIL and CONS
 
 desugared (ADD p1 p2) = desugared p1 && desugared p2
 desugared (SUB p1 p2) = desugared p1 && desugared p2
@@ -160,6 +166,12 @@ desugar (CONST x)   = CONST x
 
 desugar (NIL)       = NIL
 desugar (CONS p ps) = CONS (desugar p) (desugar ps)
+
+desugar (GET v 0)   = case v of CONS p ps -> desugar $ p
+desugar (GET v i)   = case v of CONS p ps -> desugar $ GET ps (i-1)
+desugar (SET v 0 x) = case v of CONS p ps -> desugar $ CONS x ps
+desugar (SET v i x) = case v of CONS p ps -> desugar $ CONS p (SET ps (i-1) x)
+
 
 -- Simplified & Untyped DSL (core language)
 data DSL' p i =
@@ -225,6 +237,20 @@ unpack program = case program of
 
   NIL       -> []
   CONS p ps -> unpack p ++ unpack ps
+  -- GET v 0   -> case v of
+  --   NIL -> [] --FIXME: this should never be reached
+  --              --because 0 <= i < (len NIL) is impossible
+  --   CONS p ps -> unpack $ p
+  -- GET v i   -> case v of
+  --   NIL -> [] --FIXME: again, this should never be reached
+  --   CONS p ps -> unpack $ GET ps (i-1)
+  -- SET v 0 x -> case v of
+  --   NIL -> [] --FIXME: impossible
+  --   CONS p ps -> unpack $ CONS x ps
+  -- SET v i x -> case v of
+  --   NIL -> [] --FIXME: impossible
+  --   CONS p ps -> unpack $ CONS p (SET ps (i-1) x)
+
 
   where
   {-@ lazy unpack1 @-}
