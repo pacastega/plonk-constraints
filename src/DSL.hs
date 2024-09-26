@@ -17,72 +17,72 @@ import Vec
 import qualified Data.Set as S
 
 -- The type variable ‘i’ should be understood as the set of wire indices
-data DSL p i t where
+data DSL p i where
   -- Basic operations
-  WIRE  :: i -> DSL p i p -- wire (i.e. variable)
-  CONST :: p -> DSL p i p -- constant
+  WIRE  :: i -> DSL p i -- wire (i.e. variable)
+  CONST :: p -> DSL p i -- constant
 
   -- Arithmetic operations
-  ADD :: DSL p i p -> DSL p i p -> DSL p i p -- field addition
-  SUB :: DSL p i p -> DSL p i p -> DSL p i p -- field substraction
-  MUL :: DSL p i p -> DSL p i p -> DSL p i p -- field multiplication
-  DIV :: DSL p i p -> DSL p i p -> DSL p i p -- field division
+  ADD :: DSL p i -> DSL p i -> DSL p i -- field addition
+  SUB :: DSL p i -> DSL p i -> DSL p i -- field substraction
+  MUL :: DSL p i -> DSL p i -> DSL p i -- field multiplication
+  DIV :: DSL p i -> DSL p i -> DSL p i -- field division
 
   -- Boolean operations
-  NOT :: DSL p i Bool -> DSL p i Bool                 -- logical not
-  AND :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical and
-  OR  :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical or
-  XOR :: DSL p i Bool -> DSL p i Bool -> DSL p i Bool -- logical xor
+  NOT :: DSL p i -> DSL p i            -- logical not
+  AND :: DSL p i -> DSL p i -> DSL p i -- logical and
+  OR  :: DSL p i -> DSL p i -> DSL p i -- logical or
+  XOR :: DSL p i -> DSL p i -> DSL p i -- logical xor
 
   -- Boolean constructors
-  EQL    :: DSL p i p -> DSL p i p -> DSL p i Bool -- equality check
-  ISZERO :: DSL p i p -> DSL p i Bool              -- zero check
+  EQL    :: DSL p i -> DSL p i -> DSL p i -- equality check
+  ISZERO :: DSL p i -> DSL p i            -- zero check
 
   -- Functional constructs: iterators
-  ITER :: Bound -> (Int -> DSL p i t -> DSL p i t) -> DSL p i t -> DSL p i t
+  ITER :: Bound -> (Int -> DSL p i -> DSL p i) -> DSL p i -> DSL p i
 
   -- Vectors
-  NIL  :: DSL p i [t]
-  CONS :: DSL p i t -> DSL p i [t] -> DSL p i [t]
-  GET  :: DSL p i [t] -> Int -> DSL p i t
-  SET  :: DSL p i [t] -> Int -> DSL p i t -> DSL p i [t]
+  NIL  :: DSL p i
+  CONS :: DSL p i -> DSL p i -> DSL p i
+  GET  :: DSL p i -> Int -> DSL p i
+  SET  :: DSL p i -> Int -> DSL p i -> DSL p i
 
 infixr 5 `CONS`
 
 
 {-@
-data DSL p i t where
-  WIRE  :: i -> DSL p i p
-  CONST :: p -> DSL p i p
+data DSL p i where
+  WIRE  :: i -> DSL p i
+  CONST :: p -> DSL p i
 
-  ADD :: {v:DSL p i p | unpacked v} -> {u:DSL p i p | unpacked u} -> DSL p i p
-  SUB :: {v:DSL p i p | unpacked v} -> {u:DSL p i p | unpacked u} -> DSL p i p
-  MUL :: {v:DSL p i p | unpacked v} -> {u:DSL p i p | unpacked u} -> DSL p i p
-  DIV :: {v:DSL p i p | unpacked v} -> {u:DSL p i p | unpacked u} -> DSL p i p
+  ADD :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
+  SUB :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
+  MUL :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
+  DIV :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
 
-  NOT :: {v:DSL p i Bool | unpacked v} -> DSL p i Bool
-  AND :: {v:DSL p i Bool | unpacked v} -> {u:DSL p i Bool | unpacked u} -> DSL p i Bool
-  OR  :: {v:DSL p i Bool | unpacked v} -> {u:DSL p i Bool | unpacked u} -> DSL p i Bool
-  XOR :: {v:DSL p i Bool | unpacked v} -> {u:DSL p i Bool | unpacked u} -> DSL p i Bool
+  NOT :: {v:DSL p i | unpacked v} -> DSL p i
+  AND :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
+  OR  :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
+  XOR :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
 
-  EQL    :: {v:DSL _ _ _ | unpacked v} -> {u:DSL _ _ _ | unpacked u} -> DSL _ _ Bool
-  ISZERO :: {v:DSL p i p | unpacked v} -> DSL p i Bool
+  EQL    :: {v:DSL _ _ | unpacked v} -> {u:DSL _ _ | unpacked u} -> DSL _ _
+  ISZERO :: {v:DSL p i | unpacked v} -> DSL p i
 
   ITER :: b:Bound ->
-          ({v:Int | within b v} -> {v:DSL p i t | unpacked v} ->
-              {v:DSL p i t | unpacked v}) ->
-          {v:DSL p i t | unpacked v} -> {v:DSL p i t | unpacked v}
+          ({v:Int | within b v} -> {v:DSL p i | unpacked v} ->
+              {v:DSL p i | unpacked v}) ->
+          {v:DSL p i | unpacked v} -> {v:DSL p i | unpacked v}
 
-  NIL  :: DSL _ _ [t]
-  CONS :: DSL _ _ t -> DSL _ _ [t] -> DSL _ _ [t]
-  GET  :: l:DSL _ _ [t] -> Btwn 0 (vlength l) -> DSL _ _ t
-  SET  :: l:DSL _ _ [t] -> Btwn 0 (vlength l) -> DSL _ _ t -> DSL _ _ [t]
+  NIL  :: DSL _ _
+  CONS :: DSL _ _ -> DSL _ _ -> DSL _ _
+  GET  :: l:DSL _ _ -> Btwn 0 (vlength l) -> DSL _ _
+  SET  :: l:DSL _ _ -> Btwn 0 (vlength l) -> DSL _ _ -> DSL _ _
 
 @-}
 
 {-@ measure vlength @-}
-{-@ vlength :: DSL p i t -> Nat @-}
-vlength :: DSL p i t -> Int
+{-@ vlength :: DSL p i -> Nat @-}
+vlength :: DSL p i -> Int
 vlength (CONS _ ps) = 1 + vlength ps
 vlength _           = 0
 
@@ -96,7 +96,7 @@ within (B s e) x = s <= x && x <= e
 
 
 {-@ measure desugared @-}
-desugared :: DSL p i t -> Bool
+desugared :: DSL p i -> Bool
 desugared (EQL {})  = False
 desugared (ITER {}) = False
 
@@ -121,29 +121,29 @@ desugared (XOR p1 p2) = desugared p1 && desugared p2
 desugared (ISZERO p)  = desugared p
 
 {-@ measure getSize @-}
-{-@ getSize :: v:{DSL p i t | isIter v} -> Nat @-}
-getSize :: DSL p i t -> Int
+{-@ getSize :: v:{DSL p i | isIter v} -> Nat @-}
+getSize :: DSL p i -> Int
 getSize (ITER (B s e) _ _) = e - s
 
 
 {-@ measure isIter @-}
-isIter :: DSL p i t -> Bool
+isIter :: DSL p i -> Bool
 isIter (ITER {}) = True
 isIter _         = False
 
 
-{-@ unfoldIter :: p:{DSL p i t | isIter p} -> DSL p i t
+{-@ unfoldIter :: p:{DSL p i | isIter p} -> DSL p i
                   / [getSize p] @-}
-unfoldIter :: DSL p i t -> DSL p i t
+unfoldIter :: DSL p i -> DSL p i
 unfoldIter (ITER (B s e) f a)
   | s == e    = f s a
   | otherwise = unfoldIter (ITER (B (s+1) e) f (f s a))
 
 
 {-@ lazy desugar @-}
-{-@ desugar :: p:DSL p i t ->
-               {v:DSL p i t | desugared v && (unpacked p => unpacked v)} @-}
-desugar :: DSL p i t -> DSL p i t
+{-@ desugar :: p:DSL p i ->
+               {v:DSL p i | desugared v && (unpacked p => unpacked v)} @-}
+desugar :: DSL p i -> DSL p i
 -- syntactic sugar:
 desugar (EQL p1 p2) = ISZERO (SUB (desugar p1) (desugar p2))
 desugar p@(ITER {}) = desugar (unfoldIter p)
@@ -191,8 +191,8 @@ data DSL' p i =
   deriving Show
 
 {-@ measure unpacked @-}
-{-@ unpacked :: DSL p i t -> Bool @-}
-unpacked :: DSL p i t -> Bool
+{-@ unpacked :: DSL p i -> Bool @-}
+unpacked :: DSL p i -> Bool
 unpacked (EQL p1 p2) = unpacked p1 && unpacked p2
 
 unpacked (WIRE _)    = True
@@ -218,9 +218,9 @@ unpacked (ITER {})   = False
 
 
 {-@ lazy unpack @-}
-{-@ unpack :: program:{v:DSL p i t | desugared v} ->
+{-@ unpack :: program:{v:DSL p i | desugared v} ->
               {u:[DSL' p i] | unpacked program => len u = 1} @-}
-unpack :: DSL p i t -> [DSL' p i]
+unpack :: DSL p i -> [DSL' p i]
 unpack program = case program of
   WIRE i    -> [WIRE' i]
   CONST x   -> [CONST' x]
@@ -257,18 +257,18 @@ unpack program = case program of
   where
   {-@ lazy unpack1 @-}
   {-@ unpack1 :: (DSL' p i -> DSL' p i) ->
-                 program:{v:DSL p i t | desugared v && unpacked v} ->
+                 program:{v:DSL p i | desugared v && unpacked v} ->
                  {u:[DSL' p i] | unpacked program => len u = 1} @-}
-  unpack1 :: (DSL' p i -> DSL' p i) -> DSL p i t -> [DSL' p i]
+  unpack1 :: (DSL' p i -> DSL' p i) -> DSL p i -> [DSL' p i]
   unpack1 ctor p1 = [ctor p1'] where [p1'] = unpack p1
 
   {-@ lazy unpack2 @-}
   {-@ unpack2 :: (DSL' p i -> DSL' p i -> DSL' p i) ->
-                 p1:{v:DSL p i t | desugared v && unpacked v} ->
-                 p2:{v:DSL p i t | desugared v && unpacked v} ->
+                 p1:{v:DSL p i | desugared v && unpacked v} ->
+                 p2:{v:DSL p i | desugared v && unpacked v} ->
                  {u:[DSL' p i] | (unpacked p1 && unpacked p2) => len u = 1} @-}
   unpack2 :: (DSL' p i -> DSL' p i -> DSL' p i) ->
-             DSL p i t -> DSL p i t -> [DSL' p i]
+             DSL p i -> DSL p i -> [DSL' p i]
   unpack2 ctor p1 p2 = [ctor p1' p2'] where [p1'] = unpack p1; [p2'] = unpack p2
 
 

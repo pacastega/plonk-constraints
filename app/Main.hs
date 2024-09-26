@@ -24,79 +24,79 @@ type F17 = PrimeField 17
 type F p = PrimeField p
 
 
-{-@ testProgram :: v:DSL _ (Btwn 0 7) _ @-}
-testProgram :: DSL F17 Int F17
+{-@ testProgram :: v:DSL _ (Btwn 0 7) @-}
+testProgram :: DSL F17 Int
 testProgram = ADD (ADD (WIRE 0) (WIRE 1)) (ADD (WIRE 2) (WIRE 3))
 
-{-@ testProgram2 :: v:DSL _ (Btwn 0 7) _ @-}
-testProgram2 :: DSL F17 Int F17
+{-@ testProgram2 :: v:DSL _ (Btwn 0 7) @-}
+testProgram2 :: DSL F17 Int
 testProgram2 = MUL (ADD (WIRE 0) (CONST 15)) (ADD (WIRE 1) (CONST 3))
 
-{-@ testProgram3 :: DSL _ (Btwn 0 6) _ @-}
-testProgram3 :: DSL F17 Int F17
+{-@ testProgram3 :: DSL _ (Btwn 0 6) @-}
+testProgram3 :: DSL F17 Int
 testProgram3 = DIV (WIRE 5) (WIRE 1)
 
-{-@ testProgram4 :: DSL _ (Btwn 0 20) _ @-}
-testProgram4 :: DSL F17 Int Bool
+{-@ testProgram4 :: DSL _ (Btwn 0 20) @-}
+testProgram4 :: DSL F17 Int
 testProgram4 = ISZERO (WIRE 0) `OR` (NOT (ISZERO (WIRE 0)) `AND` (ISZERO (WIRE 1)))
 
-{-@ testProgram5 :: DSL _ (Btwn 0 20) _ @-}
-testProgram5 :: DSL F17 Int Bool
+{-@ testProgram5 :: DSL _ (Btwn 0 20) @-}
+testProgram5 :: DSL F17 Int
 testProgram5 = (CONST 7 `MUL` WIRE 0) `EQL` CONST 1
 
-{-@ testProgram6 :: DSL _ (Btwn 0 20) _ @-}
-testProgram6 :: DSL F17 Int Bool
+{-@ testProgram6 :: DSL _ (Btwn 0 20) @-}
+testProgram6 :: DSL F17 Int
 testProgram6 = (WIRE 0 `ADD` CONST 2) `EQL` CONST 5
 
-{-@ testProgram7 :: DSL _ (Btwn 0 20) _ @-}
-testProgram7 :: DSL (F 2131) Int (F 2131)
+{-@ testProgram7 :: DSL _ (Btwn 0 20) @-}
+testProgram7 :: DSL (F 2131) Int
 testProgram7 = ITER (B 1 5) body (WIRE 1) where
   {-@ body :: Int ->
-              {v:DSL _ (Btwn 0 20) _ | unpacked v} ->
-              {v:DSL _ (Btwn 0 20) _ | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
+              {v:DSL _ (Btwn 0 20) | unpacked v} ->
+              {v:DSL _ (Btwn 0 20) | unpacked v} @-}
+  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
   body = (\i p -> MUL p (WIRE 0))
 
-{-@ testProgram8 :: DSL _ (Btwn 0 20) _ @-}
-testProgram8 :: DSL (F 2131) Int (F 2131)
+{-@ testProgram8 :: DSL _ (Btwn 0 20) @-}
+testProgram8 :: DSL (F 2131) Int
 testProgram8 = ITER (B 2 5) body (CONST 1) where
   {-@ body :: Int ->
-              {v:DSL _ (Btwn 0 20) _ | unpacked v} ->
-              {v:DSL _ (Btwn 0 20) _ | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
+              {v:DSL _ (Btwn 0 20) | unpacked v} ->
+              {v:DSL _ (Btwn 0 20) | unpacked v} @-}
+  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
   body = \i p -> MUL p (CONST $ fromIntegral i)
 
-{-@ testProgram9 :: DSL _ (Btwn 0 20) _ @-}
-testProgram9 :: DSL (F 2131) Int (F 2131)
+{-@ testProgram9 :: DSL _ (Btwn 0 20) @-}
+testProgram9 :: DSL (F 2131) Int
 testProgram9 = ITER (B 1 6) body (CONST 0) where
   {-@ body :: Int ->
-              {v:DSL _ (Btwn 0 20) _ | unpacked v} ->
-              {v:DSL _ (Btwn 0 20) _ | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
+              {v:DSL _ (Btwn 0 20) | unpacked v} ->
+              {v:DSL _ (Btwn 0 20) | unpacked v} @-}
+  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
   body = \i p -> ADD p (CONST $ fromIntegral i)
 
-{-@ testProgram10 :: Btwn 1 39 -> DSL _ (Btwn 0 40) _ @-}
-testProgram10 :: Int -> DSL (F 2131) Int (F 2131)
+{-@ testProgram10 :: Btwn 1 39 -> DSL _ (Btwn 0 40) @-}
+testProgram10 :: Int -> DSL (F 2131) Int
 testProgram10 nIters = ITER (B 1 nIters) body (CONST 0) where
   body = \i p -> WIRE i `ADD` (p `MUL` WIRE 0)
   {-@ body :: Btwn 1 40 ->
-              {v:DSL _ (Btwn 0 40) _ | unpacked v} ->
-              {v:DSL _ (Btwn 0 40) _ | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
+              {v:DSL _ (Btwn 0 40) | unpacked v} ->
+              {v:DSL _ (Btwn 0 40) | unpacked v} @-}
+  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
 
 
-{-@ testProgram11 :: DSL _ (Btwn 0 20) _ @-}
-testProgram11 :: DSL (F 2131) Int Bool
+{-@ testProgram11 :: DSL _ (Btwn 0 20) @-}
+testProgram11 :: DSL (F 2131) Int
 testProgram11 = (ITER (B 2 4) body (WIRE 0)) `EQL` (CONST 42) where
   body = \i p -> MUL p (WIRE 0)
   {-@ body :: Int ->
-              {v:DSL _ (Btwn 0 20) _ | unpacked v} ->
-              {v:DSL _ (Btwn 0 20) _ | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int (F 2131) -> DSL (F 2131) Int (F 2131)
+              {v:DSL _ (Btwn 0 20) | unpacked v} ->
+              {v:DSL _ (Btwn 0 20) | unpacked v} @-}
+  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
 
 
-{-@ testProgram12 :: {v:DSL _ (Btwn 0 20) _ | vlength v = 3} @-}
-testProgram12 :: DSL (F 2131) Int [F 2131]
+{-@ testProgram12 :: {v:DSL _ (Btwn 0 20) | vlength v = 3} @-}
+testProgram12 :: DSL (F 2131) Int
 testProgram12 = (CONST 42)             `CONS`
                 (CONST 4 `SUB` WIRE 0) `CONS`
                 (WIRE 1 `ADD` CONST 5) `CONS` NIL
@@ -106,9 +106,9 @@ cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
 
-{-@ test :: m:Nat1 -> DSL _ (Btwn 0 m) t -> (Btwn 0 m -> p) -> IO () @-}
+{-@ test :: m:Nat1 -> DSL _ (Btwn 0 m) -> (Btwn 0 m -> p) -> IO () @-}
 test :: (Eq p, Fractional p, Show p) =>
-        Int -> DSL p Int t -> (Int -> p) -> IO ()
+        Int -> DSL p Int -> (Int -> p) -> IO ()
 test m program valuation = do
   let labeledPrograms = label m (unpack $ desugar program)
   let circuit = concatMap (compile m) labeledPrograms
