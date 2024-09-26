@@ -105,8 +105,8 @@ desugared (CONST _) = True
 
 desugared (NIL)       = True
 desugared (CONS p ps) = desugared p  && desugared ps
-desugared (GET v i)   = False -- should be desugared to use only NIL and CONS
-desugared (SET v i x) = False -- should be desugared to use only NIL and CONS
+desugared (GET _ _)   = False -- should be desugared to use only NIL and CONS
+desugared (SET _ _ _) = False -- should be desugared to use only NIL and CONS
 
 desugared (ADD p1 p2) = desugared p1 && desugared p2
 desugared (SUB p1 p2) = desugared p1 && desugared p2
@@ -167,9 +167,9 @@ desugar (CONST x)   = CONST x
 desugar (NIL)       = NIL
 desugar (CONS p ps) = CONS (desugar p) (desugar ps)
 
-desugar (GET v 0)   = case v of CONS p ps -> desugar $ p
-desugar (GET v i)   = case v of CONS p ps -> desugar $ GET ps (i-1)
-desugar (SET v 0 x) = case v of CONS p ps -> desugar $ CONS x ps
+desugar (GET v 0)   = case v of CONS p _  -> desugar $ p
+desugar (GET v i)   = case v of CONS _ ps -> desugar $ GET ps (i-1)
+desugar (SET v 0 x) = case v of CONS _ ps -> desugar $ CONS x ps
 desugar (SET v i x) = case v of CONS p ps -> desugar $ CONS p (SET ps (i-1) x)
 
 
@@ -239,19 +239,6 @@ unpack program = case program of
 
   NIL       -> []
   CONS p ps -> unpack p ++ unpack ps
-  -- GET v 0   -> case v of
-  --   NIL -> [] --FIXME: this should never be reached
-  --              --because 0 <= i < (len NIL) is impossible
-  --   CONS p ps -> unpack $ p
-  -- GET v i   -> case v of
-  --   NIL -> [] --FIXME: again, this should never be reached
-  --   CONS p ps -> unpack $ GET ps (i-1)
-  -- SET v 0 x -> case v of
-  --   NIL -> [] --FIXME: impossible
-  --   CONS p ps -> unpack $ CONS x ps
-  -- SET v i x -> case v of
-  --   NIL -> [] --FIXME: impossible
-  --   CONS p ps -> unpack $ CONS p (SET ps (i-1) x)
 
 
   where
