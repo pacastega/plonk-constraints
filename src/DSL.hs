@@ -191,7 +191,7 @@ data DSL' p i =
   deriving Show
 
 {-@ measure unpacked @-}
-{-@ unpacked :: {v:DSL p i t | desugared v} -> Bool @-}
+{-@ unpacked :: DSL p i t -> Bool @-}
 unpacked :: DSL p i t -> Bool
 unpacked (EQL p1 p2) = unpacked p1 && unpacked p2
 
@@ -200,6 +200,8 @@ unpacked (CONST _)   = True
 
 unpacked (NIL)       = False
 unpacked (CONS _ _)  = False
+unpacked (GET {})    = False
+unpacked (SET {})    = False
 
 unpacked (ADD p1 p2) = unpacked p1 && unpacked p2
 unpacked (SUB p1 p2) = unpacked p1 && unpacked p2
