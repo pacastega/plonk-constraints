@@ -104,7 +104,7 @@ loop1 = ITER (B 1 5) body (WIRE 1) where
               {v:DSL _ (Btwn 0 20) | unpacked v} ->
               {v:DSL _ (Btwn 0 20) | unpacked v} @-}
   body :: Int -> DSL FF Int -> DSL FF Int
-  body = (\i p -> MUL p (WIRE 0))
+  body = (\_ p -> MUL p (WIRE 0))
 
 -- 5! = 120
 {-@ loop2 :: DSL _ (Btwn 0 20) @-}
@@ -141,7 +141,7 @@ loop4 n = ITER (B 1 n) body (CONST 0) where
 {-@ loop5 :: DSL _ (Btwn 0 20) @-}
 loop5 :: DSL FF Int
 loop5 = (ITER (B 2 4) body (WIRE 0)) `EQL` (CONST 42) where
-  body = \i p -> MUL p (WIRE 0)
+  body = \_ p -> MUL p (WIRE 0)
   {-@ body :: Int ->
               {v:DSL _ (Btwn 0 20) | unpacked v} ->
               {v:DSL _ (Btwn 0 20) | unpacked v} @-}

@@ -84,9 +84,9 @@ vlength _           = 0
 
 {-@ measure isVector @-}
 isVector :: DSL p i -> Bool
-isVector (NIL)       = True
-isVector (CONS p ps) = True
-isVector _           = False
+isVector (NIL)      = True
+isVector (CONS _ _) = True
+isVector _          = False
 
 {-@ data Bound = B {s::Int, e::{v:Int | s <= v}} @-}
 data Bound = B Int Int
@@ -170,12 +170,12 @@ desugar (CONS p ps) = CONS (desugar p) (desugar ps)
 
 {-@ get :: v:{DSL p i | isVector v} -> Btwn 0 (vlength v) -> DSL p i @-}
 get :: DSL p i -> Int -> DSL p i
-get (CONS p ps) 0 = p
-get (CONS p ps) i = get ps (i-1)
+get (CONS p _ ) 0 = p
+get (CONS _ ps) i = get ps (i-1)
 
 {-@ set :: v:{DSL p i | isVector v} -> Btwn 0 (vlength v) -> {x:DSL p i | unpacked x} -> {u:DSL p i | isVector u} @-}
 set :: DSL p i -> Int -> DSL p i -> DSL p i
-set (CONS p ps) 0 x = CONS x ps
+set (CONS _ ps) 0 x = CONS x ps
 set (CONS p ps) i x = CONS p (set ps (i-1) x)
 
 

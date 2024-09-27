@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
-{-# OPTIONS -Wno-incomplete-uni-patterns #-}
+{-# OPTIONS -Wno-unused-imports #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
