@@ -102,6 +102,32 @@ testProgram12 = (CONST 42)             `CONS`
                 (WIRE 1 `ADD` CONST 5) `CONS` NIL
 
 
+{-@ range :: lo:Int -> hi:{Int | hi >= lo} ->
+             {res:DSL _ (Btwn 0 20) | isVector res && vlength res = hi-lo}
+          / [hi-lo] @-}
+range :: Int -> Int -> DSL (F 2131) Int
+range a b = if a == b then NIL else CONST (fromIntegral a) `CONS` (range (a+1) b)
+
+{-@ testProgram13 :: DSL _ (Btwn 0 20) @-}
+testProgram13 :: DSL (F 2131) Int
+testProgram13 = set (range 1 5) 2 (CONST 42) where
+
+{-@ testProgram14 :: DSL _ (Btwn 0 20) @-}
+testProgram14 :: DSL (F 2131) Int
+testProgram14 = get (range 1 5) 3 where
+
+{-@ vecMul :: {a:DSL _ (Btwn 0 20) | isVector a} ->
+              {b:DSL _ (Btwn 0 20) | isVector b && vlength b = vlength a} ->
+              {c:DSL _ (Btwn 0 20) | isVector c && vlength c = vlength a} @-}
+vecMul :: DSL (F 2131) Int -> DSL (F 2131) Int -> DSL (F 2131) Int
+vecMul (NIL)       (NIL)       = NIL
+vecMul (CONS a as) (CONS b bs) = CONS (MUL a b) (vecMul as bs)
+
+{-@ testProgram15 :: DSL _ (Btwn 0 20) @-}
+testProgram15 :: DSL (F 2131) Int
+testProgram15 = vecMul (range 1 4) (range 5 8)
+
+
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
@@ -155,3 +181,7 @@ main = do
   test 20 testProgram11 (const 627)
 
   test 20 testProgram12 (\i -> if i < 2 then [1,2] !! i else 0)
+
+  test 20 testProgram13 (const 0)
+  test 20 testProgram14 (const 0)
+  test 20 testProgram15 (const 0)
