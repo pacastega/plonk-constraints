@@ -44,8 +44,6 @@ data DSL p i where
   -- Vectors
   NIL  :: DSL p i
   CONS :: DSL p i -> DSL p i -> DSL p i
-  GET  :: DSL p i -> Int -> DSL p i
-  SET  :: DSL p i -> Int -> DSL p i -> DSL p i
 
 infixr 5 `CONS`
 
@@ -74,9 +72,7 @@ data DSL p i where
           {v:DSL p i | unpacked v} -> {v:DSL p i | unpacked v}
 
   NIL  :: DSL _ _
-  CONS :: DSL _ _ -> DSL _ _ -> DSL _ _
-  GET  :: l:DSL _ _ -> Btwn 0 (vlength l) -> DSL _ _
-  SET  :: l:DSL _ _ -> Btwn 0 (vlength l) -> DSL _ _ -> DSL _ _
+  CONS :: head:{DSL _ _ | unpacked head} -> tail:{DSL _ _ | isVector tail} -> DSL _ _
 
 @-}
 
@@ -86,6 +82,11 @@ vlength :: DSL p i -> Int
 vlength (CONS _ ps) = 1 + vlength ps
 vlength _           = 0
 
+{-@ measure isVector @-}
+isVector :: DSL p i -> Bool
+isVector (NIL)       = True
+isVector (CONS p ps) = True
+isVector _           = False
 
 {-@ data Bound = B {s::Int, e::{v:Int | s <= v}} @-}
 data Bound = B Int Int
@@ -105,8 +106,6 @@ desugared (CONST _) = True
 
 desugared (NIL)       = True
 desugared (CONS p ps) = desugared p  && desugared ps
-desugared (GET _ _)   = False -- should be desugared to use only NIL and CONS
-desugared (SET _ _ _) = False -- should be desugared to use only NIL and CONS
 
 desugared (ADD p1 p2) = desugared p1 && desugared p2
 desugared (SUB p1 p2) = desugared p1 && desugared p2
@@ -142,7 +141,8 @@ unfoldIter (ITER (B s e) f a)
 
 {-@ lazy desugar @-}
 {-@ desugar :: p:DSL p i ->
-               {v:DSL p i | desugared v && (unpacked p => unpacked v)} @-}
+               {v:DSL p i | desugared v && (unpacked p => unpacked v)
+                                        && (isVector p => isVector v)} @-}
 desugar :: DSL p i -> DSL p i
 -- syntactic sugar:
 desugar (EQL p1 p2) = ISZERO (SUB (desugar p1) (desugar p2))
@@ -167,10 +167,16 @@ desugar (CONST x)   = CONST x
 desugar (NIL)       = NIL
 desugar (CONS p ps) = CONS (desugar p) (desugar ps)
 
-desugar (GET v 0)   = case v of CONS p _  -> desugar $ p
-desugar (GET v i)   = case v of CONS _ ps -> desugar $ GET ps (i-1)
-desugar (SET v 0 x) = case v of CONS _ ps -> desugar $ CONS x ps
-desugar (SET v i x) = case v of CONS p ps -> desugar $ CONS p (SET ps (i-1) x)
+
+{-@ get :: v:{DSL p i | isVector v} -> Btwn 0 (vlength v) -> DSL p i @-}
+get :: DSL p i -> Int -> DSL p i
+get (CONS p ps) 0 = p
+get (CONS p ps) i = get ps (i-1)
+
+{-@ set :: v:{DSL p i | isVector v} -> Btwn 0 (vlength v) -> {x:DSL p i | unpacked x} -> {u:DSL p i | isVector u} @-}
+set :: DSL p i -> Int -> DSL p i -> DSL p i
+set (CONS p ps) 0 x = CONS x ps
+set (CONS p ps) i x = CONS p (set ps (i-1) x)
 
 
 -- Simplified & Untyped DSL (core language)
@@ -200,8 +206,6 @@ unpacked (CONST _)   = True
 
 unpacked (NIL)       = False
 unpacked (CONS _ _)  = False
-unpacked (GET {})    = False
-unpacked (SET {})    = False
 
 unpacked (ADD p1 p2) = unpacked p1 && unpacked p2
 unpacked (SUB p1 p2) = unpacked p1 && unpacked p2
