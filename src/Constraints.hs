@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
-{-# OPTIONS -Wno-incomplete-uni-patterns #-}
+{-# OPTIONS -Wno-unused-imports #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
@@ -7,7 +7,7 @@ module Constraints (checkGate, satisfies, Circuit) where
 
 import Vec
 import RefinementTypes()
-import GHC.Num (fromInteger)
+import GHC.Num (fromInteger) -- needed to use reflected functions
 
 
 -- n == # gates
