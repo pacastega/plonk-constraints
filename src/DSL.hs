@@ -63,7 +63,7 @@ data DSL p i where
   OR  :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
   XOR :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
 
-  EQL    :: {v:DSL _ _ | unpacked v} -> {u:DSL _ _ | unpacked u} -> DSL _ _
+  EQL    :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
   ISZERO :: {v:DSL p i | unpacked v} -> DSL p i
 
   ITER :: b:Bound ->
@@ -71,8 +71,8 @@ data DSL p i where
               {v:DSL p i | unpacked v}) ->
           {v:DSL p i | unpacked v} -> {v:DSL p i | unpacked v}
 
-  NIL  :: DSL _ _
-  CONS :: head:{DSL _ _ | unpacked head} -> tail:{DSL _ _ | isVector tail} -> DSL _ _
+  NIL  :: DSL p i
+  CONS :: head:{DSL p i | unpacked head} -> tail:{DSL p i | isVector tail} -> DSL p i
 
 @-}
 
