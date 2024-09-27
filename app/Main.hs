@@ -20,8 +20,9 @@ import Constraints
 import DSL
 import WitnessGeneration
 
-type F17 = PrimeField 17
 type F p = PrimeField p
+type F17 = F 17
+type FF  = F 2131
 
 
 {-@ testProgram :: v:DSL _ (Btwn 0 7) @-}
@@ -49,54 +50,54 @@ testProgram6 :: DSL F17 Int
 testProgram6 = (WIRE 0 `ADD` CONST 2) `EQL` CONST 5
 
 {-@ testProgram7 :: DSL _ (Btwn 0 20) @-}
-testProgram7 :: DSL (F 2131) Int
+testProgram7 :: DSL FF Int
 testProgram7 = ITER (B 1 5) body (WIRE 1) where
   {-@ body :: Int ->
               {v:DSL _ (Btwn 0 20) | unpacked v} ->
               {v:DSL _ (Btwn 0 20) | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
+  body :: Int -> DSL FF Int -> DSL FF Int
   body = (\i p -> MUL p (WIRE 0))
 
 {-@ testProgram8 :: DSL _ (Btwn 0 20) @-}
-testProgram8 :: DSL (F 2131) Int
+testProgram8 :: DSL FF Int
 testProgram8 = ITER (B 2 5) body (CONST 1) where
   {-@ body :: Int ->
               {v:DSL _ (Btwn 0 20) | unpacked v} ->
               {v:DSL _ (Btwn 0 20) | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
+  body :: Int -> DSL FF Int -> DSL FF Int
   body = \i p -> MUL p (CONST $ fromIntegral i)
 
 {-@ testProgram9 :: DSL _ (Btwn 0 20) @-}
-testProgram9 :: DSL (F 2131) Int
+testProgram9 :: DSL FF Int
 testProgram9 = ITER (B 1 6) body (CONST 0) where
   {-@ body :: Int ->
               {v:DSL _ (Btwn 0 20) | unpacked v} ->
               {v:DSL _ (Btwn 0 20) | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
+  body :: Int -> DSL FF Int -> DSL FF Int
   body = \i p -> ADD p (CONST $ fromIntegral i)
 
 {-@ testProgram10 :: Btwn 1 39 -> DSL _ (Btwn 0 40) @-}
-testProgram10 :: Int -> DSL (F 2131) Int
+testProgram10 :: Int -> DSL FF Int
 testProgram10 nIters = ITER (B 1 nIters) body (CONST 0) where
   body = \i p -> WIRE i `ADD` (p `MUL` WIRE 0)
   {-@ body :: Btwn 1 40 ->
               {v:DSL _ (Btwn 0 40) | unpacked v} ->
               {v:DSL _ (Btwn 0 40) | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
+  body :: Int -> DSL FF Int -> DSL FF Int
 
 
 {-@ testProgram11 :: DSL _ (Btwn 0 20) @-}
-testProgram11 :: DSL (F 2131) Int
+testProgram11 :: DSL FF Int
 testProgram11 = (ITER (B 2 4) body (WIRE 0)) `EQL` (CONST 42) where
   body = \i p -> MUL p (WIRE 0)
   {-@ body :: Int ->
               {v:DSL _ (Btwn 0 20) | unpacked v} ->
               {v:DSL _ (Btwn 0 20) | unpacked v} @-}
-  body :: Int -> DSL (F 2131) Int -> DSL (F 2131) Int
+  body :: Int -> DSL FF Int -> DSL FF Int
 
 
 {-@ testProgram12 :: {v:DSL _ (Btwn 0 20) | vlength v = 3} @-}
-testProgram12 :: DSL (F 2131) Int
+testProgram12 :: DSL FF Int
 testProgram12 = (CONST 42)             `CONS`
                 (CONST 4 `SUB` WIRE 0) `CONS`
                 (WIRE 1 `ADD` CONST 5) `CONS` NIL
@@ -105,26 +106,26 @@ testProgram12 = (CONST 42)             `CONS`
 {-@ range :: lo:Int -> hi:{Int | hi >= lo} ->
              {res:DSL _ (Btwn 0 20) | isVector res && vlength res = hi-lo}
           / [hi-lo] @-}
-range :: Int -> Int -> DSL (F 2131) Int
+range :: Int -> Int -> DSL FF Int
 range a b = if a == b then NIL else CONST (fromIntegral a) `CONS` (range (a+1) b)
 
 {-@ testProgram13 :: DSL _ (Btwn 0 20) @-}
-testProgram13 :: DSL (F 2131) Int
+testProgram13 :: DSL FF Int
 testProgram13 = set (range 1 5) 2 (CONST 42) where
 
 {-@ testProgram14 :: DSL _ (Btwn 0 20) @-}
-testProgram14 :: DSL (F 2131) Int
+testProgram14 :: DSL FF Int
 testProgram14 = get (range 1 5) 3 where
 
 {-@ vecMul :: {a:DSL _ (Btwn 0 20) | isVector a} ->
               {b:DSL _ (Btwn 0 20) | isVector b && vlength b = vlength a} ->
               {c:DSL _ (Btwn 0 20) | isVector c && vlength c = vlength a} @-}
-vecMul :: DSL (F 2131) Int -> DSL (F 2131) Int -> DSL (F 2131) Int
+vecMul :: DSL FF Int -> DSL FF Int -> DSL FF Int
 vecMul (NIL)       (NIL)       = NIL
 vecMul (CONS a as) (CONS b bs) = CONS (MUL a b) (vecMul as bs)
 
 {-@ testProgram15 :: DSL _ (Btwn 0 20) @-}
-testProgram15 :: DSL (F 2131) Int
+testProgram15 :: DSL FF Int
 testProgram15 = vecMul (range 1 4) (range 5 8)
 
 
