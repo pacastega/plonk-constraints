@@ -5,7 +5,7 @@ import Examples
 
 main :: IO ()
 main = do
-  testArithmetic
-  testBoolean
-  testLoops
+  -- testArithmetic
+  -- testBoolean
+  -- testLoops
   testVectors

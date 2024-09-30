@@ -9,6 +9,7 @@ module Examples (testArithmetic, testBoolean, testLoops, testVectors) where
 
 import Data.FiniteField.PrimeField
 import Vec
+import PlinkLib
 
 import Utils           -- needed to use reflected functions
 import Circuits        -- needed to use reflected functions
@@ -173,11 +174,11 @@ vec1 = (CONST 42)             `CONS`     -- 42
        (CONST 4 `SUB` WIRE 0) `CONS`     -- 4 - x_0
        (WIRE 1 `ADD` CONST 5) `CONS` NIL -- x_1 + 5
 
-{-@ range :: lo:Int -> hi:{Int | hi >= lo} ->
+{-@ range :: lo:p -> hi:{p | hi >= lo} ->
              {res:DSL _ (Btwn 0 20) | isVector res && vlength res = hi-lo}
           / [hi-lo] @-}
-range :: Int -> Int -> DSL FF Int
-range a b = if a == b then NIL else CONST (fromIntegral a) `CONS` (range (a+1) b)
+range :: (Ord p, Num p) => p -> p -> DSL p Int
+range a b = if a == b then NIL else CONST a `CONS` (range (a+1) b)
 
 -- (range 1 5) but writing 42 in the 2nd position
 {-@ vec2 :: DSL _ (Btwn 0 20) @-}
@@ -190,17 +191,27 @@ vec3 :: DSL FF Int
 vec3 = get (range 1 5) 3 where
 
 -- multiply two vectors component-wise
-{-@ vecMul :: {a:DSL _ (Btwn 0 20) | isVector a} ->
-              {b:DSL _ (Btwn 0 20) | isVector b && vlength b = vlength a} ->
-              {c:DSL _ (Btwn 0 20) | isVector c && vlength c = vlength a} @-}
+{-@ vecMul :: a:{DSL _ (Btwn 0 20) | isVector a} ->
+              b:{DSL _ (Btwn 0 20) | isVector b && vlength b = vlength a} ->
+              c:{DSL _ (Btwn 0 20) | isVector c && vlength c = vlength a} @-}
 vecMul :: DSL FF Int -> DSL FF Int -> DSL FF Int
 vecMul (NIL)       (NIL)       = NIL
 vecMul (CONS a as) (CONS b bs) = CONS (MUL a b) (vecMul as bs)
+-- vecMul = bitwise MUL
+-- the inferred type ‘Int’ is not a subtype of the required type ‘Nat’
 
 -- [1, 2, 3] * [5, 6, 7] = [1*5, 2*6, 3*7] = [5, 12, 21]
 {-@ vec4 :: DSL _ (Btwn 0 20) @-}
 vec4 :: DSL FF Int
 vec4 = vecMul (range 1 4) (range 5 8)
+
+{-@ vec5 :: {v:DSL _ (Btwn 0 20) | vlength v = 9} @-}
+vec5 :: DSL FF Int
+vec5 = rotateL (range 1 10) 3
+
+{-@ vec6 :: {v:DSL _ (Btwn 0 20) | vlength v = 9} @-}
+vec6 :: DSL FF Int
+vec6 = rotateR (range 1 10) 2
 
 testVectors :: IO ()
 testVectors = do
@@ -209,3 +220,6 @@ testVectors = do
   test 20 vec2 (const 0)
   test 20 vec3 (const 0)
   test 20 vec4 (const 0)
+
+  test 20 vec5 (const 0)
+  test 20 vec6 (const 0)
