@@ -26,3 +26,10 @@ append' (x:xs) ys = x : append' xs ys
 {-@ reflect boolean @-}
 boolean :: (Num p, Eq p) => p -> Bool
 boolean x = x == 0 || x == 1
+
+-- Exponentiate by repeated multiplication
+{-@ reflect pow @-}
+{-@ pow :: a -> n:Nat -> a / [n] @-}
+pow :: Num a => a -> Int -> a
+pow _ 0 = 1
+pow x n = x * (pow x (n-1))
