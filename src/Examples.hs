@@ -213,6 +213,12 @@ vec5 = rotateL (range 1 10) 3
 vec6 :: DSL FF Int
 vec6 = rotateR (range 1 10) 2
 
+{-@ vec7 :: {v:DSL _ (Btwn 0 500) | isVector v && vlength v >= 0} @-}
+vec7 :: DSL FF Int
+vec7 = vecAdd (PlinkLib.fromList [CONST 0, CONST 1, CONST 1]) -- 2
+              (PlinkLib.fromList [CONST 0, CONST 1, CONST 0]) -- 3
+
+
 testVectors :: IO ()
 testVectors = do
   test 20 vec1 (\i -> if i < 2 then [1,2] !! i else 0)
@@ -223,3 +229,5 @@ testVectors = do
 
   test 20 vec5 (const 0)
   test 20 vec6 (const 0)
+
+  test 500 vec7 (const 0)
