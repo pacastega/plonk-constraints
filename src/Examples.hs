@@ -7,6 +7,7 @@
 
 module Examples (testArithmetic, testBoolean, testLoops, testVectors) where
 
+import qualified Data.Map as M
 import Data.FiniteField.PrimeField
 import Vec
 import PlinkLib
@@ -29,205 +30,215 @@ type FF  = F 2131
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
+{-@ compose' :: m:Nat -> Env m -> M.Map String p -> M.Map (Btwn 0 m) p @-}
+compose' :: Int -> Env -> M.Map String p -> M.Map Int p
+compose' _ env val = M.compose val (invert env) where
+  invert = M.fromList . map swap . M.toList
+  swap (a,b) = (b,a)
+  invert :: M.Map String Int -> M.Map Int String
+  swap :: (String, Int) -> (Int, String)
 
-{-@ test :: m:Nat1 -> DSL _ (Btwn 0 m) -> (Btwn 0 m -> p) -> IO () @-}
+
+{-@ test :: DSL _ -> (M.Map String p) -> IO () @-}
 test :: (Eq p, Fractional p, Show p) =>
-        Int -> DSL p Int -> (Int -> p) -> IO ()
-test m program valuation = do
-  let labeledPrograms = label m (unpack $ desugar program)
+        DSL p -> (M.Map String p) -> IO ()
+test program valuation = do
+  let desugaredProgram = desugar program
+  let m = 1 + nWires desugaredProgram -- upper bound for #(needed wires)
+  let (labeledPrograms, env) = label m [desugaredProgram]
   let circuit = concatMap (compile m) labeledPrograms
-  let input = witnessGen m labeledPrograms valuation
+  let input = witnessGen m labeledPrograms (compose' m env valuation)
   let output = map (\p -> input ! outputWire p) labeledPrograms
+  let output' = splitAt (length labeledPrograms - vlength program) output
 
   putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   putStrLn $ "Compiled circuit:     " ++ show circuit
   putStrLn $ "Input:                " ++ show input
-  putStrLn $ "Final result: " ++ cyan (show output)
+  putStrLn $ "Variable environment: " ++ show env
+  putStrLn $ "Final result: " ++ cyan (show output')
 
   putStrLn $ replicate 80 '='
 
+
 -- Arithmetic programs ---------------------------------------------------------
--- (x0 + x1) + (x2 + x3)
-{-@ arith1 :: v:DSL _ (Btwn 0 7) @-}
-arith1 :: DSL F17 Int
-arith1 = ADD (ADD (WIRE 0) (WIRE 1)) (ADD (WIRE 2) (WIRE 3))
+-- (a + b) + (c + d)
+{-@ arith1 :: v:DSL _ @-}
+arith1 :: DSL F17
+arith1 = ADD (ADD (VAR "a") (VAR "b")) (ADD (VAR "c") (VAR "d"))
 
--- (x0 + 15) * (x1 + 3)
-{-@ arith2 :: v:DSL _ (Btwn 0 7) @-}
-arith2 :: DSL F17 Int
-arith2 = MUL (ADD (WIRE 0) (CONST 15)) (ADD (WIRE 1) (CONST 3))
+-- (a + 15) * (b + 3)
+{-@ arith2 :: v:DSL _ @-}
+arith2 :: DSL F17
+arith2 = MUL (ADD (VAR "a") (CONST 15)) (ADD (VAR "b") (CONST 3))
 
--- x5 / x1
-{-@ arith3 :: DSL _ (Btwn 0 6) @-}
-arith3 :: DSL F17 Int
-arith3 = DIV (WIRE 5) (WIRE 1)
+-- num / den
+{-@ arith3 :: DSL _ @-}
+arith3 :: DSL F17
+arith3 = DIV (VAR "num") (VAR "den")
 
 testArithmetic :: IO ()
 testArithmetic = do
-  test 7 arith1 (const 1)                      -- (1+1)  + (1+1) = 4
-  test 7 arith2 (\case 0 -> 7; 1 -> 3; _ -> 0) -- (7+15) * (3+3) = 13
-  test 6 arith3 (\case 5 -> 3; 1 -> 9; _ -> 0) -- 3 / 9          = 6
+  -- (1+1)  + (1+1) = 4
+  test arith1 (M.fromList [("a",1), ("b",1), ("c",1), ("d",1)])
+  test arith2 (M.fromList [("a",7), ("b",3)])     -- (7+15) * (3+3) = 13
+  test arith3 (M.fromList [("num",3), ("den",9)]) -- 3 / 9          = 6
 
 -- Boolean programs ------------------------------------------------------------
--- x0 == 0 || (x0 /= 0 && x1 == 1)
-{-@ bool1 :: DSL _ (Btwn 0 20) @-}
-bool1 :: DSL F17 Int
-bool1 = ISZERO (WIRE 0) `OR` (NOT (ISZERO (WIRE 0)) `AND` (ISZERO (WIRE 1)))
+-- a == 0 || (a /= 0 && b == 1)
+{-@ bool1 :: DSL _ @-}
+bool1 :: DSL F17
+bool1 = ISZERO (VAR "a") `OR` (NOT (ISZERO (VAR "a")) `AND` (ISZERO (VAR "b")))
 
--- 7 * x0 == 1
-{-@ bool2 :: DSL _ (Btwn 0 20) @-}
-bool2 :: DSL F17 Int
-bool2 = (CONST 7 `MUL` WIRE 0) `EQL` CONST 1
+-- 7 * inv == 1
+{-@ bool2 :: DSL _ @-}
+bool2 :: DSL F17
+bool2 = (CONST 7 `MUL` VAR "inv") `EQL` CONST 1
 
--- x0 + 2 == 5
-{-@ bool3 :: DSL _ (Btwn 0 20) @-}
-bool3 :: DSL F17 Int
-bool3 = (WIRE 0 `ADD` CONST 2) `EQL` CONST 5
+-- addTo5 + 2 == 5
+{-@ bool3 :: DSL _ @-}
+bool3 :: DSL F17
+bool3 = (VAR "addsTo5" `ADD` CONST 2) `EQL` CONST 5
 
 testBoolean :: IO ()
 testBoolean = do
-  test 20 bool1 (\case 0 -> 0; 1 -> 3; _ -> 7) -- x0 == 0
-  test 20 bool1 (\case 0 -> 1; 1 -> 0; _ -> 7) -- x0 /= 0 && x1 == 0
-  test 20 bool1 (\case 0 -> 1; 1 -> 8; _ -> 7) -- x0 /= 0 && x1 /= 0
+  test bool1 (M.fromList [("a",0), ("b",3)]) -- a == 0
+  test bool1 (M.fromList [("a",1), ("b",0)]) -- a /= 0 && b == 0
+  test bool1 (M.fromList [("a",1), ("b",8)]) -- a /= 0 && b /= 0
 
-  test 20 bool2 (\case 0 -> 5; _ -> 8) -- 7 * 5 == 1 (== True)
-  test 20 bool2 (\case 0 -> 7; _ -> 8) -- 7 * 7 == 1 (== False)
+  test bool2 (M.fromList [("inv",5)]) -- 7 * 5 == 1 (== True)
+  test bool2 (M.fromList [("inv",7)]) -- 7 * 7 == 1 (== False)
 
-  test 20 bool3 (\case 0 -> 2; _ -> 0) -- 2 + 2 == 5 (== False)
-  test 20 bool3 (\case 0 -> 3; _ -> 0) -- 3 + 2 == 5 (== True)
+  test bool3 (M.fromList [("addsTo5",2)]) -- 2 + 2 == 5 (== False)
+  test bool3 (M.fromList [("addsTo5",3)]) -- 3 + 2 == 5 (== True)
 
 -- Loop programs ---------------------------------------------------------------
--- x1 * (x0)^5
-{-@ loop1 :: DSL _ (Btwn 0 20) @-}
-loop1 :: DSL FF Int
-loop1 = ITER (B 1 5) body (WIRE 1) where
+-- start * (base)^5
+{-@ loop1 :: DSL _ @-}
+loop1 :: DSL FF
+loop1 = ITER (B 1 5) body (VAR "start") where
   {-@ body :: Int ->
-              {v:DSL _ (Btwn 0 20) | unpacked v} ->
-              {v:DSL _ (Btwn 0 20) | unpacked v} @-}
-  body :: Int -> DSL FF Int -> DSL FF Int
-  body = (\_ p -> MUL p (WIRE 0))
+              {v:DSL _ | unpacked v} ->
+              {v:DSL _ | unpacked v} @-}
+  body :: Int -> DSL FF -> DSL FF
+  body = (\_ p -> MUL p (VAR "base"))
 
 -- 5! = 120
-{-@ loop2 :: DSL _ (Btwn 0 20) @-}
-loop2 :: DSL FF Int
+{-@ loop2 :: DSL _ @-}
+loop2 :: DSL FF
 loop2 = ITER (B 2 5) body (CONST 1) where
   {-@ body :: Int ->
-              {v:DSL _ (Btwn 0 20) | unpacked v} ->
-              {v:DSL _ (Btwn 0 20) | unpacked v} @-}
-  body :: Int -> DSL FF Int -> DSL FF Int
+              {v:DSL _ | unpacked v} ->
+              {v:DSL _ | unpacked v} @-}
+  body :: Int -> DSL FF -> DSL FF
   body = \i p -> MUL p (CONST $ fromIntegral i)
 
 -- 1 + 2 + 3 + 4 + 5 + 6 = 21
-{-@ loop3 :: DSL _ (Btwn 0 20) @-}
-loop3 :: DSL FF Int
+{-@ loop3 :: DSL _ @-}
+loop3 :: DSL FF
 loop3 = ITER (B 1 6) body (CONST 0) where
   {-@ body :: Int ->
-              {v:DSL _ (Btwn 0 20) | unpacked v} ->
-              {v:DSL _ (Btwn 0 20) | unpacked v} @-}
-  body :: Int -> DSL FF Int -> DSL FF Int
+              {v:DSL _ | unpacked v} ->
+              {v:DSL _ | unpacked v} @-}
+  body :: Int -> DSL FF -> DSL FF
   body = \i p -> ADD p (CONST $ fromIntegral i)
 
 -- Polynomial evaluation:
--- let x = x_0 in (x_1 * x^(n-1) + x_2 * x^(n-2) + ... + x_(n-1) * x + x_n)
-{-@ loop4 :: Btwn 1 39 -> DSL _ (Btwn 0 40) @-}
-loop4 :: Int -> DSL FF Int
+-- x_1 * x^(n-1) + x_2 * x^(n-2) + ... + x_(n-1) * x + x_n
+{-@ loop4 :: Btwn 1 39 -> DSL _ @-}
+loop4 :: Int -> DSL FF
 loop4 n = ITER (B 1 n) body (CONST 0) where
-  body = \i p -> WIRE i `ADD` (p `MUL` WIRE 0)
+  body = \i p -> (VAR $ "coef" ++ show i) `ADD` (p `MUL` VAR "x") --FIXME:
   {-@ body :: Btwn 1 40 ->
-              {v:DSL _ (Btwn 0 40) | unpacked v} ->
-              {v:DSL _ (Btwn 0 40) | unpacked v} @-}
-  body :: Int -> DSL FF Int -> DSL FF Int
+              {v:DSL _ | unpacked v} ->
+              {v:DSL _ | unpacked v} @-}
+  body :: Int -> DSL FF -> DSL FF
 
--- (x0)^4 == 42
-{-@ loop5 :: DSL _ (Btwn 0 20) @-}
-loop5 :: DSL FF Int
-loop5 = (ITER (B 2 4) body (WIRE 0)) `EQL` (CONST 42) where
-  body = \_ p -> MUL p (WIRE 0)
+-- (base)^4 == 42
+{-@ loop5 :: DSL _ @-}
+loop5 :: DSL FF
+loop5 = (ITER (B 2 4) body (VAR "base")) `EQL` (CONST 42) where
+  body = \_ p -> MUL p (VAR "base")
   {-@ body :: Int ->
-              {v:DSL _ (Btwn 0 20) | unpacked v} ->
-              {v:DSL _ (Btwn 0 20) | unpacked v} @-}
-  body :: Int -> DSL FF Int -> DSL FF Int
+              {v:DSL _ | unpacked v} ->
+              {v:DSL _ | unpacked v} @-}
+  body :: Int -> DSL FF -> DSL FF
 
 testLoops :: IO ()
 testLoops = do
-  test 20 loop1 (\case 0 -> 2; 1 -> 1; _ -> 0) -- 1 * 2^5 = 2^5  = 32
-  test 20 loop1 (\case 0 -> 4; 1 -> 2; _ -> 0) -- 2 * 4^5 = 2^11 = 2048
+  test loop1 (M.fromList [("base",2), ("start",1)]) -- 1 * 2^5 = 2^5  = 32
+  test loop1 (M.fromList [("base",4), ("start",2)]) -- 2 * 4^5 = 2^11 = 2048
 
-  test 20 loop2 (const 0) -- 5! = 120
-  test 20 loop3 (const 0) -- 1 + 2 + ... + 6 = 21
+  test loop2 (M.empty) -- 5! = 120
+  test loop3 (M.empty) -- 1 + 2 + ... + 6 = 21
 
-  -- decode 11111000 in binary (base x0 = 2) --> 248
-  test 40 (loop4 8) (\i -> if i == 0 then 2
-                           else if i > 8 then 0
-                           else [1,1,1,1,1,0,0,0] !! (i-1))
-  -- decode F8 in hexadecimal (base x0 = 16) --> 248
-  test 40 (loop4 2) (\i -> if i == 0 then 16
-                           else if i > 2 then 0
-                           else [15, 8] !! (i-1))
+  let coefs = map (\n -> "coef" ++ show n) [1..]
 
-  test 20 loop5 (const 627) -- 627^4 == 42 (mod 2131)
+  -- decode 11111000 in binary (base x = 2) --> 248
+  test (loop4 8) (M.fromList $ [("x",2)] ++ zip coefs [1,1,1,1,1,0,0,0])
+  -- decode F8 in hexadecimal (base x = 16) --> 248
+  test (loop4 2) (M.fromList $ [("x",16)] ++ zip coefs [15, 8])
+
+  test loop5 (M.fromList [("base",627)]) -- 627^4 == 42 (mod 2131)
 
 -- Vector programs -------------------------------------------------------------
-{-@ vec1 :: {v:DSL _ (Btwn 0 20) | vlength v = 3} @-}
-vec1 :: DSL FF Int
-vec1 = (CONST 42)             `CONS`     -- 42
-       (CONST 4 `SUB` WIRE 0) `CONS`     -- 4 - x_0
-       (WIRE 1 `ADD` CONST 5) `CONS` NIL -- x_1 + 5
+{-@ vec1 :: {v:DSL _ | vlength v = 3} @-}
+vec1 :: DSL FF
+vec1 = (CONST 42)             `CONS`      -- 42
+       (CONST 4 `SUB` VAR "a") `CONS`     -- 4 - a
+       (VAR "b" `ADD` CONST 5) `CONS` NIL -- b + 5
 
 {-@ range :: lo:p -> hi:{p | hi >= lo} ->
-             {res:DSL _ (Btwn 0 20) | isVector res && vlength res = hi-lo}
+             {res:DSL _ | isVector res && vlength res = hi-lo}
           / [hi-lo] @-}
-range :: (Ord p, Num p) => p -> p -> DSL p Int
+range :: (Ord p, Num p) => p -> p -> DSL p
 range a b = if a == b then NIL else CONST a `CONS` (range (a+1) b)
 
 -- (range 1 5) but writing 42 in the 2nd position
-{-@ vec2 :: DSL _ (Btwn 0 20) @-}
-vec2 :: DSL FF Int
+{-@ vec2 :: DSL _ @-}
+vec2 :: DSL FF
 vec2 = set (range 1 5) 2 (CONST 42) where
 
 -- 3rd position of (range 1 5)
-{-@ vec3 :: DSL _ (Btwn 0 20) @-}
-vec3 :: DSL FF Int
+{-@ vec3 :: DSL _ @-}
+vec3 :: DSL FF
 vec3 = get (range 1 5) 3 where
 
 -- multiply two vectors component-wise
-{-@ vecMul :: a:{DSL _ (Btwn 0 20) | isVector a} ->
-              b:{DSL _ (Btwn 0 20) | isVector b && vlength b = vlength a} ->
-              c:{DSL _ (Btwn 0 20) | isVector c && vlength c = vlength a} @-}
-vecMul :: DSL FF Int -> DSL FF Int -> DSL FF Int
+{-@ vecMul :: a:{DSL _ | isVector a} ->
+              b:{DSL _ | isVector b && vlength b = vlength a} ->
+              c:{DSL _ | isVector c && vlength c = vlength a} @-}
+vecMul :: DSL FF -> DSL FF -> DSL FF
 vecMul (NIL)       (NIL)       = NIL
 vecMul (CONS a as) (CONS b bs) = CONS (MUL a b) (vecMul as bs)
 -- vecMul = bitwise MUL
 -- the inferred type ‘Int’ is not a subtype of the required type ‘Nat’
 
 -- [1, 2, 3] * [5, 6, 7] = [1*5, 2*6, 3*7] = [5, 12, 21]
-{-@ vec4 :: DSL _ (Btwn 0 20) @-}
-vec4 :: DSL FF Int
+{-@ vec4 :: DSL _ @-}
+vec4 :: DSL FF
 vec4 = vecMul (range 1 4) (range 5 8)
 
-{-@ vec5 :: {v:DSL _ (Btwn 0 20) | vlength v = 9} @-}
-vec5 :: DSL FF Int
+{-@ vec5 :: {v:DSL _ | vlength v = 9} @-}
+vec5 :: DSL FF
 vec5 = rotateL (range 1 10) 3
 
-{-@ vec6 :: {v:DSL _ (Btwn 0 20) | vlength v = 9} @-}
-vec6 :: DSL FF Int
+{-@ vec6 :: {v:DSL _ | vlength v = 9} @-}
+vec6 :: DSL FF
 vec6 = rotateR (range 1 10) 2
 
-{-@ vec7 :: {v:DSL _ (Btwn 0 500) | isVector v && vlength v >= 0} @-}
-vec7 :: DSL FF Int
+{-@ vec7 :: {v:DSL _ | isVector v && vlength v >= 0} @-}
+vec7 :: DSL FF
 vec7 = vecAdd (PlinkLib.fromList [CONST 0, CONST 1, CONST 1]) -- 2
               (PlinkLib.fromList [CONST 0, CONST 1, CONST 0]) -- 3
 
-
 testVectors :: IO ()
 testVectors = do
-  test 20 vec1 (\i -> if i < 2 then [1,2] !! i else 0)
+  test vec1 (M.fromList [("a",1), ("b",2)])
 
-  test 20 vec2 (const 0)
-  test 20 vec3 (const 0)
-  test 20 vec4 (const 0)
+  test vec2 (M.empty)
+  test vec3 (M.empty)
+  test vec4 (M.empty)
 
-  test 20 vec5 (const 0)
-  test 20 vec6 (const 0)
-
-  test 500 vec7 (const 0)
+  test vec5 (M.empty)
+  test vec6 (M.empty)
+  test vec7 (M.empty)

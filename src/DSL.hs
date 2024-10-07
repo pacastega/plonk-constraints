@@ -14,76 +14,76 @@ import Circuits
 import Utils
 import Vec
 
-import qualified Data.Set as S
+import qualified Data.Map as M
 
--- The type variable ‘i’ should be understood as the set of wire indices
-data DSL p i where
+data DSL p where
   -- Basic operations
-  WIRE  :: i -> DSL p i -- wire (i.e. variable)
-  CONST :: p -> DSL p i -- constant
+  VAR   :: String -> DSL p -- variable
+  CONST :: p      -> DSL p -- constant
 
   -- Arithmetic operations
-  ADD :: DSL p i -> DSL p i -> DSL p i -- field addition
-  SUB :: DSL p i -> DSL p i -> DSL p i -- field substraction
-  MUL :: DSL p i -> DSL p i -> DSL p i -- field multiplication
-  DIV :: DSL p i -> DSL p i -> DSL p i -- field division
+  ADD :: DSL p -> DSL p -> DSL p -- field addition
+  SUB :: DSL p -> DSL p -> DSL p -- field substraction
+  MUL :: DSL p -> DSL p -> DSL p -- field multiplication
+  DIV :: DSL p -> DSL p -> DSL p -- field division
 
   -- Boolean operations
-  NOT :: DSL p i -> DSL p i            -- logical not
-  AND :: DSL p i -> DSL p i -> DSL p i -- logical and
-  OR  :: DSL p i -> DSL p i -> DSL p i -- logical or
-  XOR :: DSL p i -> DSL p i -> DSL p i -- logical xor
+  NOT :: DSL p -> DSL p          -- logical not
+  AND :: DSL p -> DSL p -> DSL p -- logical and
+  OR  :: DSL p -> DSL p -> DSL p -- logical or
+  XOR :: DSL p -> DSL p -> DSL p -- logical xor
 
   -- Boolean constructors
-  EQL    :: DSL p i -> DSL p i -> DSL p i -- equality check
-  ISZERO :: DSL p i -> DSL p i            -- zero check
+  EQL    :: DSL p -> DSL p -> DSL p -- equality check
+  ISZERO :: DSL p -> DSL p          -- zero check
 
-  -- Functional constructs: iterators
-  ITER :: Bound -> (Int -> DSL p i -> DSL p i) -> DSL p i -> DSL p i
+  -- Functional constructs: iterators & local bindings
+  ITER :: Bound -> (Int -> DSL p -> DSL p) -> DSL p -> DSL p
 
   -- Vectors
-  NIL  :: DSL p i
-  CONS :: DSL p i -> DSL p i -> DSL p i
+  NIL  :: DSL p
+  CONS :: DSL p -> DSL p -> DSL p
 
 infixr 5 `CONS`
 
 
 {-@
-data DSL p i where
-  WIRE  :: i -> DSL p i
-  CONST :: p -> DSL p i
+data DSL p where
+  VAR   :: String -> DSL p
+  CONST :: p      -> DSL p
 
-  ADD :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
-  SUB :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
-  MUL :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
-  DIV :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
+  ADD :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  SUB :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  MUL :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  DIV :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
 
-  NOT :: {v:DSL p i | unpacked v} -> DSL p i
-  AND :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
-  OR  :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
-  XOR :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
+  NOT :: {v:DSL p | unpacked v}                           -> DSL p
+  AND :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  OR  :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  XOR :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
 
-  EQL    :: {v:DSL p i | unpacked v} -> {u:DSL p i | unpacked u} -> DSL p i
-  ISZERO :: {v:DSL p i | unpacked v} -> DSL p i
+  EQL    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  ISZERO :: {v:DSL p | unpacked v} -> DSL p
 
   ITER :: b:Bound ->
-          ({v:Int | within b v} -> {v:DSL p i | unpacked v} ->
-              {v:DSL p i | unpacked v}) ->
-          {v:DSL p i | unpacked v} -> {v:DSL p i | unpacked v}
+          ({v:Int | within b v} -> {v:DSL p | unpacked v} ->
+              {v:DSL p | unpacked v}) ->
+          {v:DSL p | unpacked v} -> {v:DSL p | unpacked v}
 
-  NIL  :: DSL p i
-  CONS :: head:{DSL p i | unpacked head} -> tail:{DSL p i | isVector tail} -> DSL p i
+  NIL  :: DSL p
+  CONS :: head:{DSL p | unpacked head} -> tail:{DSL p | isVector tail} -> DSL p
 
 @-}
 
 {-@ measure vlength @-}
-{-@ vlength :: DSL p i -> Nat @-}
-vlength :: DSL p i -> Int
+{-@ vlength :: DSL p -> Nat @-}
+vlength :: DSL p -> Int
+vlength (NIL)       = 0
 vlength (CONS _ ps) = 1 + vlength ps
-vlength _           = 0
+vlength _           = 1
 
 {-@ measure isVector @-}
-isVector :: DSL p i -> Bool
+isVector :: DSL p -> Bool
 isVector (NIL)      = True
 isVector (CONS _ _) = True
 isVector _          = False
@@ -97,11 +97,11 @@ within (B s e) x = s <= x && x <= e
 
 
 {-@ measure desugared @-}
-desugared :: DSL p i -> Bool
+desugared :: DSL p -> Bool
 desugared (EQL {})  = False
 desugared (ITER {}) = False
 
-desugared (WIRE _)  = True
+desugared (VAR _)   = True
 desugared (CONST _) = True
 
 desugared (NIL)       = True
@@ -120,30 +120,30 @@ desugared (XOR p1 p2) = desugared p1 && desugared p2
 desugared (ISZERO p)  = desugared p
 
 {-@ measure getSize @-}
-{-@ getSize :: v:{DSL p i | isIter v} -> Nat @-}
-getSize :: DSL p i -> Int
+{-@ getSize :: v:{DSL p | isIter v} -> Nat @-}
+getSize :: DSL p -> Int
 getSize (ITER (B s e) _ _) = e - s
 
 
 {-@ measure isIter @-}
-isIter :: DSL p i -> Bool
+isIter :: DSL p -> Bool
 isIter (ITER {}) = True
 isIter _         = False
 
 
-{-@ unfoldIter :: p:{DSL p i | isIter p} -> DSL p i
+{-@ unfoldIter :: p:{DSL p | isIter p} -> DSL p
                   / [getSize p] @-}
-unfoldIter :: DSL p i -> DSL p i
+unfoldIter :: DSL p -> DSL p
 unfoldIter (ITER (B s e) f a)
   | s == e    = f s a
   | otherwise = unfoldIter (ITER (B (s+1) e) f (f s a))
 
 
 {-@ lazy desugar @-}
-{-@ desugar :: p:DSL p i ->
-               {v:DSL p i | desugared v && (unpacked p => unpacked v)
-                                        && (isVector p => isVector v)} @-}
-desugar :: DSL p i -> DSL p i
+{-@ desugar :: p:DSL p ->
+               {v:DSL p | desugared v && (unpacked p => unpacked v)
+                                      && (isVector p => isVector v)} @-}
+desugar :: DSL p -> DSL p
 -- syntactic sugar:
 desugar (EQL p1 p2) = ISZERO (SUB (desugar p1) (desugar p2))
 desugar p@(ITER {}) = desugar (unfoldIter p)
@@ -161,47 +161,30 @@ desugar (XOR p1 p2) = XOR (desugar p1) (desugar p2)
 
 desugar (ISZERO p)  = ISZERO (desugar p)
 
-desugar (WIRE i)    = WIRE i
+desugar (VAR s)     = VAR s
 desugar (CONST x)   = CONST x
 
 desugar (NIL)       = NIL
 desugar (CONS p ps) = CONS (desugar p) (desugar ps)
 
 
-{-@ get :: v:{DSL p i | isVector v} -> Btwn 0 (vlength v) -> DSL p i @-}
-get :: DSL p i -> Int -> DSL p i
+{-@ get :: v:{DSL p | isVector v} -> Btwn 0 (vlength v) -> DSL p @-}
+get :: DSL p -> Int -> DSL p
 get (CONS p _ ) 0 = p
 get (CONS _ ps) i = get ps (i-1)
 
-{-@ set :: v:{DSL p i | isVector v} -> Btwn 0 (vlength v) -> {x:DSL p i | unpacked x} -> {u:DSL p i | isVector u} @-}
-set :: DSL p i -> Int -> DSL p i -> DSL p i
+{-@ set :: v:{DSL p | isVector v} -> Btwn 0 (vlength v) -> {x:DSL p | unpacked x} -> {u:DSL p | isVector u} @-}
+set :: DSL p -> Int -> DSL p -> DSL p
 set (CONS _ ps) 0 x = CONS x ps
 set (CONS p ps) i x = CONS p (set ps (i-1) x)
 
 
--- Simplified & Untyped DSL (core language)
-data DSL' p i =
-  WIRE'  i                   |
-  CONST' p                   |
-  ADD' (DSL' p i) (DSL' p i) |
-  SUB' (DSL' p i) (DSL' p i) |
-  MUL' (DSL' p i) (DSL' p i) |
-  DIV' (DSL' p i) (DSL' p i) |
-
-  NOT' (DSL' p i)            |
-  AND' (DSL' p i) (DSL' p i) |
-  OR'  (DSL' p i) (DSL' p i) |
-  XOR' (DSL' p i) (DSL' p i) |
-
-  ISZERO' (DSL' p i)
-  deriving Show
-
 {-@ measure unpacked @-}
-{-@ unpacked :: DSL p i -> Bool @-}
-unpacked :: DSL p i -> Bool
+{-@ unpacked :: DSL p -> Bool @-}
+unpacked :: DSL p -> Bool
 unpacked (EQL p1 p2) = unpacked p1 && unpacked p2
 
-unpacked (WIRE _)    = True
+unpacked (VAR _)     = True
 unpacked (CONST _)   = True
 
 unpacked (NIL)       = False
@@ -221,51 +204,9 @@ unpacked (ISZERO p)  = unpacked p
 unpacked (ITER {})   = False
 
 
-{-@ lazy unpack @-}
-{-@ unpack :: program:{v:DSL p i | desugared v} ->
-              {u:[DSL' p i] | unpacked program => len u = 1} @-}
-unpack :: DSL p i -> [DSL' p i]
-unpack program = case program of
-  WIRE i    -> [WIRE' i]
-  CONST x   -> [CONST' x]
-
-  ADD p1 p2 -> unpack2 ADD' p1 p2
-  SUB p1 p2 -> unpack2 SUB' p1 p2
-  MUL p1 p2 -> unpack2 MUL' p1 p2
-  DIV p1 p2 -> unpack2 DIV' p1 p2
-
-  NOT p1    -> unpack1 NOT' p1
-  AND p1 p2 -> unpack2 AND' p1 p2
-  OR  p1 p2 -> unpack2 OR'  p1 p2
-  XOR p1 p2 -> unpack2 XOR' p1 p2
-
-  ISZERO p  -> unpack1 ISZERO' p
-
-  NIL       -> []
-  CONS p ps -> unpack p ++ unpack ps
-
-
-  where
-  {-@ lazy unpack1 @-}
-  {-@ unpack1 :: (DSL' p i -> DSL' p i) ->
-                 program:{v:DSL p i | desugared v && unpacked v} ->
-                 {u:[DSL' p i] | unpacked program => len u = 1} @-}
-  unpack1 :: (DSL' p i -> DSL' p i) -> DSL p i -> [DSL' p i]
-  unpack1 ctor p1 = [ctor p1'] where [p1'] = unpack p1
-
-  {-@ lazy unpack2 @-}
-  {-@ unpack2 :: (DSL' p i -> DSL' p i -> DSL' p i) ->
-                 p1:{v:DSL p i | desugared v && unpacked v} ->
-                 p2:{v:DSL p i | desugared v && unpacked v} ->
-                 {u:[DSL' p i] | (unpacked p1 && unpacked p2) => len u = 1} @-}
-  unpack2 :: (DSL' p i -> DSL' p i -> DSL' p i) ->
-             DSL p i -> DSL p i -> [DSL' p i]
-  unpack2 ctor p1 p2 = [ctor p1' p2'] where [p1'] = unpack p1; [p2'] = unpack p2
-
-
 -- Labeled DSL
 data LDSL p i =
-  LWIRE  i                       |
+  LWIRE  String i                |
   LCONST p                     i |
   LADD   (LDSL p i) (LDSL p i) i |
   LSUB   (LDSL p i) (LDSL p i) i |
@@ -281,74 +222,95 @@ data LDSL p i =
   deriving Show
 
 
+{-@ type Env M = M.Map String (Btwn 0 M) @-}
+type Env = M.Map String Int
+
+
 {-@ lazy label @-}
 -- label each constructor with the index of the wire where its output will be
-{-@ label :: m:Nat1 -> [DSL' p (Btwn 0 m)] ->
-             [LDSL p (Btwn 0 m)] @-}
-label :: Int -> [DSL' p Int] -> [LDSL p Int]
-label m programs = fst $ labelAll programs (concatMap wires programs) where
-  {-@ labelAll :: [DSL' p (Btwn 0 m)] -> [Btwn 0 m] ->
-                  ([LDSL p (Btwn 0 m)], [Btwn 0 m]) @-}
-  labelAll :: [DSL' p Int] -> [Int] -> ([LDSL p Int], [Int])
-  labelAll programs usedWires = foldl go ([], usedWires) programs where
-    {-@ go :: ([LDSL p (Btwn 0 m)], [Btwn 0 m]) ->
-              DSL' p (Btwn 0 m) ->
-              ([LDSL p (Btwn 0 m)], [Btwn 0 m]) @-}
-    go :: ([LDSL p Int], [Int]) -> DSL' p Int -> ([LDSL p Int], [Int])
-    go (acc, ws) program = let (labeledProgram, ws') = label' program ws
-                           in (acc ++ [labeledProgram], ws')
+{-@ label :: m:Nat1 -> [{v:DSL p | desugared v}] ->
+             ([LDSL p (Btwn 0 m)], Env m) @-}
+label :: Int -> [DSL p] -> ([LDSL p Int], Env)
+label m programs = (labeledPrograms, finalEnv) where
+  (labeledPrograms, _, finalEnv) = labelAll programs
+
+  {-@ labelAll :: [{v:DSL p | desugared v}] ->
+                  ([LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) @-}
+  labelAll :: [DSL p] -> ([LDSL p Int], [Int], Env)
+  labelAll programs = foldl go ([], [], M.empty) programs where
+    {-@ go :: ([LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) ->
+              {v:DSL p | desugared v} ->
+              ([LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) @-}
+    go :: ([LDSL p Int], [Int], Env) -> DSL p -> ([LDSL p Int], [Int], Env)
+    go (acc, ws, env) program =
+      let (labeledProgram, ws', env') = label' program ws env
+      in (acc ++ labeledProgram, ws', env')
 
   -- combinator to label programs with 1 argument that needs recursive labelling
   {-@ label1 :: (LDSL p (Btwn 0 m) -> Btwn 0 m -> LDSL p (Btwn 0 m)) ->
-                DSL' p (Btwn 0 m) ->
-                [Btwn 0 m] -> (LDSL p (Btwn 0 m), [Btwn 0 m]) @-}
+                {arg:DSL p | desugared arg && unpacked arg} ->
+                [Btwn 0 m] -> Env m ->
+                (ListN (LDSL p (Btwn 0 m)) 1, [Btwn 0 m], Env m) @-}
   label1 :: (LDSL p Int -> Int -> LDSL p Int) ->
-            DSL' p Int ->
-            [Int] -> (LDSL p Int, [Int])
-  label1 ctor arg1 usedWires = (ctor arg1' i, is1) where
+            DSL p ->
+            [Int] -> Env ->
+            ([LDSL p Int], [Int], Env)
+  label1 ctor arg1 usedWires env = ([ctor arg1' i], is1, env') where
     i = freshIndex m usedWires
-    (arg1', is1) = label' arg1 (i:usedWires)
+    ([arg1'], is1, env') = label' arg1 (i:usedWires) env
 
   -- combinator to label programs with 2 arguments that need recursive labelling
   {-@ label2 :: (LDSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) -> Btwn 0 m ->
                         LDSL p (Btwn 0 m)) ->
-                DSL' p (Btwn 0 m) ->
-                DSL' p (Btwn 0 m) ->
-                [Btwn 0 m] -> (LDSL p (Btwn 0 m), [Btwn 0 m]) @-}
+                {arg1:DSL p | desugared arg1 && unpacked arg1} ->
+                {arg2:DSL p | desugared arg2 && unpacked arg2} ->
+                [Btwn 0 m] -> Env m ->
+                (ListN (LDSL p (Btwn 0 m)) 1, [Btwn 0 m], Env m) @-}
   label2 :: (LDSL p Int -> LDSL p Int -> Int -> LDSL p Int) ->
-            DSL' p Int -> DSL' p Int ->
-            [Int] -> (LDSL p Int, [Int])
-  label2 ctor arg1 arg2 usedWires = (ctor arg1' arg2' i, is2) where
+            DSL p -> DSL p ->
+            [Int] -> Env ->
+            ([LDSL p Int], [Int], Env)
+  label2 ctor arg1 arg2 usedWires env = ([ctor arg1' arg2' i], is2, env'') where
     i = freshIndex m usedWires
-    (arg1', is1) = label' arg1 (i:usedWires)
-    (arg2', is2) = label' arg2 is1
+    ([arg1'], is1, env') = label' arg1 (i:usedWires) env
+    ([arg2'], is2, env'') = label' arg2 is1 env'
 
-  {-@ label' :: DSL' p (Btwn 0 m) -> [Btwn 0 m] ->
-                (LDSL p (Btwn 0 m), [Btwn 0 m]) @-}
-  label' :: DSL' p Int -> [Int] -> (LDSL p Int, [Int])
-  label' (WIRE' i)  usedWires = (LWIRE i, usedWires)
-  label' (CONST' x) usedWires = (LCONST x i, i:usedWires)
+  {-@ label' :: program:{DSL p | desugared program} -> [Btwn 0 m] -> Env m ->
+                ({l:[LDSL p (Btwn 0 m)] | unpacked program => len l = 1},
+                 [Btwn 0 m],
+                 Env m) @-}
+  label' :: DSL p -> [Int] -> Env -> ([LDSL p Int], [Int], Env)
+  label' (VAR s) usedWires env = case M.lookup s env of
+      Nothing -> let i = freshIndex m usedWires -- free variable
+                 in ([LWIRE s i], i:usedWires, add (s,i) env)
+      Just i  -> ([LWIRE s i], usedWires, env)
+    where add (k,v) = M.alter (\_ -> Just v) k
+  label' (CONST x) usedWires env = ([LCONST x i], i:usedWires, env)
     where i = freshIndex m usedWires
-  label' (ADD' p1 p2) usedWires = label2 LADD p1 p2 usedWires
-  label' (SUB' p1 p2) usedWires = label2 LSUB p1 p2 usedWires
-  label' (MUL' p1 p2) usedWires = label2 LMUL p1 p2 usedWires
-  label' (DIV' p1 p2) usedWires = label2 LDIV p1 p2 usedWires
+  label' (ADD p1 p2) usedWires env = label2 LADD p1 p2 usedWires env
+  label' (SUB p1 p2) usedWires env = label2 LSUB p1 p2 usedWires env
+  label' (MUL p1 p2) usedWires env = label2 LMUL p1 p2 usedWires env
+  label' (DIV p1 p2) usedWires env = label2 LDIV p1 p2 usedWires env
 
-  label' (NOT' p1)    usedWires = label1 LNOT p1    usedWires
-  label' (AND' p1 p2) usedWires = label2 LAND p1 p2 usedWires
-  label' (OR'  p1 p2) usedWires = label2 LOR  p1 p2 usedWires
-  label' (XOR' p1 p2) usedWires = label2 LXOR p1 p2 usedWires
+  label' (NOT p1)    usedWires env = label1 LNOT p1    usedWires env
+  label' (AND p1 p2) usedWires env = label2 LAND p1 p2 usedWires env
+  label' (OR  p1 p2) usedWires env = label2 LOR  p1 p2 usedWires env
+  label' (XOR p1 p2) usedWires env = label2 LXOR p1 p2 usedWires env
 
-  label' (ISZERO' p1) usedWires = (LISZERO p1' w i, is1) where
+  label' (ISZERO p1) usedWires env = ([LISZERO p1' w i], is1, env') where
     i = freshIndex m usedWires
     w = freshIndex m (i:usedWires)
-    (p1', is1) = label' p1 (i:w:usedWires)
+    ([p1'], is1, env') = label' p1 (i:w:usedWires) env
 
+  label' (NIL) usedWires env = ([], usedWires, env)
+  label' (CONS p ps) usedWires env = (p' ++ ps', ws', env'') where
+    (p', ws, env') = label' p usedWires env
+    (ps', ws', env'') = label' ps ws env'
 
 -- TODO: this could probably be avoided by using record syntax
 {-@ reflect outputWire @-}
 outputWire :: LDSL p i -> i
-outputWire (LWIRE i)    = i
+outputWire (LWIRE _ i)  = i
 outputWire (LCONST _ i) = i
 outputWire (LADD _ _ i) = i
 outputWire (LSUB _ _ i) = i
@@ -363,51 +325,38 @@ outputWire (LXOR _ _ i) = i
 outputWire (LISZERO _ _ i) = i
 
 
-{-@ wires :: DSL' p i -> [i] @-}
-wires :: DSL' p i -> [i]
-wires (WIRE' n)    = [n]
-wires (CONST' _)   = []
-wires (ADD' p1 p2) = wires p1 ++ wires p2
-wires (SUB' p1 p2) = wires p1 ++ wires p2
-wires (MUL' p1 p2) = wires p1 ++ wires p2
-wires (DIV' p1 p2) = wires p1 ++ wires p2
+-- An upper bound on the number of needed wires (e.g. if some (VAR s) is used
+-- more than once in a program, it will be counted once for each appearance).
+{-@ reflect nWires @-}
+{-@ nWires :: {v:DSL p | desugared v} -> Nat @-}
+nWires :: DSL p -> Int
+nWires (VAR _)     = 1
+nWires (CONST _)   = 1
 
-wires (NOT' p1)    = wires p1
-wires (AND' p1 p2) = wires p1 ++ wires p2
-wires (OR'  p1 p2) = wires p1 ++ wires p2
-wires (XOR' p1 p2) = wires p1 ++ wires p2
+nWires (ADD p1 p2) = 1 + nWires p1 + nWires p2
+nWires (SUB p1 p2) = 1 + nWires p1 + nWires p2
+nWires (MUL p1 p2) = 1 + nWires p1 + nWires p2
+nWires (DIV p1 p2) = 1 + nWires p1 + nWires p2
 
-wires (ISZERO' p1) = wires p1
+nWires (NOT p1   ) = 1 + nWires p1
+nWires (AND p1 p2) = 1 + nWires p1 + nWires p2
+nWires (OR  p1 p2) = 1 + nWires p1 + nWires p2
+nWires (XOR p1 p2) = 1 + nWires p1 + nWires p2
 
+nWires (ISZERO p1) = 2 + nWires p1
 
-{-@ reflect lwires @-}
-lwires :: Ord i => LDSL p i -> S.Set i
-lwires (LWIRE n)      = S.singleton n
-lwires (LCONST _ _)   = S.empty
-lwires (LADD p1 p2 _) = lwires p1 `S.union` lwires p2
-lwires (LSUB p1 p2 _) = lwires p1 `S.union` lwires p2
-lwires (LMUL p1 p2 _) = lwires p1 `S.union` lwires p2
-lwires (LDIV p1 p2 _) = lwires p1 `S.union` lwires p2
-
-lwires (LNOT p1    _) = lwires p1
-lwires (LAND p1 p2 _) = lwires p1 `S.union` lwires p2
-lwires (LOR  p1 p2 _) = lwires p1 `S.union` lwires p2
-lwires (LXOR p1 p2 _) = lwires p1 `S.union` lwires p2
-
-lwires (LISZERO p1 _ _) = lwires p1
-
+nWires (NIL)       = 0
+nWires (CONS p ps) = nWires p + nWires ps
 
 {-@ assume enumFromTo :: x:a -> y:a -> [{v:a | x <= v && v <= y}] @-}
 -- find a wire index that has not been used yet
 
--- TODO: ideally, this should only be called with sets strictly contained in
--- {0..m-1}; otherwise, there will be no fresh index to return. Is it possible
--- to specify that the second argument should have size < m?
-{-@ freshIndex :: m:Nat1 -> [Btwn 0 m] -> Btwn 0 m @-}
+{-@ lazy freshIndex @-}
+{-@ freshIndex :: m:Nat1 -> [Int] -> Btwn 0 m @-}
 freshIndex :: Int -> [Int] -> Int
 freshIndex m used = freshIndex_ [0..m-1] where
   {-@ freshIndex_ :: [Btwn 0 m] -> Btwn 0 m @-}
-  freshIndex_ []     = 0 -- FIXME: this should never be reached
+  freshIndex_ []     = 0 -- FIXME: This shouldn’t be reached. How to prove it?
   freshIndex_ (x:xs) = if x `elem` used then freshIndex_ xs else x
 
 
@@ -415,7 +364,7 @@ freshIndex m used = freshIndex_ [0..m-1] where
 {-@ measure nGates @-}
 {-@ nGates :: LDSL p i -> Nat @-}
 nGates :: LDSL p i -> Int
-nGates (LWIRE _)      = 0
+nGates (LWIRE _ _)    = 0
 nGates (LCONST _ _)   = 1
 nGates (LADD p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LSUB p1 p2 _) = 1 + nGates p1 + nGates p2
@@ -436,7 +385,7 @@ nGates (LISZERO p1 _ _) = 2 + nGates p1
                c:LDSL p (Btwn 0 m) ->
                Circuit p (nGates c) m @-}
 compile :: Fractional p => Int -> LDSL p Int -> Circuit p
-compile m (LWIRE _)      = emptyCircuit m
+compile m (LWIRE _ _)    = emptyCircuit m
 compile m (LCONST x i)   = constGate m x i
 compile m (LADD p1 p2 i) = c
   where
@@ -497,7 +446,7 @@ compile m (LISZERO p1 w i) = c
                            LDSL p (Btwn 0 m) -> VecN p m ->
                            Bool @-}
 semanticsAreCorrect :: (Eq p, Fractional p) => Int -> LDSL p Int -> Vec p -> Bool
-semanticsAreCorrect _ (LWIRE _)      _     = True
+semanticsAreCorrect _ (LWIRE _ _)    _     = True
 semanticsAreCorrect _ (LCONST x i)   input = input!i == x
 semanticsAreCorrect m (LADD p1 p2 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
