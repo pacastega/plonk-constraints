@@ -9,3 +9,4 @@ main = do
   -- testBoolean
   -- testLoops
   testVectors
+  testLet

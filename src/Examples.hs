@@ -5,7 +5,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Examples (testArithmetic, testBoolean, testLoops, testVectors) where
+module Examples ( testArithmetic
+                , testBoolean
+                , testLoops
+                , testVectors
+                , testLet
+                )
+where
 
 import qualified Data.Map as M
 import Data.FiniteField.PrimeField
@@ -56,7 +62,6 @@ test program valuation = do
   putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   putStrLn $ "Compiled circuit:     " ++ show circuit
   putStrLn $ "Input:                " ++ show input
-  putStrLn $ "Variable environment: " ++ show env
   putStrLn $ "Final result: " ++ cyan (show output')
 
   putStrLn $ replicate 80 '='
@@ -269,3 +274,24 @@ testVectors = do
   test vec6 (M.empty)
 
   test' vec7 (M.empty) "treekz/good_int_addition.tex"
+
+
+-- Local bindings --------------------------------------------------------------
+
+-- let x = 5 in let y = 7 in x + y
+let1 :: DSL FF
+let1 = LET "x" (CONST 5) (LET "y" (CONST 7) (VAR "x" `ADD` VAR "y"))
+
+-- let x = 5 in let x = 7 in x
+let2 :: DSL FF
+let2 = LET "x" (CONST 5) (LET "x" (CONST 7) (VAR "x"))
+
+-- -- let x = 2 in (let x = 1 in x) + x
+-- let3 :: DSL FF
+-- let3 = LET "x" (CONST 2) ((LET "x" (CONST 1) (VAR "x")) `ADD` (VAR "x"))
+
+testLet :: IO ()
+testLet = do
+  test let1 (M.empty) -- 12
+  test let2 (M.empty) -- 7
+  -- test let3 (M.empty) -- 3
