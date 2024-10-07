@@ -22,6 +22,8 @@ import Constraints
 import DSL
 import WitnessGeneration
 
+import Treekz
+
 type F p = PrimeField p
 type F17 = F 17
 type FF  = F 2131
@@ -59,6 +61,30 @@ test program valuation = do
 
   putStrLn $ replicate 80 '='
 
+
+{-@ test' :: DSL _ -> (M.Map String p) -> String -> IO () @-}
+test' :: (Eq p, Fractional p, Show p) =>
+         DSL p -> (M.Map String p) -> String -> IO ()
+test' program valuation tikzFilename = do
+  let desugaredProgram = desugar program
+  let m = 1 + nWires desugaredProgram -- upper bound for #(needed wires)
+  let (labeledPrograms, env) = label m [desugaredProgram]
+  let circuit = concatMap (compile m) labeledPrograms
+  let input = witnessGen m labeledPrograms (compose' m env valuation)
+  let output = map (\p -> input ! outputWire p) labeledPrograms
+  let output' = splitAt (length labeledPrograms - vlength program) output
+
+  putStrLn $ "Preprocessed program: " ++ show labeledPrograms
+  putStrLn $ "Compiled circuit:     " ++ show circuit
+  putStrLn $ "Input:                " ++ show input
+  putStrLn $ "Variable environment: " ++ show env
+  putStrLn $ "Final result: " ++ cyan (show output')
+
+  let treekzCode = map parse labeledPrograms
+  let tikzStr = genTikzs 0.45 (14, -1.5) treekzCode
+  writeFile tikzFilename (intro ++ tikzStr ++ outro)
+
+  putStrLn $ replicate 80 '='
 
 -- Arithmetic programs ---------------------------------------------------------
 -- (a + b) + (c + d)
@@ -226,7 +252,7 @@ vec5 = rotateL (range 1 10) 3
 vec6 :: DSL FF
 vec6 = rotateR (range 1 10) 2
 
-{-@ vec7 :: {v:DSL _ | isVector v && vlength v >= 0} @-}
+{-@ vec7 :: DSL _ @-}
 vec7 :: DSL FF
 vec7 = vecAdd (PlinkLib.fromList [CONST 0, CONST 1, CONST 1]) -- 2
               (PlinkLib.fromList [CONST 0, CONST 1, CONST 0]) -- 3
@@ -241,4 +267,5 @@ testVectors = do
 
   test vec5 (M.empty)
   test vec6 (M.empty)
-  test vec7 (M.empty)
+
+  test' vec7 (M.empty) "treekz/good_int_addition.tex"
