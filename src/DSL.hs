@@ -326,7 +326,7 @@ label m programs = (labeledPrograms, finalEnv) where
     (ps', ws', env'') = label' ps ws env'
 
 -- TODO: this could probably be avoided by using record syntax
-{-@ reflect outputWire @-}
+{-@ measure outputWire @-}
 outputWire :: LDSL p i -> i
 outputWire (LWIRE _ i)  = i
 outputWire (LCONST _ i) = i
@@ -345,7 +345,7 @@ outputWire (LISZERO _ _ i) = i
 
 -- An upper bound on the number of needed wires (e.g. if some (VAR s) is used
 -- more than once in a program, it will be counted once for each appearance).
-{-@ reflect nWires @-}
+{-@ measure nWires @-}
 {-@ nWires :: {v:DSL p | desugared v} -> Nat @-}
 nWires :: DSL p -> Int
 nWires (VAR _)     = 1
