@@ -36,6 +36,7 @@ data DSL p where
   -- Boolean constructors
   EQL    :: DSL p -> DSL p -> DSL p -- equality check
   ISZERO :: DSL p -> DSL p          -- zero check
+  EQLC   :: DSL p -> p     -> DSL p -- equality check against a constant
 
   -- Functional constructs: iterators & local bindings
   ITER :: Bound -> (Int -> DSL p -> DSL p) -> DSL p -> DSL p
@@ -65,6 +66,7 @@ data DSL p where
 
   EQL    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
   ISZERO :: {v:DSL p | unpacked v} -> DSL p
+  EQLC   :: {v:DSL p | unpacked v} -> p                      -> DSL p
 
   ITER :: b:Bound ->
           ({v:Int | within b v} -> {v:DSL p | unpacked v} ->
@@ -124,6 +126,7 @@ desugared (OR  p1 p2) = desugared p1 && desugared p2
 desugared (XOR p1 p2) = desugared p1 && desugared p2
 
 desugared (ISZERO p)  = desugared p
+desugared (EQLC p _)  = desugared p
 
 {-@ measure getSize @-}
 {-@ getSize :: v:{DSL p | isIter v} -> Nat @-}
@@ -168,6 +171,7 @@ desugar (OR  p1 p2) = OR  (desugar p1) (desugar p2)
 desugar (XOR p1 p2) = XOR (desugar p1) (desugar p2)
 
 desugar (ISZERO p)  = ISZERO (desugar p)
+desugar (EQLC p k)  = EQLC (desugar p) k
 
 desugar (VAR s)     = VAR s
 desugar (CONST x)   = CONST x
@@ -211,6 +215,7 @@ unpacked (OR  p1 p2) = unpacked p1 && unpacked p2
 unpacked (XOR p1 p2) = unpacked p1 && unpacked p2
 
 unpacked (ISZERO p)  = unpacked p
+unpacked (EQLC p _)  = unpacked p
 unpacked (LET _ _ p) = False -- gets compiled to a list of more than one program
 unpacked (ITER {})   = False
 
@@ -229,7 +234,8 @@ data LDSL p i =
   LOR    (LDSL p i) (LDSL p i) i |
   LXOR   (LDSL p i) (LDSL p i) i |
 
-  LISZERO (LDSL p i)         i i
+  LISZERO (LDSL p i)         i i |
+  LEQLC   (LDSL p i) p       i i
   deriving Show
 
 
@@ -321,6 +327,10 @@ label m programs = (labeledPrograms, finalEnv) where
     i = freshIndex m usedWires
     w = freshIndex m (i:usedWires)
     ([p1'], is1, env') = label' p1 (i:w:usedWires) env
+  label' (EQLC p1 k) usedWires env = ([LEQLC p1' k w i], is1, env') where
+    i = freshIndex m usedWires
+    w = freshIndex m (i:usedWires)
+    ([p1'], is1, env') = label' p1 (i:w:usedWires) env
 
   label' (NIL) usedWires env = ([], usedWires, env)
   label' (CONS p ps) usedWires env = (p' ++ ps', ws', env'') where
@@ -343,6 +353,7 @@ outputWire (LOR  _ _ i) = i
 outputWire (LXOR _ _ i) = i
 
 outputWire (LISZERO _ _ i) = i
+outputWire (LEQLC _ _ _ i) = i
 
 
 -- An upper bound on the number of needed wires (e.g. if some (VAR s) is used
@@ -364,6 +375,7 @@ nWires (OR  p1 p2) = 1 + nWires p1 + nWires p2
 nWires (XOR p1 p2) = 1 + nWires p1 + nWires p2
 
 nWires (ISZERO p1) = 2 + nWires p1
+nWires (EQLC p1 _) = 2 + nWires p1
 nWires (LET _ p1 p2) = nWires p1 + nWires p2
 
 nWires (NIL)       = 0
@@ -398,6 +410,7 @@ nGates (LOR  p1 p2 _) = 3 + nGates p1 + nGates p2
 nGates (LXOR p1 p2 _) = 3 + nGates p1 + nGates p2
 
 nGates (LISZERO p1 _ _) = 2 + nGates p1
+nGates (LEQLC p1 _ _ _) = 2 + nGates p1
 
 
 -- compile the program into a circuit including the output wire index
@@ -460,6 +473,11 @@ compile m (LISZERO p1 w i) = c
     c1 = compile m p1
     i1 = outputWire p1
     c = append' (isZeroGate m [i1, w, i]) c1
+compile m (LEQLC p1 k w i) = c
+  where
+    c1 = compile m p1
+    i1 = outputWire p1
+    c = append' (isEqlCGate m k [i1, w, i]) c1
 
 
 {-@ reflect semanticsAreCorrect @-}
@@ -522,3 +540,11 @@ semanticsAreCorrect m (LISZERO p1 w i) input = correct where
                         (if input!i1 == 0
                          then input!i == 1
                          else input!i == 0 && input!w * input!i1 == 1)
+semanticsAreCorrect m (LEQLC p1 k w i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  i1 = outputWire p1
+  correct = correct1 && (input!i * input!i == input!i) &&
+                        ((input!i1 - k) * input!i == 0) &&
+                        (if input!i1 == k
+                         then input!i == 1
+                         else input!i == 0 && input!w * (input!i1 - k) == 1)
