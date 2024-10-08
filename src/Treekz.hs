@@ -58,6 +58,7 @@ parse p = case p of
   LXOR p1 p2 i   -> N ("$\\oplus$" ++ wire [i]) [parse p1, parse p2]
 
   LISZERO p1 i w -> N ("$ =0?$" ++ wire [i, w]) [parse p1]
+  LEQLC p1 k i w -> N ("$ =" ++ show k ++ "?$" ++ wire [i, w]) [parse p1]
   where
     wire l = "\\textcolor{red}{\\tiny " ++ (intercalate "," (map show l)) ++ "}"
 

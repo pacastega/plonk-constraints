@@ -4,8 +4,7 @@
 {-# OPTIONS -Wno-incomplete-uni-patterns #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-
-module ArithmeticGates (addGate, mulGate, isZeroGate) where
+module ArithmeticGates (addGate, mulGate, isZeroGate, isEqlCGate) where
 
 import Constraints
 import Vec
@@ -55,3 +54,16 @@ isZeroGate _ [a, w, c] =
 
   -- Gate 1. 1 - a*w == c <=> 0 + 0 - c - a*w + 1 == 0
   -- Gate 2. a*c == 0 (a is 0, or c is false)
+
+
+{-@ reflect isEqlCGate @-}
+{-@ isEqlCGate :: m:Nat -> k:p ->
+                  ListN (Btwn 0 m) 3 ->
+                  Circuit p 2 m @-} -- 2 gate, m wires
+isEqlCGate :: Num p => Int -> p -> [Int] -> Circuit p
+isEqlCGate _ k [a, w, c] =
+  [([a, w, c], [ 0,  k, -1, -1,  1]), -- 1.
+   ([a, c, 0], [ 0,  k,  0, -1,  0])] -- 2.
+
+  -- Gate 1. 1 - (a-k)*w == c <=> 0 + k*w - c - a*w + 1 == 0
+  -- Gate 2. (a-k)*c == 0 (a is k, or c is false)

@@ -90,6 +90,15 @@ witnessGen m programs valuation = toVector m valuation' where
       valuation2 = M.alter (updateWith witness)  w valuation1
       valuation3 = M.alter (updateWith result)   i valuation2
 
+    update (LEQLC p1 k w i) valuation = valuation3
+      where
+      valuation1 = update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation1
+      witness  = (\x -> if x /= k then 1/(x-k) else 0) <$> x1
+      result = (\x -> if x == k then 1 else 0) <$> x1
+      valuation2 = M.alter (updateWith witness)  w valuation1
+      valuation3 = M.alter (updateWith result)   i valuation2
+
 
 {-@ toVector :: m:Nat -> M.Map (Btwn 0 m) p -> VecN p m @-}
 toVector :: Num p => Int -> M.Map Int p -> Vec p
