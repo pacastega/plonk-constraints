@@ -126,8 +126,8 @@ vecAdd u v = localBindings env (fromList result)
        i+1           -- add the next bit in the vector
       ) where
           sum    = (x `ADD` y) `ADD` carry
-          result = (VAR sumStr `EQLC` 1) `OR` (VAR sumStr `EQLC` 3)
-          carry' = (VAR sumStr `EQLC` 2) `OR` (VAR sumStr `EQLC` 3)
+          result = (VAR sumStr `EQLC` 1) `UnsafeOR` (VAR sumStr `EQLC` 3)
+          carry' = (VAR sumStr `EQLC` 2) `UnsafeOR` (VAR sumStr `EQLC` 3)
 
           sumStr   = "sum" ++ show i
           carryStr = "carry" ++ show i

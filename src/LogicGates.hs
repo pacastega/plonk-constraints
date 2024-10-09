@@ -104,3 +104,36 @@ verifyXor x = xorIsCorrect == satisfies 3 3 x gate where
                    then 1 else 0) &&               -- xor holds
                  (x!a1 * x!b1 == x!a1) &&          -- boolean
                  (x!a2 * x!b2 == x!a2)             -- boolean
+
+-- Unsafe boolean gates (assume the inputs are boolean) ------------------------
+{-@ reflect unsafeNotGate @-}
+{-@ unsafeNotGate :: m:Nat ->
+                     ListN (Btwn 0 m) 2 ->
+                     Circuit p 1 m @-} -- 1 gate, m wires
+unsafeNotGate :: Num p => Int -> [Int] -> Circuit p
+unsafeNotGate _ [a, c] = [([a, 0, c], [-1,  0, -1,  0,  1])]
+                         -- a  b  c    qL  qR  qO  qM  qC
+
+{-@ reflect unsafeAndGate @-}
+{-@ unsafeAndGate :: m:Nat ->
+                     ListN (Btwn 0 m) 3 ->
+                     Circuit p 1 m @-} -- 1 gate, m wires
+unsafeAndGate :: Num p => Int -> [Int] -> Circuit p
+unsafeAndGate _ [a,b,c] = [([a, b, c], [ 0,  0, -1,  1,  0])]
+                          -- a  b  c    qL  qR  qO  qM  qC
+
+{-@ reflect unsafeOrGate @-}
+{-@ unsafeOrGate :: m:Nat ->
+                    ListN (Btwn 0 m) 3 ->
+                    Circuit p 1 m @-} -- 1 gate, m wires
+unsafeOrGate :: Num p => Int -> [Int] -> Circuit p
+unsafeOrGate _ [a,b,c] = [([a, b, c], [ 1,  1, -1, -1,  0])]
+                         -- a  b  c    qL  qR  qO  qM  qC
+
+{-@ reflect unsafeXorGate @-}
+{-@ unsafeXorGate :: m:Nat ->
+                     ListN (Btwn 0 m) 3 ->
+                     Circuit p 1 m @-} -- 1 gate, m wires
+unsafeXorGate :: Num p => Int -> [Int] -> Circuit p
+unsafeXorGate _ [a,b,c] = [([a, b, c], [ 1,  1, -1, -2,  0])]
+                          -- a  b  c    qL  qR  qO  qM  qC
