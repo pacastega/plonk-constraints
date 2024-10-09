@@ -47,15 +47,15 @@ parse p = case p of
   LMUL p1 p2 i   -> N ("$\times$" ++ wire [i])  [parse p1, parse p2]
   LDIV p1 p2 i   -> N ("$/$" ++ wire [i])       [parse p1, parse p2]
 
-  LNOT p1    i   -> N ("$\neg$" ++ wire [i])    [parse p1]
+  LNOT p1    i   -> N ("$\\neg$" ++ wire [i])    [parse p1]
   LAND p1 p2 i   -> N ("$\\wedge$" ++ wire [i]) [parse p1, parse p2]
   LOR  p1 p2 i   -> N ("$\\vee$" ++ wire [i])   [parse p1, parse p2]
   LXOR p1 p2 i   -> N ("$\\oplus$" ++ wire [i]) [parse p1, parse p2]
 
-  LUnsafeNOT p1    i   -> N ("$\neg$" ++ wire [i])    [parse p1]
-  LUnsafeAND p1 p2 i   -> N ("$\\wedge$" ++ wire [i]) [parse p1, parse p2]
-  LUnsafeOR  p1 p2 i   -> N ("$\\vee$" ++ wire [i])   [parse p1, parse p2]
-  LUnsafeXOR p1 p2 i   -> N ("$\\oplus$" ++ wire [i]) [parse p1, parse p2]
+  LUnsafeNOT p1    i   -> N ("$\\hat\\neg$" ++ wire [i])    [parse p1]
+  LUnsafeAND p1 p2 i   -> N ("$\\hat\\wedge$" ++ wire [i]) [parse p1, parse p2]
+  LUnsafeOR  p1 p2 i   -> N ("$\\hat\\vee$" ++ wire [i])   [parse p1, parse p2]
+  LUnsafeXOR p1 p2 i   -> N ("$\\hat\\oplus$" ++ wire [i]) [parse p1, parse p2]
 
   LISZERO p1 i w -> N ("$ =0?$" ++ wire [i, w]) [parse p1]
   LEQLC p1 k i w -> N ("$ =" ++ show k ++ "?$" ++ wire [i, w]) [parse p1]
