@@ -583,7 +583,9 @@ semanticsAreCorrect m (LDIV p1 p2 i) input = correct where
 semanticsAreCorrect m (LNOT p1 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
-  correct = correct1 && input!i == 1 - input!i1 && boolean (input!i1)
+  correct = correct1 &&
+    (input!i == if input!i1 == 1 then 0 else 1) &&
+    boolean (input!i1)
 semanticsAreCorrect m (LAND p1 p2 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   correct2 = semanticsAreCorrect m p2 input
@@ -631,7 +633,7 @@ semanticsAreCorrect m (LUnsafeXOR p1 p2 i) input = correct where
 semanticsAreCorrect m (LISZERO p1 w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
-  correct = correct1 && (input!i * input!i == input!i) &&
+  correct = correct1 && boolean (input!i) &&
                         (input!i1 * input!i == 0) &&
                         (if input!i1 == 0
                          then input!i == 1
@@ -639,7 +641,7 @@ semanticsAreCorrect m (LISZERO p1 w i) input = correct where
 semanticsAreCorrect m (LEQLC p1 k w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
-  correct = correct1 && (input!i * input!i == input!i) &&
+  correct = correct1 && boolean (input!i) &&
                         ((input!i1 - k) * input!i == 0) &&
                         (if input!i1 == k
                          then input!i == 1
