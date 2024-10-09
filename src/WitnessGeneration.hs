@@ -19,7 +19,6 @@ updateWith (Just x) (Just y) = if x == y then Just x else Nothing
 setConcat :: Ord a => [S.Set a] -> S.Set a
 setConcat = foldl S.union S.empty
 
-{-@ ignore witnessGen @-}
 {-@ witnessGen :: m:Nat ->
                   [LDSL p (Btwn 0 m)] ->
                   (M.Map (Btwn 0 m) p) ->
