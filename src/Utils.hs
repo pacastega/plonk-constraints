@@ -33,3 +33,11 @@ boolean x = x == 0 || x == 1
 pow :: Num a => a -> Int -> a
 pow _ 0 = 1
 pow x n = x * (pow x (n-1))
+
+{-@ reflect mkList2 @-}
+mkList2 :: a -> a -> [a]
+mkList2 x y = [x, y]
+
+{-@ reflect mkList3 @-}
+mkList3 :: a -> a -> a -> [a]
+mkList3 x y z = [x, y, z]

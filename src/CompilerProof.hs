@@ -112,3 +112,61 @@ satisfiesDistr :: Num p => Int -> Int -> Int ->
                   Vec p -> Circuit p -> Circuit p -> Proof
 satisfiesDistr _  _  _ input []     c2 = trivial
 satisfiesDistr n1 n2 m input (c:cs) c2 = satisfiesDistr (n1-1) n2 m input cs c2
+
+-- Some partial correctness results --------------------------------------------
+
+-- The output of ‘isZeroGate’ is always a boolean
+{-@ isZeroBoolean :: m:Nat -> a:Btwn 0 m -> w:Btwn 0 m -> c:Btwn 0 m ->
+                     input:VecN p m ->
+                     {satisfies 2 m input (isZeroGate m (mkList3 a w c)) =>
+                      boolean (input!c)} @-}
+isZeroBoolean :: Num p => Int -> Int -> Int -> Int -> Vec p -> Proof
+isZeroBoolean m a w c input = trivial
+
+-- The output of ‘isEqlCGate’ is always a boolean
+{-@ isEqlCBoolean :: m:Nat -> a:Btwn 0 m -> w:Btwn 0 m -> c:Btwn 0 m -> k:p ->
+                     input:VecN p m ->
+                     {satisfies 2 m input (isEqlCGate m k (mkList3 a w c)) =>
+                      boolean (input!c)} @-}
+isEqlCBoolean :: Num p => Int -> Int -> Int -> Int -> p -> Vec p -> Proof
+isEqlCBoolean m a w c k input = trivial
+
+-- Unsafe boolean operations are safe (equivalent to the normal boolean
+-- operations, and in particular not under-constrained) under the assumption
+-- that their arguments are boolean
+
+{-@ unsafeNotCorrect :: m:Nat -> a:Btwn 0 m -> c:Btwn 0 m ->
+        input:VecN p m ->
+        {boolean (input!a) &&
+          satisfies 1 m input (unsafeNotGate m (mkList2 a c)) <=>
+         boolean (input!a) &&
+          input!c == if (input!a == 1) then 0 else 1} @-}
+unsafeNotCorrect :: (Eq p, Num p) => Int -> Int -> Int -> Vec p -> Proof
+unsafeNotCorrect m a c input = trivial
+
+{-@ unsafeAndCorrect :: m:Nat -> a:Btwn 0 m -> b:Btwn 0 m -> c:Btwn 0 m ->
+        input:VecN p m ->
+        {boolean (input!a) && boolean (input!b) &&
+          satisfies 1 m input (unsafeAndGate m (mkList3 a b c)) <=>
+         boolean (input!a) && boolean (input!b) &&
+          input!c == if (input!a == 0 || input!b == 0) then 0 else 1} @-}
+unsafeAndCorrect :: (Eq p, Num p) => Int -> Int -> Int -> Int -> Vec p -> Proof
+unsafeAndCorrect m a b c input = trivial
+
+{-@ unsafeOrCorrect :: m:Nat -> a:Btwn 0 m -> b:Btwn 0 m -> c:Btwn 0 m ->
+        input:VecN p m ->
+        {boolean (input!a) && boolean (input!b) &&
+          satisfies 1 m input (unsafeOrGate m (mkList3 a b c)) <=>
+         boolean (input!a) && boolean (input!b) &&
+          input!c == if (input!a == 1 || input!b == 1) then 1 else 0} @-}
+unsafeOrCorrect :: (Eq p, Num p) => Int -> Int -> Int -> Int -> Vec p -> Proof
+unsafeOrCorrect m a b c input = trivial
+
+{-@ unsafeXorCorrect :: m:Nat -> a:Btwn 0 m -> b:Btwn 0 m -> c:Btwn 0 m ->
+        input:VecN p m ->
+        {boolean (input!a) && boolean (input!b) &&
+          satisfies 1 m input (unsafeXorGate m (mkList3 a b c)) <=>
+         boolean (input!a) && boolean (input!b) &&
+          input!c == if (input!a /= input!b) then 1 else 0} @-}
+unsafeXorCorrect :: (Eq p, Num p) => Int -> Int -> Int -> Int -> Vec p -> Proof
+unsafeXorCorrect m a b c input = trivial
