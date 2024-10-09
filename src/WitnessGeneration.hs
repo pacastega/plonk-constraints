@@ -79,6 +79,29 @@ witnessGen m programs valuation = toVector m valuation' where
       x1 = M.lookup (outputWire p1) valuation' >>= ensure boolean
       x2 = M.lookup (outputWire p2) valuation' >>= ensure boolean
       xor = (\x y -> x + y - 2*x*y) <$> x1 <*> x2
+    update (LUnsafeNOT p1 i) valuation = M.alter (updateWith neg) i valuation'
+      where
+      valuation' = update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation' >>= ensure boolean
+      neg = (1 -) <$> x1
+    update (LUnsafeAND p1 p2 i) valuation = M.alter (updateWith and) i valuation'
+      where
+      valuation' = update p2 $ update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation' >>= ensure boolean
+      x2 = M.lookup (outputWire p2) valuation' >>= ensure boolean
+      and = (*) <$> x1 <*> x2
+    update (LUnsafeOR  p1 p2 i) valuation = M.alter (updateWith or) i valuation'
+      where
+      valuation' = update p2 $ update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation' >>= ensure boolean
+      x2 = M.lookup (outputWire p2) valuation' >>= ensure boolean
+      or = (\x y -> x + y - x*y) <$> x1 <*> x2
+    update (LUnsafeXOR p1 p2 i) valuation = M.alter (updateWith xor) i valuation'
+      where
+      valuation' = update p2 $ update p1 valuation
+      x1 = M.lookup (outputWire p1) valuation' >>= ensure boolean
+      x2 = M.lookup (outputWire p2) valuation' >>= ensure boolean
+      xor = (\x y -> x + y - 2*x*y) <$> x1 <*> x2
 
     update (LISZERO p1 w i) valuation = valuation3
       where

@@ -33,6 +33,11 @@ data DSL p where
   OR  :: DSL p -> DSL p -> DSL p -- logical or
   XOR :: DSL p -> DSL p -> DSL p -- logical xor
 
+  UnsafeNOT :: DSL p -> DSL p          -- unsafe logical not
+  UnsafeAND :: DSL p -> DSL p -> DSL p -- unsafe logical and
+  UnsafeOR  :: DSL p -> DSL p -> DSL p -- unsafe logical or
+  UnsafeXOR :: DSL p -> DSL p -> DSL p -- unsafe logical xor
+
   -- Boolean constructors
   EQL    :: DSL p -> DSL p -> DSL p -- equality check
   ISZERO :: DSL p -> DSL p          -- zero check
@@ -63,6 +68,11 @@ data DSL p where
   AND :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
   OR  :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
   XOR :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+
+  UnsafeNOT :: {v:DSL p | unpacked v} -> DSL p
+  UnsafeAND :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  UnsafeOR  :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  UnsafeXOR :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
 
   EQL    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
   ISZERO :: {v:DSL p | unpacked v} -> DSL p
@@ -125,6 +135,11 @@ desugared (AND p1 p2) = desugared p1 && desugared p2
 desugared (OR  p1 p2) = desugared p1 && desugared p2
 desugared (XOR p1 p2) = desugared p1 && desugared p2
 
+desugared (UnsafeNOT p)     = desugared p
+desugared (UnsafeAND p1 p2) = desugared p1 && desugared p2
+desugared (UnsafeOR  p1 p2) = desugared p1 && desugared p2
+desugared (UnsafeXOR p1 p2) = desugared p1 && desugared p2
+
 desugared (ISZERO p)  = desugared p
 desugared (EQLC p _)  = desugared p
 
@@ -170,6 +185,11 @@ desugar (AND p1 p2) = AND (desugar p1) (desugar p2)
 desugar (OR  p1 p2) = OR  (desugar p1) (desugar p2)
 desugar (XOR p1 p2) = XOR (desugar p1) (desugar p2)
 
+desugar (UnsafeNOT p)     = UnsafeNOT (desugar p)
+desugar (UnsafeAND p1 p2) = UnsafeAND (desugar p1) (desugar p2)
+desugar (UnsafeOR  p1 p2) = UnsafeOR  (desugar p1) (desugar p2)
+desugar (UnsafeXOR p1 p2) = UnsafeXOR (desugar p1) (desugar p2)
+
 desugar (ISZERO p)  = ISZERO (desugar p)
 desugar (EQLC p k)  = EQLC (desugar p) k
 
@@ -214,6 +234,11 @@ unpacked (AND p1 p2) = unpacked p1 && unpacked p2
 unpacked (OR  p1 p2) = unpacked p1 && unpacked p2
 unpacked (XOR p1 p2) = unpacked p1 && unpacked p2
 
+unpacked (UnsafeNOT p)     = unpacked p
+unpacked (UnsafeAND p1 p2) = unpacked p1 && unpacked p2
+unpacked (UnsafeOR  p1 p2) = unpacked p1 && unpacked p2
+unpacked (UnsafeXOR p1 p2) = unpacked p1 && unpacked p2
+
 unpacked (ISZERO p)  = unpacked p
 unpacked (EQLC p _)  = unpacked p
 unpacked (LET _ _ p) = False -- gets compiled to a list of more than one program
@@ -233,6 +258,11 @@ data LDSL p i =
   LAND   (LDSL p i) (LDSL p i) i |
   LOR    (LDSL p i) (LDSL p i) i |
   LXOR   (LDSL p i) (LDSL p i) i |
+
+  LUnsafeNOT   (LDSL p i)            i |
+  LUnsafeAND   (LDSL p i) (LDSL p i) i |
+  LUnsafeOR    (LDSL p i) (LDSL p i) i |
+  LUnsafeXOR   (LDSL p i) (LDSL p i) i |
 
   LISZERO (LDSL p i)         i i |
   LEQLC   (LDSL p i) p       i i
@@ -314,6 +344,11 @@ label m programs = (labeledPrograms, finalEnv) where
   label' (OR  p1 p2) usedWires env = label2 LOR  p1 p2 usedWires env
   label' (XOR p1 p2) usedWires env = label2 LXOR p1 p2 usedWires env
 
+  label' (UnsafeNOT p1)    usedWires env = label1 LUnsafeNOT p1    usedWires env
+  label' (UnsafeAND p1 p2) usedWires env = label2 LUnsafeAND p1 p2 usedWires env
+  label' (UnsafeOR  p1 p2) usedWires env = label2 LUnsafeOR  p1 p2 usedWires env
+  label' (UnsafeXOR p1 p2) usedWires env = label2 LUnsafeXOR p1 p2 usedWires env
+
   label' (LET var def body) usedWires env =
       let ([def'], ws, env') = label' def usedWires env
           i = outputWire def' -- index of the local definition
@@ -352,6 +387,11 @@ outputWire (LAND _ _ i) = i
 outputWire (LOR  _ _ i) = i
 outputWire (LXOR _ _ i) = i
 
+outputWire (LUnsafeNOT _   i) = i
+outputWire (LUnsafeAND _ _ i) = i
+outputWire (LUnsafeOR  _ _ i) = i
+outputWire (LUnsafeXOR _ _ i) = i
+
 outputWire (LISZERO _ _ i) = i
 outputWire (LEQLC _ _ _ i) = i
 
@@ -373,6 +413,11 @@ nWires (NOT p1   ) = 1 + nWires p1
 nWires (AND p1 p2) = 1 + nWires p1 + nWires p2
 nWires (OR  p1 p2) = 1 + nWires p1 + nWires p2
 nWires (XOR p1 p2) = 1 + nWires p1 + nWires p2
+
+nWires (UnsafeNOT p1   ) = 1 + nWires p1
+nWires (UnsafeAND p1 p2) = 1 + nWires p1 + nWires p2
+nWires (UnsafeOR  p1 p2) = 1 + nWires p1 + nWires p2
+nWires (UnsafeXOR p1 p2) = 1 + nWires p1 + nWires p2
 
 nWires (ISZERO p1) = 2 + nWires p1
 nWires (EQLC p1 _) = 2 + nWires p1
@@ -408,6 +453,11 @@ nGates (LNOT p1    _) = 2 + nGates p1
 nGates (LAND p1 p2 _) = 3 + nGates p1 + nGates p2
 nGates (LOR  p1 p2 _) = 3 + nGates p1 + nGates p2
 nGates (LXOR p1 p2 _) = 3 + nGates p1 + nGates p2
+
+nGates (LUnsafeNOT p1    _) = 1 + nGates p1
+nGates (LUnsafeAND p1 p2 _) = 1 + nGates p1 + nGates p2
+nGates (LUnsafeOR  p1 p2 _) = 1 + nGates p1 + nGates p2
+nGates (LUnsafeXOR p1 p2 _) = 1 + nGates p1 + nGates p2
 
 nGates (LISZERO p1 _ _) = 2 + nGates p1
 nGates (LEQLC p1 _ _ _) = 2 + nGates p1
@@ -468,6 +518,29 @@ compile m (LXOR p1 p2 i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (xorGate m [i1, i2, i]) c'
+compile m (LUnsafeNOT p1 i) = c
+  where
+    c1 = compile m p1
+    i1 = outputWire p1
+    c = append' (unsafeNotGate m [i1, i]) c1
+compile m (LUnsafeAND p1 p2 i) = c
+  where
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
+    c' = append' c1 c2
+    c = append' (unsafeAndGate m [i1, i2, i]) c'
+compile m (LUnsafeOR  p1 p2 i) = c
+  where
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
+    c' = append' c1 c2
+    c = append' (unsafeOrGate m [i1, i2, i]) c'
+compile m (LUnsafeXOR p1 p2 i) = c
+  where
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
+    c' = append' c1 c2
+    c = append' (unsafeXorGate m [i1, i2, i]) c'
 compile m (LISZERO p1 w i) = c
   where
     c1 = compile m p1
@@ -532,6 +605,29 @@ semanticsAreCorrect m (LXOR p1 p2 i) input = correct where
   correct = correct1 && correct2 &&
     (input!i == if input!i1 /= input!i2 then 1 else 0) &&
     boolean (input!i1) && boolean (input!i2)
+semanticsAreCorrect m (LUnsafeNOT p1 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  i1 = outputWire p1
+  correct = correct1 &&
+    (input!i == 1 - input!i1)
+semanticsAreCorrect m (LUnsafeAND p1 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 &&
+    (input!i == input!i1 * input!i2)
+semanticsAreCorrect m (LUnsafeOR  p1 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 &&
+    (input!i == input!i1 + input!i2 - input!i1*input!i2)
+semanticsAreCorrect m (LUnsafeXOR p1 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 &&
+    (input!i == input!i1 + input!i2 - 2*input!i1*input!i2)
 semanticsAreCorrect m (LISZERO p1 w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
