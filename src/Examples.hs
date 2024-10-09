@@ -273,7 +273,7 @@ testVectors = do
   test vec5 (M.empty)
   test vec6 (M.empty)
 
-  test' vec7 (M.empty) "treekz/good_int_addition.tex"
+  test' vec7 (M.empty) "treekz/int_addition.tex"
 
 
 -- Local bindings --------------------------------------------------------------
