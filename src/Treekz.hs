@@ -8,11 +8,9 @@ import DSL
 data Tree a = N a [Tree a] deriving (Read, Show)
 type Pos = (Float, Float)
 
-{-@ ignore compress @-}
 compress :: Bool
 compress = True
 
-{-@ ignore circle @-}
 circle :: Pos -> Float -> String -> String
 circle pos radius value = "\\draw " ++ show pos ++
                           -- " circle (" ++ show radius ++ "cm)" ++
@@ -30,19 +28,16 @@ genTikz radius (dx, dy) pos@(x, y) (N v ts) = circle pos radius v ++
     positions = zip xPositions (repeat $ y-dy)
 
 
-{-@ ignore drawChild @-}
 drawChild :: Float -> Pos -> Pos -> Pos -> Tree String -> String
 drawChild radius pos (dx, dy) childPos child =
   line pos childPos radius ++ genTikz radius (dx, dy) childPos child
 
-{-@ ignore parse @-}
 genTikzs :: Float -> Pos -> [Tree String] -> String
 genTikzs r delta trees = concatMap aux trees where
   aux tree = "\\begin{tikzpicture}\n" ++
              genTikz r delta (0,0) tree ++
              "\\end{tikzpicture}\n\\newpage\n"
 
-{-@ ignore parse @-}
 parse :: (Show p, Show i) => LDSL p i -> Tree String
 parse p = case p of
   LWIRE s i      -> N ("$" ++ s ++ "$" ++ wire [i])         []
@@ -62,7 +57,6 @@ parse p = case p of
   where
     wire l = "\\textcolor{red}{\\tiny " ++ (intercalate "," (map show l)) ++ "}"
 
-{-@ ignore norm @-}
 norm :: Pos -> Float
 norm (x, y) = sqrt (x*x + y*y)
 
@@ -79,7 +73,6 @@ line (x1, y1) (x2, y2) r = "\\draw "
     pos1' = (x1 + r*dx, y1 + r*dy)
     pos2' = (x2 - r*dx, y2 - r*dy)
 
-{-@ ignore intro @-}
 intro :: String
 intro = "\\documentclass{article}\n\
          \\\usepackage{tikz}\n\
@@ -87,6 +80,5 @@ intro = "\\documentclass{article}\n\
          \\\begin{document}\n\
          \\\centering\n"
 
-{-@ ignore outro @-}
 outro :: String
 outro = "\\end{document}\n"
