@@ -257,10 +257,11 @@ vec5 = rotateL (range 1 10) 3
 vec6 :: DSL FF
 vec6 = rotateR (range 1 10) 2
 
-{-@ vec7 :: DSL _ @-}
 vec7 :: DSL FF
-vec7 = vecAdd (PlinkLib.fromList [CONST 0, CONST 1, CONST 1]) -- 2
-              (PlinkLib.fromList [CONST 0, CONST 1, CONST 0]) -- 3
+vec7 = vecAdd (fromInt 3 2) (fromInt 3 3) -- 2 + 3, using 3 bits
+
+vec8 :: DSL FF
+vec8 = vecAdd (fromHex ['a', '4']) (fromHex ['4', 'b']) where
 
 testVectors :: IO ()
 testVectors = do
@@ -274,6 +275,7 @@ testVectors = do
   test vec6 (M.empty)
 
   test' vec7 (M.empty) "treekz/int_addition.tex"
+  test vec8 (M.empty)
 
 
 -- Local bindings --------------------------------------------------------------
