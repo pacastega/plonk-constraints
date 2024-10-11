@@ -302,9 +302,9 @@ label m programs = (labeledPrograms, finalEnv) where
             DSL p ->
             [Int] -> Env ->
             ([LDSL p Int], [Int], Env)
-  label1 ctor arg1 usedWires env = ([ctor arg1' i], is1, env') where
+  label1 ctor arg1 usedWires env = ([ctor arg1' i], ws1, env1) where
     i = freshIndex m usedWires
-    ([arg1'], is1, env') = label' arg1 (i:usedWires) env
+    ([arg1'], ws1, env1) = label' arg1 (i:usedWires) env
 
   -- combinator to label programs with 2 arguments that need recursive labelling
   {-@ label2 :: (LDSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) -> Btwn 0 m ->
@@ -317,10 +317,10 @@ label m programs = (labeledPrograms, finalEnv) where
             DSL p -> DSL p ->
             [Int] -> Env ->
             ([LDSL p Int], [Int], Env)
-  label2 ctor arg1 arg2 usedWires env = ([ctor arg1' arg2' i], is2, env'') where
+  label2 ctor arg1 arg2 usedWires env = ([ctor arg1' arg2' i], ws2, env2) where
     i = freshIndex m usedWires
-    ([arg1'], is1, env') = label' arg1 (i:usedWires) env
-    ([arg2'], is2, env'') = label' arg2 is1 env'
+    ([arg1'], ws1, env1) = label' arg1 (i:usedWires) env
+    ([arg2'], ws2, env2) = label' arg2 ws1 env1
 
   {-@ label' :: program:{DSL p | desugared program} -> [Btwn 0 m] -> Env m ->
                 ({l:[LDSL p (Btwn 0 m)] | unpacked program => len l = 1},
@@ -350,27 +350,27 @@ label m programs = (labeledPrograms, finalEnv) where
   label' (UnsafeXOR p1 p2) usedWires env = label2 LUnsafeXOR p1 p2 usedWires env
 
   label' (LET var def body) usedWires env =
-      let ([def'], ws, env') = label' def usedWires env
+      let ([def'], ws', env') = label' def usedWires env
           i = outputWire def' -- index of the local definition
-          (body', ws', env'') = label' body ws (add (var,i) env')
-      in (def':body', ws', recover var env'' env)
+          (body', ws'', env'') = label' body ws' (add (var,i) env')
+      in (def':body', ws'', recover var env'' env)
       where
         add (k,val) = M.alter (\_ -> Just val) k
         recover k newEnv oldEnv = M.alter (\_ -> M.lookup k oldEnv) k newEnv
 
-  label' (ISZERO p1) usedWires env = ([LISZERO p1' w i], is1, env') where
+  label' (ISZERO p1) usedWires env = ([LISZERO p1' w i], ws1, env') where
     i = freshIndex m usedWires
     w = freshIndex m (i:usedWires)
-    ([p1'], is1, env') = label' p1 (i:w:usedWires) env
-  label' (EQLC p1 k) usedWires env = ([LEQLC p1' k w i], is1, env') where
+    ([p1'], ws1, env') = label' p1 (i:w:usedWires) env
+  label' (EQLC p1 k) usedWires env = ([LEQLC p1' k w i], ws1, env') where
     i = freshIndex m usedWires
     w = freshIndex m (i:usedWires)
-    ([p1'], is1, env') = label' p1 (i:w:usedWires) env
+    ([p1'], ws1, env') = label' p1 (i:w:usedWires) env
 
   label' (NIL) usedWires env = ([], usedWires, env)
-  label' (CONS p ps) usedWires env = (p' ++ ps', ws', env'') where
-    (p', ws, env') = label' p usedWires env
-    (ps', ws', env'') = label' ps ws env'
+  label' (CONS p ps) usedWires env = (p' ++ ps', ws'', env'') where
+    (p', ws', env') = label' p usedWires env
+    (ps', ws'', env'') = label' ps ws' env'
 
 -- TODO: this could probably be avoided by using record syntax
 {-@ measure outputWire @-}
@@ -432,10 +432,10 @@ nWires (CONS p ps) = nWires p + nWires ps
 {-@ lazy freshIndex @-}
 {-@ freshIndex :: m:Nat1 -> [Int] -> Btwn 0 m @-}
 freshIndex :: Int -> [Int] -> Int
-freshIndex m used = freshIndex_ [0..m-1] where
-  {-@ freshIndex_ :: [Btwn 0 m] -> Btwn 0 m @-}
-  freshIndex_ []     = 0 -- FIXME: This shouldn’t be reached. How to prove it?
-  freshIndex_ (x:xs) = if x `elem` used then freshIndex_ xs else x
+freshIndex m used = freshIndex' [0..m-1] where
+  {-@ freshIndex' :: [Btwn 0 m] -> Btwn 0 m @-}
+  freshIndex' []     = 0 -- FIXME: This shouldn’t be reached. How to prove it?
+  freshIndex' (x:xs) = if x `elem` used then freshIndex' xs else x
 
 
 -- the number of gates needed to compile the program into a circuit
