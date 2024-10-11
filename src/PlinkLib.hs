@@ -92,14 +92,9 @@ fromInt n = go 0 NIL where
                   in go (m+1) (CONST r' `CONS` acc) q
 
 
--- FIXME: this is VERY inefficient:
--- 1. the (double) addition ‘x+y+c’ gets computed 4 times
--- 2. the comparisons against constants use 3 constraints, instead of 2
--- 3. the comparison ‘sum == 3’ gets computed twice
 {-@ vecAdd :: u:{DSL p | isVector u} ->
               v:{DSL p | isVector v && vlength v = vlength u} ->
                 DSL p @-}
-  -- TODO: it also preserves length
 vecAdd :: Num p => DSL p -> DSL p -> DSL p
 vecAdd u v = localBindings env (fromList result)
   where
