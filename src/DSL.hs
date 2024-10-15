@@ -55,37 +55,38 @@ infixr 5 `CONS`
 
 
 {-@
-data DSL p where
-  VAR   :: String -> DSL p
-  CONST :: p      -> DSL p
+data DSL p <dslPred :: p -> Bool> =
+    VAR  {name :: String}
+  | CONST {x :: p}
 
-  ADD :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  SUB :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  MUL :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  DIV :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  | ADD {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
+  | SUB {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
+  | MUL {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
+  | DIV {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
 
-  NOT :: {v:DSL p | unpacked v}                           -> DSL p
-  AND :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  OR  :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  XOR :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  | NOT {arg  :: {v:DSL p | unpacked v}}
+  | AND {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
+  | OR  {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
+  | XOR {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
 
-  UnsafeNOT :: {v:DSL p | unpacked v} -> DSL p
-  UnsafeAND :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  UnsafeOR  :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  UnsafeXOR :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  | UnsafeNOT {arg  :: {v:DSL p | unpacked v}}
+  | UnsafeAND {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
+  | UnsafeOR  {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
+  | UnsafeXOR {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
 
-  EQL    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  ISZERO :: {v:DSL p | unpacked v} -> DSL p
-  EQLC   :: {v:DSL p | unpacked v} -> p                      -> DSL p
+  | EQL    {arg1 :: {v:DSL p | unpacked v}, arg2 :: {u:DSL p | unpacked u}}
+  | ISZERO {arg  :: {v:DSL p | unpacked v}}
+  | EQLC   {arg1 :: {v:DSL p | unpacked v}, arg2p :: p}
 
-  ITER :: b:Bound ->
-          ({v:Int | within b v} -> {v:DSL p | unpacked v} ->
-              {v:DSL p | unpacked v}) ->
-          {v:DSL p | unpacked v} -> {v:DSL p | unpacked v}
-  LET  :: String -> {v:DSL p | unpacked v} -> DSL p -> DSL p
+  | ITER {b :: Bound,
+            fun :: ({v:Int | within b v} -> {v:DSL p | unpacked v} ->
+                {v:DSL p | unpacked v}),
+            body :: {v:DSL p | unpacked v}}
+  | LET  {name :: String, def :: {v:DSL p | unpacked v}, body :: DSL p}
 
-  NIL  :: DSL p
-  CONS :: head:{DSL p | unpacked head} -> tail:{DSL p | isVector tail} -> DSL p
+  | NIL
+  | CONS { headCons :: DSL <dslPred> p,
+           tailCons :: {v:DSL p | isVector v}}
 
 @-}
 
