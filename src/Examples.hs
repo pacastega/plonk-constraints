@@ -241,7 +241,7 @@ vec3 = get (range 1 5) 3 where
               b:{DSL _ | isVector b && vlength b = vlength a} ->
               c:{DSL _ | isVector c && vlength c = vlength a} @-}
 vecMul :: DSL FF -> DSL FF -> DSL FF
-vecMul = bitwise MUL
+vecMul = vZipWith MUL
 
 -- [1, 2, 3] * [5, 6, 7] = [1*5, 2*6, 3*7] = [5, 12, 21]
 {-@ vec4 :: DSL _ @-}

@@ -1,21 +1,11 @@
 {-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-@ LIQUID "--reflection" @-}
+{-@ infix +++ @-}
 
 module PlinkLib where
 
 import DSL
 import Utils (pow)
-
--- Bit-wise applications -------------------------------------------------------
-{-@ bitwise :: op:({x:DSL p | unpacked x} ->
-                   {y:DSL p | unpacked y} ->
-                   {z:DSL p | unpacked z}) ->
-               u:{DSL p | isVector u} ->
-               v:{DSL p | isVector v && vlength v = vlength u} ->
-               w:{DSL p | isVector w && vlength w = vlength u} @-}
-bitwise :: (DSL p -> DSL p -> DSL p) -> DSL p -> DSL p -> DSL p
-bitwise _  (NIL)       (NIL)       = NIL
-bitwise op (CONS x xs) (CONS y ys) = op x y `CONS` bitwise op xs ys
 
 -- List-like functions ---------------------------------------------------------
 {-@ fromList :: l:[{v:DSL p | unpacked v}] ->
@@ -24,12 +14,14 @@ fromList :: [DSL p] -> DSL p
 fromList []     = NIL
 fromList (x:xs) = x `CONS` fromList xs
 
-{-@ vAppend :: u:{DSL p | isVector u} ->
-               v:{DSL p | isVector v} ->
-               {w:DSL p | isVector w && vlength w = vlength u + vlength v} @-}
-vAppend :: DSL p -> DSL p -> DSL p
-vAppend (NIL)       ys = ys
-vAppend (CONS x xs) ys = CONS x (vAppend xs ys)
+{-@ (+++) :: u:{DSL p | isVector u} ->
+             v:{DSL p | isVector v} ->
+             {w:DSL p | isVector w && vlength w = vlength u + vlength v} @-}
+(+++) :: DSL p -> DSL p -> DSL p
+(NIL)       +++ ys = ys
+(CONS x xs) +++ ys = CONS x (xs +++ ys)
+
+infixr 5 +++
 
 {-@ vTakeDrop :: n:Nat -> u:{DSL p | isVector u && vlength u >= n} ->
                 ({v:DSL p | isVector v && vlength v = n},
@@ -53,28 +45,75 @@ vZip :: DSL p -> DSL p -> [(DSL p, DSL p)]
 vZip (NIL)       (NIL)       = []
 vZip (CONS x xs) (CONS y ys) = (x,y) : vZip xs ys
 
+{-@ vZipWith :: op:({x:DSL p | unpacked x} ->
+                    {y:DSL p | unpacked y} ->
+                    {z:DSL p | unpacked z}) ->
+                u:{DSL p | isVector u} ->
+                v:{DSL p | isVector v && vlength v = vlength u} ->
+                w:{DSL p | isVector w && vlength w = vlength u} @-}
+vZipWith :: (DSL p -> DSL p -> DSL p) -> DSL p -> DSL p -> DSL p
+vZipWith _  (NIL)       (NIL)       = NIL
+vZipWith op (CONS x xs) (CONS y ys) = op x y `CONS` vZipWith op xs ys
+
+{-@ vMap :: op:({x:DSL p | unpacked x} -> {y:DSL p | unpacked y})
+         -> u:{DSL p | isVector u}
+         -> v:{DSL p | isVector v && vlength v = vlength u} @-}
+vMap :: (DSL p -> DSL p) -> DSL p -> DSL p
+vMap _  (NIL)       = NIL
+vMap op (CONS x xs) = op x `CONS` vMap op xs
+
+--FIXME: termination should be provable
+{-@ lazy vChunk @-}
+{-@ vChunk :: n:Nat -> v:{DSL p | isVector v && (vlength v) mod n = 0}
+           -> {l:[{w:DSL p | isVector w && vlength w = n}]
+                | n * len l = vlength v}
+            / [vlength v] @-}
+vChunk :: Int -> DSL p -> [DSL p]
+vChunk _ NIL = []
+vChunk n xs  = let (ys, zs) = vTakeDrop n xs in ys : (vChunk n zs)
+
+-- Bitwise operations ----------------------------------------------------------
+{-@ vNot :: u:{DSL p | isVector u} ->
+            w:{DSL p | isVector w && vlength w = vlength u} @-}
+vNot = vMap NOT
+
+{-@ vAnd :: u:{DSL p | isVector u} ->
+            v:{DSL p | isVector v && vlength v = vlength u} ->
+            w:{DSL p | isVector w && vlength w = vlength u} @-}
+vAnd = vZipWith AND
+
+{-@ vOr :: u:{DSL p | isVector u} ->
+           v:{DSL p | isVector v && vlength v = vlength u} ->
+           w:{DSL p | isVector w && vlength w = vlength u} @-}
+vOr = vZipWith OR
+
+{-@ vXor :: u:{DSL p | isVector u} ->
+            v:{DSL p | isVector v && vlength v = vlength u} ->
+            w:{DSL p | isVector w && vlength w = vlength u} @-}
+vXor = vZipWith XOR
+
 -- Shift & rotate --------------------------------------------------------------
 {-@ rotateL :: u:{DSL p | isVector u} -> Btwn 0 (vlength u) ->
                {v:DSL p | isVector v && vlength v = vlength u} @-}
 rotateL :: DSL p -> Int -> DSL p
-rotateL xs n = let (ys, zs) = vTakeDrop n xs in zs `vAppend` ys
+rotateL xs n = let (ys, zs) = vTakeDrop n xs in zs +++ ys
 
 {-@ rotateR :: u:{DSL p | isVector u} -> Btwn 0 (vlength u) ->
                {v:DSL p | isVector v && vlength v = vlength u} @-}
 rotateR :: DSL p -> Int -> DSL p
-rotateR xs n = let (ys, zs) = vTakeDrop (vlength xs - n) xs in zs `vAppend` ys
+rotateR xs n = let (ys, zs) = vTakeDrop (vlength xs - n) xs in zs +++ ys
 
 {-@ shiftL :: u:{DSL p | isVector u} -> Btwn 0 (vlength u) ->
               {v:DSL p | isVector v && vlength v = vlength u} @-}
 shiftL :: Num p => DSL p -> Int -> DSL p
 shiftL xs n = let (_, zs) = vTakeDrop n xs in
-  zs `vAppend` vReplicate n (CONST 0)
+  zs +++ vReplicate n (CONST 0)
 
 {-@ shiftR :: u:{DSL p | isVector u} -> Btwn 0 (vlength u) ->
               {v:DSL p | isVector v && vlength v = vlength u} @-}
 shiftR :: Num p => DSL p -> Int -> DSL p
 shiftR xs n = let (ys, _) = vTakeDrop (vlength xs - n) xs in
-  vReplicate n (CONST 0) `vAppend` ys
+  vReplicate n (CONST 0) +++ ys
 
 -- Integers mod 2^n -----------------------------------------------------------
 {-@ fromInt :: n:Nat -> x:Btwn 0 (pow 2 n) ->
@@ -124,7 +163,7 @@ isHexDigit _   = False
                {v:DSL p | isVector v && vlength v = 4 * len h} @-}
 fromHex :: Num p => String -> DSL p
 fromHex []     = NIL
-fromHex (c:cs) = go c `vAppend` (fromHex cs) where
+fromHex (c:cs) = go c +++ (fromHex cs) where
   {-@ go :: {c:Char | isHexDigit c} ->
             {v:DSL p | isVector v && vlength v = 4} @-}
   go :: Num p => Char -> DSL p
