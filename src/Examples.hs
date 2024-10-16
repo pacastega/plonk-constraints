@@ -287,12 +287,12 @@ let1 = LET "x" (CONST 5) (LET "y" (CONST 7) (VAR "x" `ADD` VAR "y"))
 let2 :: DSL FF
 let2 = LET "x" (CONST 5) (LET "x" (CONST 7) (VAR "x"))
 
--- -- let x = 2 in (let x = 1 in x) + x
--- let3 :: DSL FF
--- let3 = LET "x" (CONST 2) ((LET "x" (CONST 1) (VAR "x")) `ADD` (VAR "x"))
+-- let x = 2 in (let x = 1 in x) + x
+let3 :: DSL FF
+let3 = LET "x" (CONST 2) ((LET "x" (CONST 1) (VAR "x")) `ADD` (VAR "x"))
 
 testLet :: IO ()
 testLet = do
   test let1 (M.empty) -- 12
   test let2 (M.empty) -- 7
-  -- test let3 (M.empty) -- 3
+  test let3 (M.empty) -- 3
