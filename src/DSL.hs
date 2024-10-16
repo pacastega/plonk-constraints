@@ -241,7 +241,7 @@ unpacked (UnsafeXOR p1 p2) = unpacked p1 && unpacked p2
 
 unpacked (ISZERO p)  = unpacked p
 unpacked (EQLC p _)  = unpacked p
-unpacked (LET _ _ p) = False -- gets compiled to a list of more than one program
+unpacked (LET _ _ p) = unpacked p
 unpacked (ITER {})   = False
 
 
@@ -276,35 +276,39 @@ type Env = M.Map String Int
 {-@ lazy label @-}
 -- label each constructor with the index of the wire where its output will be
 {-@ label :: m:Nat1 -> [{v:DSL p | desugared v}] ->
-             ([LDSL p (Btwn 0 m)], Env m) @-}
-label :: Int -> [DSL p] -> ([LDSL p Int], Env)
-label m programs = (labeledPrograms, finalEnv) where
-  (labeledPrograms, _, finalEnv) = labelAll programs
+             ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], Env m) @-}
+label :: Int -> [DSL p] -> ([LDSL p Int], [LDSL p Int], Env)
+label m programs = (labeledBodies, labeledBindings, finalEnv) where
+  (labeledBodies, labeledBindings, _, finalEnv) = labelAll programs
 
   {-@ labelAll :: [{v:DSL p | desugared v}] ->
-                  ([LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) @-}
-  labelAll :: [DSL p] -> ([LDSL p Int], [Int], Env)
-  labelAll programs = foldl go ([], [], M.empty) programs where
-    {-@ go :: ([LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) ->
+                  ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) @-}
+  labelAll :: [DSL p] -> ([LDSL p Int], [LDSL p Int], [Int], Env)
+  labelAll programs = foldl go ([], [], [], M.empty) programs where
+    {-@ go :: ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) ->
               {v:DSL p | desugared v} ->
-              ([LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) @-}
-    go :: ([LDSL p Int], [Int], Env) -> DSL p -> ([LDSL p Int], [Int], Env)
-    go (acc, ws, env) program =
-      let (labeledProgram, ws', env') = label' program ws env
-      in (acc ++ labeledProgram, ws', env')
+              ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) @-}
+    go :: ([LDSL p Int], [LDSL p Int], [Int], Env) -> DSL p ->
+          ([LDSL p Int], [LDSL p Int], [Int], Env)
+    go (acc1, acc2, ws, env) program =
+      let (labeledBody, labeledBindings, ws', env') = label' program ws env
+      in (acc1 ++ labeledBody,
+          acc2 ++ labeledBindings,
+          ws', env')
 
   -- combinator to label programs with 1 argument that needs recursive labelling
   {-@ label1 :: (LDSL p (Btwn 0 m) -> Btwn 0 m -> LDSL p (Btwn 0 m)) ->
                 {arg:DSL p | desugared arg && unpacked arg} ->
                 [Btwn 0 m] -> Env m ->
-                (ListN (LDSL p (Btwn 0 m)) 1, [Btwn 0 m], Env m) @-}
+                (ListN (LDSL p (Btwn 0 m)) 1, [LDSL p (Btwn 0 m)],
+                 [Btwn 0 m], Env m) @-}
   label1 :: (LDSL p Int -> Int -> LDSL p Int) ->
             DSL p ->
             [Int] -> Env ->
-            ([LDSL p Int], [Int], Env)
-  label1 ctor arg1 usedWires env = ([ctor arg1' i], ws1, env1) where
+            ([LDSL p Int], [LDSL p Int], [Int], Env)
+  label1 ctor arg1 usedWires env = ([ctor arg1' i], bs, ws1, env1) where
     i = freshIndex m usedWires
-    ([arg1'], ws1, env1) = label' arg1 (i:usedWires) env
+    ([arg1'], bs, ws1, env1) = label' arg1 (i:usedWires) env
 
   -- combinator to label programs with 2 arguments that need recursive labelling
   {-@ label2 :: (LDSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) -> Btwn 0 m ->
@@ -312,27 +316,31 @@ label m programs = (labeledPrograms, finalEnv) where
                 {arg1:DSL p | desugared arg1 && unpacked arg1} ->
                 {arg2:DSL p | desugared arg2 && unpacked arg2} ->
                 [Btwn 0 m] -> Env m ->
-                (ListN (LDSL p (Btwn 0 m)) 1, [Btwn 0 m], Env m) @-}
+                (ListN (LDSL p (Btwn 0 m)) 1, [LDSL p (Btwn 0 m)],
+                 [Btwn 0 m], Env m) @-}
   label2 :: (LDSL p Int -> LDSL p Int -> Int -> LDSL p Int) ->
             DSL p -> DSL p ->
             [Int] -> Env ->
-            ([LDSL p Int], [Int], Env)
-  label2 ctor arg1 arg2 usedWires env = ([ctor arg1' arg2' i], ws2, env2) where
+            ([LDSL p Int], [LDSL p Int], [Int], Env)
+  label2 ctor arg1 arg2 usedWires env = ([ctor arg1' arg2' i], bs, ws2, env2)
+    where
     i = freshIndex m usedWires
-    ([arg1'], ws1, env1) = label' arg1 (i:usedWires) env
-    ([arg2'], ws2, env2) = label' arg2 ws1 env1
+    ([arg1'], bs1, ws1, env1) = label' arg1 (i:usedWires) env
+    ([arg2'], bs2, ws2, env2) = label' arg2 ws1 env1
+    bs = bs1 ++ bs2
 
   {-@ label' :: program:{DSL p | desugared program} -> [Btwn 0 m] -> Env m ->
                 ({l:[LDSL p (Btwn 0 m)] | unpacked program => len l = 1},
+                 [LDSL p (Btwn 0 m)],
                  [Btwn 0 m],
                  Env m) @-}
-  label' :: DSL p -> [Int] -> Env -> ([LDSL p Int], [Int], Env)
+  label' :: DSL p -> [Int] -> Env -> ([LDSL p Int], [LDSL p Int], [Int], Env)
   label' (VAR s) usedWires env = case M.lookup s env of
       Nothing -> let i = freshIndex m usedWires -- free variable
-                 in ([LWIRE s i], i:usedWires, add (s,i) env)
-      Just i  -> ([LWIRE s i], usedWires, env)
+                 in ([LWIRE s i], [], i:usedWires, add (s,i) env)
+      Just i  -> ([LWIRE s i], [], usedWires, env)
     where add (k,v) = M.alter (\_ -> Just v) k
-  label' (CONST x) usedWires env = ([LCONST x i], i:usedWires, env)
+  label' (CONST x) usedWires env = ([LCONST x i], [], i:usedWires, env)
     where i = freshIndex m usedWires
   label' (ADD p1 p2) usedWires env = label2 LADD p1 p2 usedWires env
   label' (SUB p1 p2) usedWires env = label2 LSUB p1 p2 usedWires env
@@ -350,27 +358,29 @@ label m programs = (labeledPrograms, finalEnv) where
   label' (UnsafeXOR p1 p2) usedWires env = label2 LUnsafeXOR p1 p2 usedWires env
 
   label' (LET var def body) usedWires env =
-      let ([def'], ws', env') = label' def usedWires env
+      let ([def'], bs', ws', env') = label' def usedWires env
           i = outputWire def' -- index of the local definition
-          (body', ws'', env'') = label' body ws' (add (var,i) env')
-      in (def':body', ws'', recover var env'' env)
+          (body', bs'', ws'', env'') = label' body ws' (add (var,i) env')
+          bs = bs' ++ bs''
+      in (body', def':bs, ws'', recover var env'' env)
       where
         add (k,val) = M.alter (\_ -> Just val) k
         recover k newEnv oldEnv = M.alter (\_ -> M.lookup k oldEnv) k newEnv
 
-  label' (ISZERO p1) usedWires env = ([LISZERO p1' w i], ws1, env') where
+  label' (ISZERO p1) usedWires env = ([LISZERO p1' w i], bs, ws1, env') where
     i = freshIndex m usedWires
     w = freshIndex m (i:usedWires)
-    ([p1'], ws1, env') = label' p1 (i:w:usedWires) env
-  label' (EQLC p1 k) usedWires env = ([LEQLC p1' k w i], ws1, env') where
+    ([p1'], bs, ws1, env') = label' p1 (i:w:usedWires) env
+  label' (EQLC p1 k) usedWires env = ([LEQLC p1' k w i], bs, ws1, env') where
     i = freshIndex m usedWires
     w = freshIndex m (i:usedWires)
-    ([p1'], ws1, env') = label' p1 (i:w:usedWires) env
+    ([p1'], bs, ws1, env') = label' p1 (i:w:usedWires) env
 
-  label' (NIL) usedWires env = ([], usedWires, env)
-  label' (CONS p ps) usedWires env = (p' ++ ps', ws'', env'') where
-    (p', ws', env') = label' p usedWires env
-    (ps', ws'', env'') = label' ps ws' env'
+  label' (NIL) usedWires env = ([], [], usedWires, env)
+  label' (CONS p ps) usedWires env = (p' ++ ps', bs, ws'', env'') where
+    (p', bs', ws', env') = label' p usedWires env
+    (ps', bs'', ws'', env'') = label' ps ws' env'
+    bs = bs' ++ bs''
 
 -- TODO: this could probably be avoided by using record syntax
 {-@ measure outputWire @-}

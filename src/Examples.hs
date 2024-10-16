@@ -53,16 +53,17 @@ test :: (Eq p, Fractional p, Show p) =>
 test program valuation = do
   let desugaredProgram = desugar program
   let m = 1 + nWires desugaredProgram -- upper bound for #(needed wires)
-  let (labeledPrograms, env) = label m [desugaredProgram]
+  let (bodies, bindings, env) = label m [desugaredProgram]
+  let labeledPrograms = bindings ++ bodies
+
   let circuit = concatMap (compile m) labeledPrograms
   let input = witnessGen m labeledPrograms (compose' m env valuation)
-  let output = map (\p -> input ! outputWire p) labeledPrograms
-  let output' = splitAt (length labeledPrograms - vlength program) output
+  let output = map (\p -> input ! outputWire p) bodies
 
   putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   putStrLn $ "Compiled circuit:     " ++ show circuit
   putStrLn $ "Input:                " ++ show input
-  putStrLn $ "Final result: " ++ cyan (show output')
+  putStrLn $ "Final result: " ++ cyan (show output)
 
   putStrLn $ replicate 80 '='
 
@@ -73,17 +74,18 @@ test' :: (Eq p, Fractional p, Show p) =>
 test' program valuation tikzFilename = do
   let desugaredProgram = desugar program
   let m = 1 + nWires desugaredProgram -- upper bound for #(needed wires)
-  let (labeledPrograms, env) = label m [desugaredProgram]
+  let (bodies, bindings, env) = label m [desugaredProgram]
+  let labeledPrograms = bindings ++ bodies
+
   let circuit = concatMap (compile m) labeledPrograms
   let input = witnessGen m labeledPrograms (compose' m env valuation)
-  let output = map (\p -> input ! outputWire p) labeledPrograms
-  let output' = splitAt (length labeledPrograms - vlength program) output
+  let output = map (\p -> input ! outputWire p) bodies
 
   putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   putStrLn $ "Compiled circuit:     " ++ show circuit
   putStrLn $ "Input:                " ++ show input
   putStrLn $ "Variable environment: " ++ show env
-  putStrLn $ "Final result: " ++ cyan (show output')
+  putStrLn $ "Final result: " ++ cyan (show output)
 
   let treekzCode = map parse labeledPrograms
   let tikzStr = genTikzs 0.45 (14, -1.5) treekzCode
