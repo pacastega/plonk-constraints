@@ -43,10 +43,6 @@ data DSL p where
   ISZERO :: DSL p -> DSL p          -- zero check
   EQLC   :: DSL p -> p     -> DSL p -- equality check against a constant
 
-  -- Functional constructs: iterators & local bindings
-  ITER :: Bound -> (Int -> DSL p -> DSL p) -> DSL p -> DSL p
-  LET  :: String -> DSL p -> DSL p -> DSL p
-
   -- Vectors
   NIL  :: DSL p
   CONS :: DSL p -> DSL p -> DSL p
@@ -78,12 +74,6 @@ data DSL p where
   ISZERO :: {v:DSL p | unpacked v} -> DSL p
   EQLC   :: {v:DSL p | unpacked v} -> p                      -> DSL p
 
-  ITER :: b:Bound ->
-          ({v:Int | within b v} -> {v:DSL p | unpacked v} ->
-              {v:DSL p | unpacked v}) ->
-          {v:DSL p | unpacked v} -> {v:DSL p | unpacked v}
-  LET  :: String -> {v:DSL p | unpacked v} -> DSL p -> DSL p
-
   NIL  :: DSL p
   CONS :: head:{DSL p | unpacked head} -> tail:{DSL p | isVector tail} -> DSL p
 
@@ -94,30 +84,17 @@ data DSL p where
 vlength :: DSL p -> Int
 vlength (NIL)       = 0
 vlength (CONS _ ps) = 1 + vlength ps
-vlength (LET _ _ p) = vlength p
 vlength _           = 1
 
 {-@ measure isVector @-}
 isVector :: DSL p -> Bool
 isVector (NIL)      = True
 isVector (CONS _ _) = True
-isVector (LET _ _ p) = False --TODO: this should be ‘isVector p’
 isVector _          = False
-
-{-@ data Bound = B {s::Int, e::{v:Int | s <= v}} @-}
-data Bound = B Int Int
-
-{-@ reflect within @-}
-within :: Bound -> Int -> Bool
-within (B s e) x = s <= x && x <= e
-
 
 {-@ measure desugared @-}
 desugared :: DSL p -> Bool
 desugared (EQL {})  = False
-desugared (ITER {}) = False
-
-desugared (LET _ b p) = desugared b && desugared p
 
 desugared (VAR _)   = True
 desugared (CONST _) = True
@@ -143,25 +120,6 @@ desugared (UnsafeXOR p1 p2) = desugared p1 && desugared p2
 desugared (ISZERO p)  = desugared p
 desugared (EQLC p _)  = desugared p
 
-{-@ measure getSize @-}
-{-@ getSize :: v:{DSL p | isIter v} -> Nat @-}
-getSize :: DSL p -> Int
-getSize (ITER (B s e) _ _) = e - s
-
-
-{-@ measure isIter @-}
-isIter :: DSL p -> Bool
-isIter (ITER {}) = True
-isIter _         = False
-
-
-{-@ unfoldIter :: p:{DSL p | isIter p} -> DSL p
-                  / [getSize p] @-}
-unfoldIter :: DSL p -> DSL p
-unfoldIter (ITER (B s e) f a)
-  | s == e    = f s a
-  | otherwise = unfoldIter (ITER (B (s+1) e) f (f s a))
-
 
 {-@ lazy desugar @-}
 {-@ desugar :: p:DSL p ->
@@ -170,9 +128,6 @@ unfoldIter (ITER (B s e) f a)
 desugar :: DSL p -> DSL p
 -- syntactic sugar:
 desugar (EQL p1 p2) = ISZERO (SUB (desugar p1) (desugar p2))
-desugar p@(ITER {}) = desugar (unfoldIter p)
-
-desugar (LET s b p) = LET s (desugar b) (desugar p)
 
 -- core language instructions:
 desugar (ADD p1 p2) = ADD (desugar p1) (desugar p2)
@@ -241,8 +196,6 @@ unpacked (UnsafeXOR p1 p2) = unpacked p1 && unpacked p2
 
 unpacked (ISZERO p)  = unpacked p
 unpacked (EQLC p _)  = unpacked p
-unpacked (LET _ _ p) = unpacked p
-unpacked (ITER {})   = False
 
 
 -- Labeled DSL
@@ -357,16 +310,6 @@ label m programs = (labeledBodies, labeledBindings, finalEnv) where
   label' (UnsafeOR  p1 p2) usedWires env = label2 LUnsafeOR  p1 p2 usedWires env
   label' (UnsafeXOR p1 p2) usedWires env = label2 LUnsafeXOR p1 p2 usedWires env
 
-  label' (LET var def body) usedWires env =
-      let ([def'], bs', ws', env') = label' def usedWires env
-          i = outputWire def' -- index of the local definition
-          (body', bs'', ws'', env'') = label' body ws' (add (var,i) env')
-          bs = bs' ++ bs''
-      in (body', def':bs, ws'', recover var env'' env)
-      where
-        add (k,val) = M.alter (\_ -> Just val) k
-        recover k newEnv oldEnv = M.alter (\_ -> M.lookup k oldEnv) k newEnv
-
   label' (ISZERO p1) usedWires env = ([LISZERO p1' w i], bs, ws1, env') where
     i = freshIndex m usedWires
     w = freshIndex m (i:usedWires)
@@ -431,7 +374,6 @@ nWires (UnsafeXOR p1 p2) = 1 + nWires p1 + nWires p2
 
 nWires (ISZERO p1) = 2 + nWires p1
 nWires (EQLC p1 _) = 2 + nWires p1
-nWires (LET _ p1 p2) = nWires p1 + nWires p2
 
 nWires (NIL)       = 0
 nWires (CONS p ps) = nWires p + nWires ps

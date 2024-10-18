@@ -194,43 +194,19 @@ fromHex (c:cs) = go c +++ (fromHex cs) where
 
 {-@ vecAdd :: u:{DSL p | isVector u} ->
               v:{DSL p | isVector v && vlength v = vlength u} ->
-                DSL p @-}
+              w:{DSL p | isVector w && vlength w >= 0} @-}
+-- TODO: it also preserves length
 vecAdd :: Num p => DSL p -> DSL p -> DSL p
-vecAdd u v = localBindings env (fromList result)
+vecAdd u v = fromList result
   where
-    (result, _, env, _) = foldr addWithCarry ([], CONST 0, [], 0) (vZip u v)
+    (result, _) = foldr addWithCarry ([], CONST 0) (vZip u v)
 
-    {-@ addWithCarry :: ({x:DSL p | unpacked x},
-                         {y:DSL p | unpacked y})
-                     -> ([{v:DSL p | unpacked v}],
-                          {v:DSL p | unpacked v},
-                          [(String, {v:DSL p | unpacked v})],
-                          Nat)
-                     -> ([{v:DSL p | unpacked v}],
-                          {v:DSL p | unpacked v},
-                          [(String, {v:DSL p | unpacked v})],
-                          Nat)
+    {-@ addWithCarry :: ({x:DSL p | unpacked x}, {y:DSL p | unpacked y})
+                     -> ([{v:DSL p | unpacked v}], {v:DSL p | unpacked v})
+                     -> ([{v:DSL p | unpacked v}], {v:DSL p | unpacked v})
     @-}
-    addWithCarry :: Num p => (DSL p, DSL p) ->
-                             ([DSL p], DSL p, [(String, DSL p)], Int) ->
-                             ([DSL p], DSL p, [(String, DSL p)], Int)
-    addWithCarry (x, y) (acc, carry, env, i) =
-      (result : acc, -- new acc
-       VAR carryStr, -- new carry
-       env',         -- new environment
-       i+1           -- add the next bit in the vector
-      ) where
-          sum    = (x `ADD` y) `ADD` carry
-          result = (VAR sumStr `EQLC` 1) `UnsafeOR` (VAR sumStr `EQLC` 3)
-          carry' = (VAR sumStr `EQLC` 2) `UnsafeOR` (VAR sumStr `EQLC` 3)
-
-          sumStr   = "sum" ++ show i
-          carryStr = "carry" ++ show i
-          env'     = env ++ [(sumStr, sum), (carryStr, carry')]
-
-
-{-@ localBindings :: [(String, {v:DSL p | unpacked v})] -> DSL p -> DSL p @-}
-localBindings :: [(String, DSL p)] -> DSL p -> DSL p
-localBindings env body = case env of
-  []               -> body
-  (var,def) : env' -> LET var def (localBindings env' body)
+    addWithCarry :: Num p => (DSL p, DSL p) -> ([DSL p], DSL p) ->
+                             ([DSL p], DSL p)
+    addWithCarry (x, y) (acc, carry) = let sum = (x `ADD` y) `ADD` carry in
+      ((sum `EQL` CONST 1) `OR` (sum `EQL` CONST 3) : acc, -- new acc
+       (sum `EQL` CONST 2) `OR` (sum `EQL` CONST 3))       -- new carry

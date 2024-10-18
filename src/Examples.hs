@@ -7,9 +7,8 @@
 
 module Examples ( testArithmetic
                 , testBoolean
-                , testLoops
+                -- , testLoops
                 , testVectors
-                , testLet
                 )
 where
 
@@ -145,73 +144,73 @@ testBoolean = do
   test bool3 (M.fromList [("addsTo5",3)]) -- 3 + 2 == 5 (== True)
 
 -- Loop programs ---------------------------------------------------------------
--- start * (base)^5
-{-@ loop1 :: DSL _ @-}
-loop1 :: DSL FF
-loop1 = ITER (B 1 5) body (VAR "start") where
-  {-@ body :: Int ->
-              {v:DSL _ | unpacked v} ->
-              {v:DSL _ | unpacked v} @-}
-  body :: Int -> DSL FF -> DSL FF
-  body = (\_ p -> MUL p (VAR "base"))
+-- -- start * (base)^5
+-- {-@ loop1 :: DSL _ @-}
+-- loop1 :: DSL FF
+-- loop1 = foldl body (VAR "start") [1..5] where
+--   {-@ body :: {v:DSL _ | unpacked v} ->
+--               Int ->
+--               {v:DSL _ | unpacked v} @-}
+--   body :: DSL FF -> Int -> DSL FF
+--   body = (\p _ -> MUL p (VAR "base"))
 
--- 5! = 120
-{-@ loop2 :: DSL _ @-}
-loop2 :: DSL FF
-loop2 = ITER (B 2 5) body (CONST 1) where
-  {-@ body :: Int ->
-              {v:DSL _ | unpacked v} ->
-              {v:DSL _ | unpacked v} @-}
-  body :: Int -> DSL FF -> DSL FF
-  body = \i p -> MUL p (CONST $ fromIntegral i)
+-- -- 5! = 120
+-- {-@ loop2 :: DSL _ @-}
+-- loop2 :: DSL FF
+-- loop2 = foldl body (CONST 1) [2..5] where
+--   {-@ body :: {v:DSL _ | unpacked v} ->
+--               Int ->
+--               {v:DSL _ | unpacked v} @-}
+--   body :: DSL FF -> Int -> DSL FF
+--   body = \p i -> MUL p (CONST $ fromIntegral i)
 
--- 1 + 2 + 3 + 4 + 5 + 6 = 21
-{-@ loop3 :: DSL _ @-}
-loop3 :: DSL FF
-loop3 = ITER (B 1 6) body (CONST 0) where
-  {-@ body :: Int ->
-              {v:DSL _ | unpacked v} ->
-              {v:DSL _ | unpacked v} @-}
-  body :: Int -> DSL FF -> DSL FF
-  body = \i p -> ADD p (CONST $ fromIntegral i)
+-- -- 1 + 2 + 3 + 4 + 5 + 6 = 21
+-- {-@ loop3 :: DSL _ @-}
+-- loop3 :: DSL FF
+-- loop3 = foldl body (CONST 0) [1..6] where
+--   {-@ body :: {v:DSL _ | unpacked v} ->
+--               Int ->
+--               {v:DSL _ | unpacked v} @-}
+--   body :: DSL FF -> Int -> DSL FF
+--   body = \p i -> ADD p (CONST $ fromIntegral i)
 
--- Polynomial evaluation:
--- x_1 * x^(n-1) + x_2 * x^(n-2) + ... + x_(n-1) * x + x_n
-{-@ loop4 :: Btwn 1 39 -> DSL _ @-}
-loop4 :: Int -> DSL FF
-loop4 n = ITER (B 1 n) body (CONST 0) where
-  body = \i p -> (VAR $ "coef" ++ show i) `ADD` (p `MUL` VAR "x") --FIXME:
-  {-@ body :: Btwn 1 40 ->
-              {v:DSL _ | unpacked v} ->
-              {v:DSL _ | unpacked v} @-}
-  body :: Int -> DSL FF -> DSL FF
+-- -- Polynomial evaluation:
+-- -- x_1 * x^(n-1) + x_2 * x^(n-2) + ... + x_(n-1) * x + x_n
+-- {-@ loop4 :: Btwn 1 39 -> DSL _ @-}
+-- loop4 :: Int -> DSL FF
+-- loop4 n = foldl body (CONST 0) [1..n] where
+--   body = \p i -> (VAR $ "coef" ++ show i) `ADD` (p `MUL` VAR "x") --FIXME:
+--   {-@ body :: {v:DSL _ | unpacked v} ->
+--               Btwn 1 40 ->
+--               {v:DSL _ | unpacked v} @-}
+--   body :: DSL FF -> Int -> DSL FF
 
--- (base)^4 == 42
-{-@ loop5 :: DSL _ @-}
-loop5 :: DSL FF
-loop5 = (ITER (B 2 4) body (VAR "base")) `EQL` (CONST 42) where
-  body = \_ p -> MUL p (VAR "base")
-  {-@ body :: Int ->
-              {v:DSL _ | unpacked v} ->
-              {v:DSL _ | unpacked v} @-}
-  body :: Int -> DSL FF -> DSL FF
+-- -- (base)^4 == 42
+-- {-@ loop5 :: DSL _ @-}
+-- loop5 :: DSL FF
+-- loop5 = (foldl body (VAR "base") [2..4]) `EQL` (CONST 42) where
+--   body = \p _ -> MUL p (VAR "base")
+--   {-@ body :: {v:DSL _ | unpacked v} ->
+--               Int ->
+--               {v:DSL _ | unpacked v} @-}
+--   body :: DSL FF -> Int -> DSL FF
 
-testLoops :: IO ()
-testLoops = do
-  test loop1 (M.fromList [("base",2), ("start",1)]) -- 1 * 2^5 = 2^5  = 32
-  test loop1 (M.fromList [("base",4), ("start",2)]) -- 2 * 4^5 = 2^11 = 2048
+-- testLoops :: IO ()
+-- testLoops = do
+--   test loop1 (M.fromList [("base",2), ("start",1)]) -- 1 * 2^5 = 2^5  = 32
+--   test loop1 (M.fromList [("base",4), ("start",2)]) -- 2 * 4^5 = 2^11 = 2048
 
-  test loop2 (M.empty) -- 5! = 120
-  test loop3 (M.empty) -- 1 + 2 + ... + 6 = 21
+--   test loop2 (M.empty) -- 5! = 120
+--   test loop3 (M.empty) -- 1 + 2 + ... + 6 = 21
 
-  let coefs = map (\n -> "coef" ++ show n) [1..]
+--   let coefs = map (\n -> "coef" ++ show n) [1..]
 
-  -- decode 11111000 in binary (base x = 2) --> 248
-  test (loop4 8) (M.fromList $ [("x",2)] ++ zip coefs [1,1,1,1,1,0,0,0])
-  -- decode F8 in hexadecimal (base x = 16) --> 248
-  test (loop4 2) (M.fromList $ [("x",16)] ++ zip coefs [15, 8])
+--   -- decode 11111000 in binary (base x = 2) --> 248
+--   test (loop4 8) (M.fromList $ [("x",2)] ++ zip coefs [1,1,1,1,1,0,0,0])
+--   -- decode F8 in hexadecimal (base x = 16) --> 248
+--   test (loop4 2) (M.fromList $ [("x",16)] ++ zip coefs [15, 8])
 
-  test loop5 (M.fromList [("base",627)]) -- 627^4 == 42 (mod 2131)
+--   test loop5 (M.fromList [("base",627)]) -- 627^4 == 42 (mod 2131)
 
 -- Vector programs -------------------------------------------------------------
 {-@ vec1 :: {v:DSL _ | vlength v = 3} @-}
@@ -275,24 +274,3 @@ testVectors = do
 
   test' vec7 (M.empty) "treekz/int_addition.tex"
   test vec8 (M.empty)
-
-
--- Local bindings --------------------------------------------------------------
-
--- let x = 5 in let y = 7 in x + y
-let1 :: DSL FF
-let1 = LET "x" (CONST 5) (LET "y" (CONST 7) (VAR "x" `ADD` VAR "y"))
-
--- let x = 5 in let x = 7 in x
-let2 :: DSL FF
-let2 = LET "x" (CONST 5) (LET "x" (CONST 7) (VAR "x"))
-
--- let x = 2 in (let x = 1 in x) + x
-let3 :: DSL FF
-let3 = LET "x" (CONST 2) ((LET "x" (CONST 1) (VAR "x")) `ADD` (VAR "x"))
-
-testLet :: IO ()
-testLet = do
-  test let1 (M.empty) -- 12
-  test let2 (M.empty) -- 7
-  test let3 (M.empty) -- 3
