@@ -46,6 +46,7 @@ data DSL p where
   -- Vectors
   NIL  :: DSL p
   CONS :: DSL p -> DSL p -> DSL p
+  deriving (Eq, Ord)
 
 infixr 5 `CONS`
 
@@ -86,13 +87,13 @@ vlength (NIL)       = 0
 vlength (CONS _ ps) = 1 + vlength ps
 vlength _           = 1
 
-{-@ measure isVector @-}
+{-@ measure isVector @-} -- TODO: this should use types
 isVector :: DSL p -> Bool
 isVector (NIL)      = True
 isVector (CONS _ _) = True
 isVector _          = False
 
-{-@ measure desugared @-}
+{-@ measure desugared @-} -- TODO: maybe this should be removed
 desugared :: DSL p -> Bool
 desugared (EQL {})  = False
 
@@ -155,6 +156,7 @@ desugar (NIL)       = NIL
 desugar (CONS p ps) = CONS (desugar p) (desugar ps)
 
 
+-- TODO: move these to ‘PlinkLib’
 {-@ get :: v:{DSL p | isVector v} -> Btwn 0 (vlength v) -> DSL p @-}
 get :: DSL p -> Int -> DSL p
 get (CONS p _ ) 0 = p
@@ -200,7 +202,9 @@ unpacked (EQLC p _)  = unpacked p
 
 -- Labeled DSL
 data LDSL p i =
-  LWIRE  String i                |
+  LWIRE                        i |
+
+  LVAR   String                i |
   LCONST p                     i |
   LADD   (LDSL p i) (LDSL p i) i |
   LSUB   (LDSL p i) (LDSL p i) i |
@@ -222,27 +226,28 @@ data LDSL p i =
   deriving Show
 
 
-{-@ type Env M = M.Map String (Btwn 0 M) @-}
-type Env = M.Map String Int
+{-@ type Env p M = M.Map (DSL p) (Btwn 0 M) @-}
+type Env p = M.Map (DSL p) Int -- TODO: change to integer
 
 
 {-@ lazy label @-}
 -- label each constructor with the index of the wire where its output will be
 {-@ label :: m:Nat1 -> [{v:DSL p | desugared v}] ->
-             ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], Env m) @-}
-label :: Int -> [DSL p] -> ([LDSL p Int], [LDSL p Int], Env)
-label m programs = (labeledBodies, labeledBindings, finalEnv) where
-  (labeledBodies, labeledBindings, _, finalEnv) = labelAll programs
+             ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)]) @-}
+label :: Ord p => Int -> [DSL p] -> ([LDSL p Int], [LDSL p Int])
+label m programs = (labeledBodies, labeledBindings) where
+  (labeledBodies, labeledBindings, _, _) = labelAll programs
 
   {-@ labelAll :: [{v:DSL p | desugared v}] ->
-                  ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) @-}
-  labelAll :: [DSL p] -> ([LDSL p Int], [LDSL p Int], [Int], Env)
+                  ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env p m) @-}
+  labelAll :: Ord p => [DSL p] -> ([LDSL p Int], [LDSL p Int], [Int], Env p)
   labelAll programs = foldl go ([], [], [], M.empty) programs where
-    {-@ go :: ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) ->
+    {-@ go :: ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env p m) ->
               {v:DSL p | desugared v} ->
-              ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env m) @-}
-    go :: ([LDSL p Int], [LDSL p Int], [Int], Env) -> DSL p ->
-          ([LDSL p Int], [LDSL p Int], [Int], Env)
+              ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env p m) @-}
+    go :: Ord p =>
+          ([LDSL p Int], [LDSL p Int], [Int], Env p) -> DSL p ->
+          ([LDSL p Int], [LDSL p Int], [Int], Env p)
     go (acc1, acc2, ws, env) program =
       let (labeledBody, labeledBindings, ws', env') = label' program ws env
       in (acc1 ++ labeledBody,
@@ -250,85 +255,100 @@ label m programs = (labeledBodies, labeledBindings, finalEnv) where
           ws', env')
 
   -- combinator to label programs with 1 argument that needs recursive labelling
-  {-@ label1 :: (LDSL p (Btwn 0 m) -> Btwn 0 m -> LDSL p (Btwn 0 m)) ->
+  {-@ label1 :: DSL p ->
+                (LDSL p (Btwn 0 m) -> Btwn 0 m -> LDSL p (Btwn 0 m)) ->
                 {arg:DSL p | desugared arg && unpacked arg} ->
-                [Btwn 0 m] -> Env m ->
+                [Btwn 0 m] -> Env p m ->
                 (ListN (LDSL p (Btwn 0 m)) 1, [LDSL p (Btwn 0 m)],
-                 [Btwn 0 m], Env m) @-}
-  label1 :: (LDSL p Int -> Int -> LDSL p Int) ->
+                 [Btwn 0 m], Env p m) @-}
+  label1 :: Ord p =>
             DSL p ->
-            [Int] -> Env ->
-            ([LDSL p Int], [LDSL p Int], [Int], Env)
-  label1 ctor arg1 usedWires env = ([ctor arg1' i], bs, ws1, env1) where
-    i = freshIndex m usedWires
-    ([arg1'], bs, ws1, env1) = label' arg1 (i:usedWires) env
+            (LDSL p Int -> Int -> LDSL p Int) ->
+            DSL p ->
+            [Int] -> Env p ->
+            ([LDSL p Int], [LDSL p Int], [Int], Env p)
+  label1 p ctor arg1 usedWires env =
+    let i = freshIndex m usedWires
+        ([arg1'], bs, ws1, env1) = label' arg1 (i:usedWires) env
+    in ([LWIRE i], bs ++ [ctor arg1' i], ws1, add (p,i) env1)
 
   -- combinator to label programs with 2 arguments that need recursive labelling
-  {-@ label2 :: (LDSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) -> Btwn 0 m ->
+  {-@ label2 :: DSL p ->
+                (LDSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) -> Btwn 0 m ->
                         LDSL p (Btwn 0 m)) ->
                 {arg1:DSL p | desugared arg1 && unpacked arg1} ->
                 {arg2:DSL p | desugared arg2 && unpacked arg2} ->
-                [Btwn 0 m] -> Env m ->
+                [Btwn 0 m] -> Env p m ->
                 (ListN (LDSL p (Btwn 0 m)) 1, [LDSL p (Btwn 0 m)],
-                 [Btwn 0 m], Env m) @-}
-  label2 :: (LDSL p Int -> LDSL p Int -> Int -> LDSL p Int) ->
+                 [Btwn 0 m], Env p m) @-}
+  label2 :: Ord p =>
+            DSL p ->
+            (LDSL p Int -> LDSL p Int -> Int -> LDSL p Int) ->
             DSL p -> DSL p ->
-            [Int] -> Env ->
-            ([LDSL p Int], [LDSL p Int], [Int], Env)
-  label2 ctor arg1 arg2 usedWires env = ([ctor arg1' arg2' i], bs, ws2, env2)
-    where
-    i = freshIndex m usedWires
-    ([arg1'], bs1, ws1, env1) = label' arg1 (i:usedWires) env
-    ([arg2'], bs2, ws2, env2) = label' arg2 ws1 env1
-    bs = bs1 ++ bs2
+            [Int] -> Env p ->
+            ([LDSL p Int], [LDSL p Int], [Int], Env p)
+  label2 p ctor arg1 arg2 usedWires env =
+    let i = freshIndex m usedWires
+        ([arg1'], bs1, ws1, env1) = label' arg1 (i:usedWires) env
+        ([arg2'], bs2, ws2, env2) = label' arg2 ws1 env1
+        bs = bs1 ++ bs2
+    in ([LWIRE i], bs ++ [ctor arg1' arg2' i], ws2, add (p,i) env2)
 
-  {-@ label' :: program:{DSL p | desugared program} -> [Btwn 0 m] -> Env m ->
+  add (k,v) = M.alter (\_ -> Just v) k
+
+
+  {-@ label' :: program:{DSL p | desugared program} -> [Btwn 0 m] -> Env p m ->
                 ({l:[LDSL p (Btwn 0 m)] | unpacked program => len l = 1},
                  [LDSL p (Btwn 0 m)],
                  [Btwn 0 m],
-                 Env m) @-}
-  label' :: DSL p -> [Int] -> Env -> ([LDSL p Int], [LDSL p Int], [Int], Env)
-  label' (VAR s) usedWires env = case M.lookup s env of
-      Nothing -> let i = freshIndex m usedWires -- free variable
-                 in ([LWIRE s i], [], i:usedWires, add (s,i) env)
-      Just i  -> ([LWIRE s i], [], usedWires, env)
-    where add (k,v) = M.alter (\_ -> Just v) k
-  label' (CONST x) usedWires env = ([LCONST x i], [], i:usedWires, env)
-    where i = freshIndex m usedWires
-  label' (ADD p1 p2) usedWires env = label2 LADD p1 p2 usedWires env
-  label' (SUB p1 p2) usedWires env = label2 LSUB p1 p2 usedWires env
-  label' (MUL p1 p2) usedWires env = label2 LMUL p1 p2 usedWires env
-  label' (DIV p1 p2) usedWires env = label2 LDIV p1 p2 usedWires env
+                 Env p m) @-}
+  label' :: Ord p => DSL p -> [Int] -> Env p -> ([LDSL p Int], [LDSL p Int], [Int], Env p)
+  label' p usedWires env = case M.lookup p env of
+    Just i  -> ([LWIRE i], [], usedWires, env)
+    Nothing -> case p of
 
-  label' (NOT p1)    usedWires env = label1 LNOT p1    usedWires env
-  label' (AND p1 p2) usedWires env = label2 LAND p1 p2 usedWires env
-  label' (OR  p1 p2) usedWires env = label2 LOR  p1 p2 usedWires env
-  label' (XOR p1 p2) usedWires env = label2 LXOR p1 p2 usedWires env
+      VAR s -> let i = freshIndex m usedWires
+               in ([LWIRE i], [LVAR s i], i:usedWires, add (p,i) env)
+      CONST x -> let i = freshIndex m usedWires
+                 in ([LWIRE i], [LCONST x i], i:usedWires, add (p,i) env)
 
-  label' (UnsafeNOT p1)    usedWires env = label1 LUnsafeNOT p1    usedWires env
-  label' (UnsafeAND p1 p2) usedWires env = label2 LUnsafeAND p1 p2 usedWires env
-  label' (UnsafeOR  p1 p2) usedWires env = label2 LUnsafeOR  p1 p2 usedWires env
-  label' (UnsafeXOR p1 p2) usedWires env = label2 LUnsafeXOR p1 p2 usedWires env
+      ADD p1 p2 -> label2 p LADD p1 p2 usedWires env
+      SUB p1 p2 -> label2 p LSUB p1 p2 usedWires env
+      MUL p1 p2 -> label2 p LMUL p1 p2 usedWires env
+      DIV p1 p2 -> label2 p LDIV p1 p2 usedWires env
 
-  label' (ISZERO p1) usedWires env = ([LISZERO p1' w i], bs, ws1, env') where
-    i = freshIndex m usedWires
-    w = freshIndex m (i:usedWires)
-    ([p1'], bs, ws1, env') = label' p1 (i:w:usedWires) env
-  label' (EQLC p1 k) usedWires env = ([LEQLC p1' k w i], bs, ws1, env') where
-    i = freshIndex m usedWires
-    w = freshIndex m (i:usedWires)
-    ([p1'], bs, ws1, env') = label' p1 (i:w:usedWires) env
+      NOT p1    -> label1 p LNOT p1    usedWires env
+      AND p1 p2 -> label2 p LAND p1 p2 usedWires env
+      OR  p1 p2 -> label2 p LOR  p1 p2 usedWires env
+      XOR p1 p2 -> label2 p LXOR p1 p2 usedWires env
 
-  label' (NIL) usedWires env = ([], [], usedWires, env)
-  label' (CONS p ps) usedWires env = (p' ++ ps', bs, ws'', env'') where
-    (p', bs', ws', env') = label' p usedWires env
-    (ps', bs'', ws'', env'') = label' ps ws' env'
-    bs = bs' ++ bs''
+      UnsafeNOT p1    -> label1 p LUnsafeNOT p1    usedWires env
+      UnsafeAND p1 p2 -> label2 p LUnsafeAND p1 p2 usedWires env
+      UnsafeOR  p1 p2 -> label2 p LUnsafeOR  p1 p2 usedWires env
+      UnsafeXOR p1 p2 -> label2 p LUnsafeXOR p1 p2 usedWires env
+
+      ISZERO p1 -> let i = freshIndex m usedWires
+                       w = freshIndex m (i:usedWires)
+                       ([p1'], bs, ws1, env') = label' p1 (i:w:usedWires) env
+                   in ([LWIRE i], bs ++ [LISZERO p1' w i], ws1, add (p,i) env')
+      EQLC p1 k -> let i = freshIndex m usedWires
+                       w = freshIndex m (i:usedWires)
+                       ([p1'], bs, ws1, env') = label' p1 (i:w:usedWires) env
+                   in ([LWIRE i], bs ++ [LEQLC p1' k w i], ws1, add (p,i) env')
+
+
+      NIL -> ([], [], usedWires, env)
+      CONS h ts -> let (h', bs', ws', env') = label' h usedWires env
+                       (ts', bs'', ws'', env'') = label' ts ws' env'
+                       bs = bs' ++ bs''
+                   in (h' ++ ts', bs, ws'', env'') where
 
 -- TODO: this could probably be avoided by using record syntax
 {-@ measure outputWire @-}
 outputWire :: LDSL p i -> i
-outputWire (LWIRE _ i)  = i
+outputWire (LWIRE i)    = i
+
+outputWire (LVAR _ i)   = i
 outputWire (LCONST _ i) = i
 outputWire (LADD _ _ i) = i
 outputWire (LSUB _ _ i) = i
@@ -394,7 +414,9 @@ freshIndex m used = freshIndex' [0..m-1] where
 {-@ measure nGates @-}
 {-@ nGates :: LDSL p i -> Nat @-}
 nGates :: LDSL p i -> Int
-nGates (LWIRE _ _)    = 0
+nGates (LWIRE _)      = 0
+
+nGates (LVAR _ _)     = 0
 nGates (LCONST _ _)   = 1
 nGates (LADD p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LSUB p1 p2 _) = 1 + nGates p1 + nGates p2
@@ -421,7 +443,8 @@ nGates (LEQLC p1 _ _ _) = 2 + nGates p1
                c:LDSL p (Btwn 0 m) ->
                Circuit p (nGates c) m @-}
 compile :: Fractional p => Int -> LDSL p Int -> Circuit p
-compile m (LWIRE _ _)    = emptyCircuit m
+compile m (LWIRE _)      = emptyCircuit m
+compile m (LVAR _ _)     = emptyCircuit m
 compile m (LCONST x i)   = constGate m x i
 compile m (LADD p1 p2 i) = c
   where
@@ -510,7 +533,8 @@ compile m (LEQLC p1 k w i) = c
                            LDSL p (Btwn 0 m) -> VecN p m ->
                            Bool @-}
 semanticsAreCorrect :: (Eq p, Fractional p) => Int -> LDSL p Int -> Vec p -> Bool
-semanticsAreCorrect _ (LWIRE _ _)    _     = True
+semanticsAreCorrect _ (LWIRE _)      _     = True
+semanticsAreCorrect _ (LVAR _ _)     _     = True
 semanticsAreCorrect _ (LCONST x i)   input = input!i == x
 semanticsAreCorrect m (LADD p1 p2 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input

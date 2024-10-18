@@ -37,26 +37,17 @@ type FF  = F 2131
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
-{-@ compose' :: m:Nat -> Env m -> M.Map String p -> M.Map (Btwn 0 m) p @-}
-compose' :: Int -> Env -> M.Map String p -> M.Map Int p
-compose' _ env val = M.compose val (invert env) where
-  invert = M.fromList . map swap . M.toList
-  swap (a,b) = (b,a)
-  invert :: M.Map String Int -> M.Map Int String
-  swap :: (String, Int) -> (Int, String)
-
-
-{-@ test :: DSL _ -> (M.Map String p) -> IO () @-}
-test :: (Eq p, Fractional p, Show p) =>
-        DSL p -> (M.Map String p) -> IO ()
+{-@ test :: DSL _ -> Valuation p -> IO () @-}
+test :: (Ord p, Fractional p, Show p) =>
+        DSL p -> Valuation p -> IO ()
 test program valuation = do
   let desugaredProgram = desugar program
   let m = 1 + nWires desugaredProgram -- upper bound for #(needed wires)
-  let (bodies, bindings, env) = label m [desugaredProgram]
+  let (bodies, bindings) = label m [desugaredProgram]
   let labeledPrograms = bindings ++ bodies
 
   let circuit = concatMap (compile m) labeledPrograms
-  let input = witnessGen m labeledPrograms (compose' m env valuation)
+  let input = witnessGen m labeledPrograms valuation
   let output = map (\p -> input ! outputWire p) bodies
 
   putStrLn $ "Preprocessed program: " ++ show labeledPrograms
@@ -68,22 +59,21 @@ test program valuation = do
 
 
 {-@ test' :: DSL _ -> (M.Map String p) -> String -> IO () @-}
-test' :: (Eq p, Fractional p, Show p) =>
+test' :: (Ord p, Fractional p, Show p) =>
          DSL p -> (M.Map String p) -> String -> IO ()
 test' program valuation tikzFilename = do
   let desugaredProgram = desugar program
   let m = 1 + nWires desugaredProgram -- upper bound for #(needed wires)
-  let (bodies, bindings, env) = label m [desugaredProgram]
+  let (bodies, bindings) = label m [desugaredProgram]
   let labeledPrograms = bindings ++ bodies
 
   let circuit = concatMap (compile m) labeledPrograms
-  let input = witnessGen m labeledPrograms (compose' m env valuation)
+  let input = witnessGen m labeledPrograms valuation
   let output = map (\p -> input ! outputWire p) bodies
 
   putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   putStrLn $ "Compiled circuit:     " ++ show circuit
   putStrLn $ "Input:                " ++ show input
-  putStrLn $ "Variable environment: " ++ show env
   putStrLn $ "Final result: " ++ cyan (show output)
 
   let treekzCode = map parse labeledPrograms
@@ -263,14 +253,14 @@ vec8 = vecAdd (fromHex ['a', '4']) (fromHex ['4', 'b']) where
 
 testVectors :: IO ()
 testVectors = do
-  test vec1 (M.fromList [("a",1), ("b",2)])
+  test vec1 (M.fromList [("a",1), ("b",2)]) -- [42,3,7]
 
-  test vec2 (M.empty)
-  test vec3 (M.empty)
-  test vec4 (M.empty)
+  test vec2 (M.empty) -- [1,2,42,4]
+  test vec3 (M.empty) -- 4
+  test vec4 (M.empty) -- [5,12,21]
 
-  test vec5 (M.empty)
-  test vec6 (M.empty)
+  test vec5 (M.empty) -- [4,5,6,7,8,9,1,2,3]
+  test vec6 (M.empty) -- [8,9,1,2,3,4,5,6,7]
 
-  test' vec7 (M.empty) "treekz/int_addition.tex"
-  test vec8 (M.empty)
+  test vec7 (M.empty) -- "treekz/int_addition.tex" -- [1,0,1]
+  test vec8 (M.empty) -- 0xA4 + 0x4b = 0xEF = [1,1,1,0,1,1,1,1]

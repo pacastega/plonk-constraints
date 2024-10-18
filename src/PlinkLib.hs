@@ -208,5 +208,5 @@ vecAdd u v = fromList result
     addWithCarry :: Num p => (DSL p, DSL p) -> ([DSL p], DSL p) ->
                              ([DSL p], DSL p)
     addWithCarry (x, y) (acc, carry) = let sum = (x `ADD` y) `ADD` carry in
-      ((sum `EQL` CONST 1) `OR` (sum `EQL` CONST 3) : acc, -- new acc
-       (sum `EQL` CONST 2) `OR` (sum `EQL` CONST 3))       -- new carry
+      ((sum `EQLC` 1) `UnsafeOR` (sum `EQLC` 3) : acc, -- new acc
+       (sum `EQLC` 2) `UnsafeOR` (sum `EQLC` 3))       -- new carry
