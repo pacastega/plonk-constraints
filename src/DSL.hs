@@ -156,20 +156,6 @@ desugar (NIL)       = NIL
 desugar (CONS p ps) = CONS (desugar p) (desugar ps)
 
 
--- TODO: move these to ‘PlinkLib’
-{-@ get :: v:{DSL p | isVector v} -> Btwn 0 (vlength v) -> DSL p @-}
-get :: DSL p -> Int -> DSL p
-get (CONS p _ ) 0 = p
-get (CONS _ ps) i = get ps (i-1)
-
-{-@ set :: v:{DSL p | isVector v} -> Btwn 0 (vlength v) ->
-           {x:DSL p | unpacked x} ->
-           {u:DSL p | isVector u && vlength u = vlength v} @-}
-set :: DSL p -> Int -> DSL p -> DSL p
-set (CONS _ ps) 0 x = CONS x ps
-set (CONS p ps) i x = CONS p (set ps (i-1) x)
-
-
 {-@ measure unpacked @-}
 {-@ unpacked :: DSL p -> Bool @-}
 unpacked :: DSL p -> Bool
