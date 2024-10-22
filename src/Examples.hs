@@ -41,9 +41,8 @@ cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 test :: (Ord p, Fractional p, Show p) =>
         DSL p -> Valuation p -> IO ()
 test program valuation = do
-  let desugaredProgram = desugar program
-  let m = 1 + nWires desugaredProgram -- upper bound for #(needed wires)
-  let (bodies, bindings) = label m [desugaredProgram]
+  let m = 1 + nWires program -- upper bound for number of needed wires
+  let (bodies, bindings) = label m [program]
   let labeledPrograms = bindings ++ bodies
 
   let circuit = concatMap (compile m) labeledPrograms
@@ -62,9 +61,8 @@ test program valuation = do
 test' :: (Ord p, Fractional p, Show p) =>
          DSL p -> (M.Map String p) -> String -> IO ()
 test' program valuation tikzFilename = do
-  let desugaredProgram = desugar program
-  let m = 1 + nWires desugaredProgram -- upper bound for #(needed wires)
-  let (bodies, bindings) = label m [desugaredProgram]
+  let m = 1 + nWires program -- upper bound for number of needed wires
+  let (bodies, bindings) = label m [program]
   let labeledPrograms = bindings ++ bodies
 
   let circuit = concatMap (compile m) labeledPrograms

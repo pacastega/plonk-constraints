@@ -93,68 +93,6 @@ isVector (NIL)      = True
 isVector (CONS _ _) = True
 isVector _          = False
 
-{-@ measure desugared @-} -- TODO: maybe this should be removed
-desugared :: DSL p -> Bool
-desugared (EQL {})  = False
-
-desugared (VAR _)   = True
-desugared (CONST _) = True
-
-desugared (NIL)       = True
-desugared (CONS p ps) = desugared p  && desugared ps
-
-desugared (ADD p1 p2) = desugared p1 && desugared p2
-desugared (SUB p1 p2) = desugared p1 && desugared p2
-desugared (MUL p1 p2) = desugared p1 && desugared p2
-desugared (DIV p1 p2) = desugared p1 && desugared p2
-
-desugared (NOT p)     = desugared p
-desugared (AND p1 p2) = desugared p1 && desugared p2
-desugared (OR  p1 p2) = desugared p1 && desugared p2
-desugared (XOR p1 p2) = desugared p1 && desugared p2
-
-desugared (UnsafeNOT p)     = desugared p
-desugared (UnsafeAND p1 p2) = desugared p1 && desugared p2
-desugared (UnsafeOR  p1 p2) = desugared p1 && desugared p2
-desugared (UnsafeXOR p1 p2) = desugared p1 && desugared p2
-
-desugared (ISZERO p)  = desugared p
-desugared (EQLC p _)  = desugared p
-
-
-{-@ lazy desugar @-}
-{-@ desugar :: p:DSL p ->
-               {v:DSL p | desugared v && (unpacked p => unpacked v)
-                                      && (isVector p => isVector v)} @-}
-desugar :: DSL p -> DSL p
--- syntactic sugar:
-desugar (EQL p1 p2) = ISZERO (SUB (desugar p1) (desugar p2))
-
--- core language instructions:
-desugar (ADD p1 p2) = ADD (desugar p1) (desugar p2)
-desugar (SUB p1 p2) = SUB (desugar p1) (desugar p2)
-desugar (MUL p1 p2) = MUL (desugar p1) (desugar p2)
-desugar (DIV p1 p2) = DIV (desugar p1) (desugar p2)
-
-desugar (NOT p)     = NOT (desugar p)
-desugar (AND p1 p2) = AND (desugar p1) (desugar p2)
-desugar (OR  p1 p2) = OR  (desugar p1) (desugar p2)
-desugar (XOR p1 p2) = XOR (desugar p1) (desugar p2)
-
-desugar (UnsafeNOT p)     = UnsafeNOT (desugar p)
-desugar (UnsafeAND p1 p2) = UnsafeAND (desugar p1) (desugar p2)
-desugar (UnsafeOR  p1 p2) = UnsafeOR  (desugar p1) (desugar p2)
-desugar (UnsafeXOR p1 p2) = UnsafeXOR (desugar p1) (desugar p2)
-
-desugar (ISZERO p)  = ISZERO (desugar p)
-desugar (EQLC p k)  = EQLC (desugar p) k
-
-desugar (VAR s)     = VAR s
-desugar (CONST x)   = CONST x
-
-desugar (NIL)       = NIL
-desugar (CONS p ps) = CONS (desugar p) (desugar ps)
-
 
 {-@ measure unpacked @-}
 {-@ unpacked :: DSL p -> Bool @-}
@@ -218,18 +156,18 @@ type Env p = M.Map (DSL p) Int -- TODO: change to integer
 
 {-@ lazy label @-}
 -- label each constructor with the index of the wire where its output will be
-{-@ label :: m:Nat1 -> [{v:DSL p | desugared v}] ->
+{-@ label :: m:Nat1 -> [DSL p] ->
              ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)]) @-}
 label :: Ord p => Int -> [DSL p] -> ([LDSL p Int], [LDSL p Int])
 label m programs = (labeledBodies, labeledBindings) where
   (labeledBodies, labeledBindings, _, _) = labelAll programs
 
-  {-@ labelAll :: [{v:DSL p | desugared v}] ->
+  {-@ labelAll :: [DSL p] ->
                   ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env p m) @-}
   labelAll :: Ord p => [DSL p] -> ([LDSL p Int], [LDSL p Int], [Int], Env p)
   labelAll programs = foldl go ([], [], [], M.empty) programs where
     {-@ go :: ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env p m) ->
-              {v:DSL p | desugared v} ->
+              DSL p ->
               ([LDSL p (Btwn 0 m)], [LDSL p (Btwn 0 m)], [Btwn 0 m], Env p m) @-}
     go :: Ord p =>
           ([LDSL p Int], [LDSL p Int], [Int], Env p) -> DSL p ->
@@ -243,7 +181,7 @@ label m programs = (labeledBodies, labeledBindings) where
   -- combinator to label programs with 1 argument that needs recursive labelling
   {-@ label1 :: DSL p ->
                 (LDSL p (Btwn 0 m) -> Btwn 0 m -> LDSL p (Btwn 0 m)) ->
-                {arg:DSL p | desugared arg && unpacked arg} ->
+                {arg:DSL p | unpacked arg} ->
                 [Btwn 0 m] -> Env p m ->
                 (ListN (LDSL p (Btwn 0 m)) 1, [LDSL p (Btwn 0 m)],
                  [Btwn 0 m], Env p m) @-}
@@ -262,8 +200,8 @@ label m programs = (labeledBodies, labeledBindings) where
   {-@ label2 :: DSL p ->
                 (LDSL p (Btwn 0 m) -> LDSL p (Btwn 0 m) -> Btwn 0 m ->
                         LDSL p (Btwn 0 m)) ->
-                {arg1:DSL p | desugared arg1 && unpacked arg1} ->
-                {arg2:DSL p | desugared arg2 && unpacked arg2} ->
+                {arg1:DSL p | unpacked arg1} ->
+                {arg2:DSL p | unpacked arg2} ->
                 [Btwn 0 m] -> Env p m ->
                 (ListN (LDSL p (Btwn 0 m)) 1, [LDSL p (Btwn 0 m)],
                  [Btwn 0 m], Env p m) @-}
@@ -283,7 +221,7 @@ label m programs = (labeledBodies, labeledBindings) where
   add (k,v) = M.alter (\_ -> Just v) k
 
 
-  {-@ label' :: program:{DSL p | desugared program} -> [Btwn 0 m] -> Env p m ->
+  {-@ label' :: program:(DSL p) -> [Btwn 0 m] -> Env p m ->
                 ({l:[LDSL p (Btwn 0 m)] | unpacked program => len l = 1},
                  [LDSL p (Btwn 0 m)],
                  [Btwn 0 m],
@@ -313,6 +251,7 @@ label m programs = (labeledBodies, labeledBindings) where
       UnsafeOR  p1 p2 -> label2 p LUnsafeOR  p1 p2 usedWires env
       UnsafeXOR p1 p2 -> label2 p LUnsafeXOR p1 p2 usedWires env
 
+      EQL p1 p2 -> label' (ISZERO (p1 `SUB` p2)) usedWires env
       ISZERO p1 -> let i = freshIndex m usedWires
                        w = freshIndex m (i:usedWires)
                        ([p1'], bs, ws1, env') = label' p1 (i:w:usedWires) env
@@ -358,7 +297,7 @@ outputWire (LEQLC _ _ _ i) = i
 -- An upper bound on the number of needed wires (e.g. if some (VAR s) is used
 -- more than once in a program, it will be counted once for each appearance).
 {-@ measure nWires @-}
-{-@ nWires :: {v:DSL p | desugared v} -> Nat @-}
+{-@ nWires :: DSL p -> Nat @-}
 nWires :: DSL p -> Int
 nWires (VAR _)     = 1
 nWires (CONST _)   = 1
@@ -378,6 +317,7 @@ nWires (UnsafeAND p1 p2) = 1 + nWires p1 + nWires p2
 nWires (UnsafeOR  p1 p2) = 1 + nWires p1 + nWires p2
 nWires (UnsafeXOR p1 p2) = 1 + nWires p1 + nWires p2
 
+nWires (EQL p1 p2) = 3 + nWires p1 + nWires p2
 nWires (ISZERO p1) = 2 + nWires p1
 nWires (EQLC p1 _) = 2 + nWires p1
 
