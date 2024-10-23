@@ -41,12 +41,11 @@ cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 test :: (Ord p, Fractional p, Show p) =>
         DSL p -> Valuation p -> IO ()
 test program valuation = do
-  let (m, bodies, bindings) = label [program]
-  let labeledPrograms = bindings ++ bodies
+  let (m, labeledPrograms) = label [program]
 
   let circuit = concatMap (compile m) labeledPrograms
   let input = witnessGen m labeledPrograms valuation
-  let output = map (\p -> input ! outputWire p) bodies
+  let output = map (\p -> input ! outputWire p) labeledPrograms
 
   putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   putStrLn $ "Compiled circuit:     " ++ show circuit
@@ -60,12 +59,11 @@ test program valuation = do
 test' :: (Ord p, Fractional p, Show p) =>
          DSL p -> (M.Map String p) -> String -> IO ()
 test' program valuation tikzFilename = do
-  let (m, bodies, bindings) = label [program]
-  let labeledPrograms = bindings ++ bodies
+  let (m, labeledPrograms) = label [program]
 
   let circuit = concatMap (compile m) labeledPrograms
   let input = witnessGen m labeledPrograms valuation
-  let output = map (\p -> input ! outputWire p) bodies
+  let output = map (\p -> input ! outputWire p) labeledPrograms
 
   putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   putStrLn $ "Compiled circuit:     " ++ show circuit
