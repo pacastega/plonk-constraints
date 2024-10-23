@@ -7,7 +7,6 @@ import Utils (boolean)
 import Vec
 import DSL
 import qualified Data.Map as M
-import qualified Data.Set as S
 
 
 updateWith :: Eq p => Maybe p -> Maybe p -> Maybe p
@@ -30,10 +29,10 @@ witnessGen m programs strValuation = toVector m valuation' where
                -> M.Map (Btwn 0 m) p @-}
     update :: (Eq p, Fractional p) =>
               Valuation p -> LDSL p Int -> M.Map Int p -> M.Map Int p
-    update sv (LWIRE _) valuation = valuation
+    update _  (LWIRE _) valuation = valuation
     update sv (LVAR s i) valuation = M.alter (updateWith value) i valuation
       where value = M.lookup s sv -- value of ‘s’ in user-supplied valuation
-    update sv (LCONST x i) valuation = M.alter (updateWith (Just x)) i valuation
+    update _  (LCONST x i) valuation = M.alter (updateWith (Just x)) i valuation
     update sv (LADD p1 p2 i) valuation = M.alter (updateWith sum) i valuation'
       where
       valuation' = update sv p2 $ update sv p1 valuation
