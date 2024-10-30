@@ -11,6 +11,7 @@ import GHC.TypeNats (KnownNat)
 import PrimitiveRoot
 
 import RefinementTypes()
+import Vec 
 
 type F p = PF.PrimeField p
 

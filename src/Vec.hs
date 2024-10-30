@@ -2,6 +2,7 @@
 {-@ LIQUID "--reflection" @-}
 module Vec where
 
+{-@ type VecN a N = {v:Vec a | vvlen v == N} @-}
 {-@ data Vec a = Nil | Cons {vx :: a, vxs :: Vec a} @-}
 data Vec a = Nil | Cons a (Vec a)
 
