@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
-{-@ embed GHC.Num.Natural.Natural as int @-}
+
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-# OPTIONS -Wno-unused-imports #-}

@@ -19,7 +19,7 @@ jobs:
     - uses: freckle/stack-cache-action@main
     - uses: haskell/actions/setup@v2
       with:
-        ghc-version: '9.2.5'
+        ghc-version: '9.10.1'
         enable-stack: true
         stack-version: 'latest'
 
@@ -34,6 +34,4 @@ jobs:
         rm -rf z3-4.9.1-x64-glibc-2.31
         z3 --version
     - name: Build Examples
-      run: stack install --fast
-    - name: Build Translations
-      run: stack install --fast
+      run: cabal build

@@ -7,7 +7,6 @@ module Constraints (checkGate, satisfies, Circuit) where
 
 import Vec
 import RefinementTypes()
-import GHC.Num (fromInteger)
 
 
 -- n == # gates
@@ -43,7 +42,7 @@ transpose :: Int -> Int -> Circuit p -> ([[Int]], [[p]])
 transpose _ _ [] = let
     a = []; b = []; c = [];
     qL = []; qR = []; qO = []; qM = []; qC = []
-  in (a:b:c:[],  qL:qR:qO:qM:qC:[])
+  in ([a, b, c],  [qL, qR, qO, qM, qC])
 transpose n m (([a, b, c], [qL, qR, qO, qM, qC]) : gs) = let
     ([as, bs, cs],  [qLs, qRs, qOs, qMs, qCs]) = transpose (n-1) m gs
-  in ((a:as):(b:bs):(c:cs):[],  (qL:qLs):(qR:qRs):(qO:qOs):(qM:qMs):(qC:qCs):[])
+  in ([a:as, b:bs, c:cs],  [qL:qLs, qR:qRs, qO:qOs, qM:qMs, qC:qCs])

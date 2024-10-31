@@ -1,4 +1,10 @@
-packages: . ../../liquidtypes/liquidhaskell/liquidhaskell-boot
-            ../../liquidtypes/liquidhaskell/liquid-fixpoint
-            ../../liquidtypes/liquidhaskell/liquid-prelude
-            ../../liquidtypes/liquidhaskell/
+packages: . 
+
+source-repository-package
+    type: git
+    location: https://github.com/ucsd-progsys/liquidhaskell
+    tag: 462235e0a964b541f269357db2375929d1aefb54
+    subdir: . 
+            liquidhaskell-boot
+            liquid-fixpoint 
+            liquid-prelude 
