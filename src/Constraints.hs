@@ -7,7 +7,6 @@ module Constraints (checkGate, satisfies, Circuit) where
 
 import Vec
 import RefinementTypes()
-import GHC.Num (fromInteger)
 
 
 -- n == # gates

@@ -4,7 +4,6 @@
 {-# OPTIONS -Wno-incomplete-uni-patterns #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-{-@ embed GHC.Num.Natural.Natural as int @-}
 module LogicGates where
 
 import Constraints

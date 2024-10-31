@@ -3,7 +3,6 @@
 {-# LANGUAGE DataKinds #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-{-@ embed GHC.Num.Natural.Natural as int @-}
 module Circuits where
 
 import Constraints

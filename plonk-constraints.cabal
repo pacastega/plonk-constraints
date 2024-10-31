@@ -1,0 +1,74 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           plonk-constraints
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/pacastega/plonk-constraints#readme>
+homepage:       https://github.com/pacastega/plonk-constraints#readme
+bug-reports:    https://github.com/pacastega/plonk-constraints/issues
+author:         Pablo Castellanos
+maintainer:     p.cas.gar@gmail.com
+copyright:      2024 Pablo Castellanos
+license:        GPL-3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/pacastega/plonk-constraints
+
+library
+  exposed-modules:
+      ArithmeticGates
+      Circuits
+      CompilerProof
+      Constraints
+      DSL
+      Interpolation
+      LogicGates
+      PrimitiveRoot
+      RefinementTypes
+      Utils
+      Vec
+      WitnessGeneration
+  other-modules:
+      Paths_plonk_constraints
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-missing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-unused-top-binds -Wno-incomplete-patterns -XGADTs -fplugin=LiquidHaskell
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , finite-field
+    , liquid-prelude
+    , liquid-vector
+    , liquidhaskell
+    , liquidhaskell-boot
+    , poly
+    , vector
+  default-language: Haskell2010
+
+executable plonk-constraints-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_plonk_constraints
+  hs-source-dirs:
+      app
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-missing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-unused-top-binds -Wno-incomplete-patterns -XGADTs  -fplugin=LiquidHaskell
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , finite-field
+    , liquid-prelude
+    , liquid-vector
+    , liquidhaskell
+    , liquidhaskell-boot
+    , plonk-constraints
+    , poly
+    , vector
+  default-language: Haskell2010
