@@ -41,7 +41,7 @@ cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 test :: (Ord p, Fractional p, Show p) =>
         DSL p -> Valuation p -> IO ()
 test program valuation = do
-  let (m, labeledPrograms) = label [program]
+  let (m, labeledPrograms) = label program
 
   let circuit = concatMap (compile m) labeledPrograms
   let input = witnessGen m labeledPrograms valuation
@@ -59,7 +59,7 @@ test program valuation = do
 test' :: (Ord p, Fractional p, Show p) =>
          DSL p -> (M.Map String p) -> String -> IO ()
 test' program valuation tikzFilename = do
-  let (m, labeledPrograms) = label [program]
+  let (m, labeledPrograms) = label program
 
   let circuit = concatMap (compile m) labeledPrograms
   let input = witnessGen m labeledPrograms valuation

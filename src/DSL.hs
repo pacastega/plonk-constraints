@@ -155,31 +155,11 @@ type Env p i = M.Map (DSL p) i
 
 {-@ lazy label @-}
 -- label each constructor with the index of the wire where its output will be
-{-@ label :: [DSL p] ->
+{-@ label :: DSL p ->
              (m:Nat, [LDSL p Int])<\m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
-label :: Ord p => [DSL p] -> (Int, [LDSL p Int])
-label programs = (m, labeledPrograms) where
-  (m, labeledPrograms, _) = labelAll programs
-
-  {-@ labelAll :: [DSL p] ->
-                  (m:Nat, [LDSL p Int], Env p Int)
-                             <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
-                              \_ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
-  labelAll :: Ord p => [DSL p] -> (Int, [LDSL p Int], Env p Int)
-  labelAll programs = foldl go (0, [], M.empty) programs where
-    {-@ go :: (m:Nat, [LDSL p Int], Env p Int)
-                            <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
-                             \_ m -> {v:Env   p (Btwn 0 m)  | true}>
-           -> DSL p
-           -> (m:Nat, [LDSL p Int], Env p Int)
-                            <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
-                             \_ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
-    go :: Ord p =>
-          (Int, [LDSL p Int], Env p Int) -> DSL p ->
-          (Int, [LDSL p Int], Env p Int)
-    go (nextIndex, acc, env) program =
-      let (nextIndex', labeledProgram, env') = label' program nextIndex env
-      in (nextIndex', acc ++ labeledProgram, env')
+label :: Ord p => DSL p -> (Int, [LDSL p Int])
+label program = (m, labeledPrograms) where
+  (m, labeledPrograms, _) = label' program 0 M.empty
 
   -- combinator to label programs with 2 arguments that need recursive labelling
   {-@ label2 :: m0:Nat ->
