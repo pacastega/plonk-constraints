@@ -34,4 +34,6 @@ jobs:
         rm -rf z3-4.9.1-x64-glibc-2.31
         z3 --version
     - name: Build Examples
-      run: cabal build
+      run: |
+        cabal update
+        cabal build
