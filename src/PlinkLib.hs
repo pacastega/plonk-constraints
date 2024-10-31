@@ -206,19 +206,25 @@ fromHex (c:cs) = go c +++ (fromHex cs) where
 
 {-@ vecAdd :: u:{DSL p | isVector u} ->
               v:{DSL p | isVector v && vlength v = vlength u} ->
-              w:{DSL p | isVector w && vlength w >= 0} @-}
--- TODO: it also preserves length
+              w:{DSL p | isVector w && vlength w = vlength u} @-}
 vecAdd :: Num p => DSL p -> DSL p -> DSL p
-vecAdd u v = fromList result
+vecAdd u v = fst $ aux u v
   where
-    (result, _) = foldr addWithCarry ([], CONST 0) (vZip u v)
+    {-@ aux :: x:{DSL p | isVector x}
+            -> y:{DSL p | isVector y && vlength y = vlength x}
+            -> res:{({z:DSL p | isVector z}, {c:DSL p | unpacked c})
+                    | vlength (fst res) = vlength x} @-}
+    aux :: Num p => DSL p -> DSL p -> (DSL p, DSL p)
+    aux (NIL)       (NIL)       = (NIL, CONST 0)
+    aux (CONS u us) (CONS v vs) = addWithCarry (u, v) (aux us vs)
 
     {-@ addWithCarry :: ({x:DSL p | unpacked x}, {y:DSL p | unpacked y})
-                     -> ([{v:DSL p | unpacked v}], {v:DSL p | unpacked v})
-                     -> ([{v:DSL p | unpacked v}], {v:DSL p | unpacked v})
+                     -> acc:({v:DSL p | isVector v}, {v:DSL p | unpacked v})
+                     -> res:{({v:DSL p | isVector v}, {v:DSL p | unpacked v})
+                             | vlength (fst res) = 1 + vlength (fst acc)}
     @-}
-    addWithCarry :: Num p => (DSL p, DSL p) -> ([DSL p], DSL p) ->
-                             ([DSL p], DSL p)
+    addWithCarry :: Num p => (DSL p, DSL p) -> (DSL p, DSL p) ->
+                             (DSL p, DSL p)
     addWithCarry (x, y) (acc, carry) = let sum = (x `ADD` y) `ADD` carry in
-      ((sum `EQLC` 1) `UnsafeOR` (sum `EQLC` 3) : acc, -- new acc
-       (sum `EQLC` 2) `UnsafeOR` (sum `EQLC` 3))       -- new carry
+      ((sum `EQLC` 1) `UnsafeOR` (sum `EQLC` 3) `CONS` acc, -- new acc
+       (sum `EQLC` 2) `UnsafeOR` (sum `EQLC` 3))            -- new carry
