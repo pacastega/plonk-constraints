@@ -29,14 +29,17 @@ library
       CompilerProof
       Constraints
       DSL
+      Examples
       Interpolation
       LogicGates
+      PlinkLib
       PrimitiveRoot
       RefinementTypes
       Utils
       Vec
       WitnessGeneration
   other-modules:
+      Treekz
       Paths_plonk_constraints
   hs-source-dirs:
       src
