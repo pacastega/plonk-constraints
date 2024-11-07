@@ -3,8 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Interpolation (interpolate, interpolateRoots) where
 
-import Data.Poly
-import qualified Data.Vector as V
 import qualified Data.FiniteField.PrimeField as PF
 import GHC.TypeNats (KnownNat)
 
