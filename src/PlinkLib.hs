@@ -1,5 +1,7 @@
 {-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--max-case-expand=0" @-}
+{-@ LIQUID "--time-binds" @-}
 {-@ infix +++ @-}
 
 module PlinkLib where
@@ -75,13 +77,14 @@ vMap _  (NIL)       = NIL
 vMap op (CONS x xs) = op x `CONS` vMap op xs
 
 --FIXME: termination should be provable
-{-@ lazy vChunk @-}
+{- lazy vChunk @-}
 {-@ vChunk :: n:Nat -> v:{DSL p | isVector v && (vlength v) mod n = 0}
            -> {l:[{w:DSL p | isVector w && vlength w = n}]
                 | n * len l = vlength v}
             / [vlength v] @-}
 vChunk :: Int -> DSL p -> [DSL p]
 vChunk _ NIL = []
+vChunk 0 xs  = [xs] 
 vChunk n xs  = let (ys, zs) = vTakeDrop n xs in ys : (vChunk n zs)
 
 -- Bitwise operations ----------------------------------------------------------
@@ -204,6 +207,7 @@ fromHex (c:cs) = go c +++ (fromHex cs) where
   go 'E' = fromList $ map CONST [1,1,1,0]
   go 'F' = fromList $ map CONST [1,1,1,1]
 
+
 {-@ vecAdd :: u:{DSL p | isVector u} ->
               v:{DSL p | isVector v && vlength v = vlength u} ->
               w:{DSL p | isVector w && vlength w = vlength u} @-}
@@ -215,8 +219,14 @@ vecAdd u v = fst $ aux u v
             -> res:{({z:DSL p | isVector z}, {c:DSL p | unpacked c})
                     | vlength (fst res) = vlength x} @-}
     aux :: Num p => DSL p -> DSL p -> (DSL p, DSL p)
-    aux (NIL)       (NIL)       = (NIL, CONST 0)
-    aux (CONS u us) (CONS v vs) = addWithCarry (u, v) (aux us vs)
+    aux NIL y =  case y of 
+                   NIL -> (NIL, CONST 0)
+                   _   -> error "" 
+    aux (CONS u us) y = case y of 
+                         CONS v vs -> addWithCarry (u, v) (aux us vs)
+                         _         -> error "" 
+    aux _ _ = error "" 
+--     aux (CONS u us) (CONS v vs) = addWithCarry (u, v) (aux us vs)
 
     {-@ addWithCarry :: ({x:DSL p | unpacked x}, {y:DSL p | unpacked y})
                      -> acc:({v:DSL p | isVector v}, {v:DSL p | unpacked v})

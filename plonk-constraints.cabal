@@ -29,6 +29,7 @@ library
       CompilerProof
       Constraints
       DSL
+      Label
       Examples
       LogicGates
       PlinkLib
