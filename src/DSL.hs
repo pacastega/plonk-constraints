@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-@ LIQUID "--reflection" @-}
 module DSL where
 
@@ -11,6 +12,8 @@ import Utils
 import Vec
 
 import qualified Data.Map as M
+import Data.IORef
+import System.IO.Unsafe
 
 data DSL p where
   -- Basic operations
@@ -149,6 +152,8 @@ data LDSL p i =
 type Env p i = M.Map (DSL p) i
 
 
+{-@ type Store p = [(String, {v:DSL p | unpacked v})] @-}
+type Store p = [(String, DSL p)]
 
 -- TODO: this could probably be avoided by using record syntax
 {-@ measure outputWire @-}
@@ -389,3 +394,17 @@ semanticsAreCorrect m (LEQLC p1 k w i) input = correct where
                         (if input!i1 == k
                          then input!i == 1
                          else input!i == 0 && input!w * (input!i1 - k) == 1)
+
+{-# NOINLINE counter #-}
+counter :: IORef Int
+counter = unsafePerformIO $ newIORef 0
+
+{-# NOINLINE fresh #-}
+fresh :: () -> IO Int
+fresh () = (
+    do x <- readIORef counter
+       writeIORef counter (x+1)
+       return x)
+
+var :: String -> String
+var name = name ++ "#" ++ show (unsafePerformIO $ fresh ())

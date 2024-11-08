@@ -6,13 +6,29 @@ import DSL
 
 import qualified Data.Map as M
 
+{-@ label :: DSL p
+          -> Store p
+          -> (m:Nat, [LDSL p Int], [LDSL p Int])
+                  <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
+                   \_ m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
+label :: Ord p => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
+label program store = (m, labeledPrograms, labeledStore) where
+  (m', labeledStore, env') = labelStore store 0 M.empty
+  (m, labeledPrograms, _) = label' program m' env'
 
--- label each constructor with the index of the wire where its output will be
-{-@ label :: DSL p ->
-             (m:Nat, [LDSL p Int])<\m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
-label :: Ord p => DSL p -> (Int, [LDSL p Int])
-label program = (m, labeledPrograms) where
-  (m, labeledPrograms, _) = label' program 0 M.empty
+{-@ labelStore :: Store p -> m0:Nat -> Env p (Btwn 0 m0)
+               -> (m:{Int | m >= m0}, [LDSL p Int], Env p Int)
+                      <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
+                       \_ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
+labelStore :: Ord p =>
+              Store p -> Int -> Env p Int -> (Int, [LDSL p Int], Env p Int)
+labelStore [] nextIndex env = (nextIndex, [], env)
+labelStore ((name,def):ss) nextIndex env =
+  let i = nextIndex
+      (i', [def'], env') = label' def i env
+      defWire = outputWire def'
+      (i'', ss', env'') = labelStore ss i' (add (VAR name, defWire) env')
+  in (i'', def' : ss', env'')
 
 -- combinator to label programs with 2 arguments that need recursive labelling
 {-@ lazy label2 @-}
