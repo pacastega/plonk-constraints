@@ -1,7 +1,7 @@
 {-@ LIQUID "--reflection" @-}
 module Utils where
 
-import RefinementTypes()
+import TypeAliases
 
 {-@ reflect fst' @-}
 fst' :: (a, b) -> a

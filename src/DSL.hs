@@ -5,7 +5,7 @@
 module DSL where
 
 import Constraints
-import RefinementTypes()
+import TypeAliases
 import ArithmeticGates
 import LogicGates
 import Circuits

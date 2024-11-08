@@ -1,6 +1,6 @@
 {-@ LIQUID "--reflection" @-}
 
-module RefinementTypes where
+module TypeAliases where
 
 {-@ type Nat1 = {v:Nat | v >= 1} @-}
 
