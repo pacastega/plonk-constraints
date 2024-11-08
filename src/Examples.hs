@@ -24,6 +24,7 @@ import LogicGates      -- needed to use reflected functions
 import Constraints
 
 import DSL
+import Label
 import WitnessGeneration
 
 import Treekz
