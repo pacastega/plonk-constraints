@@ -1,5 +1,5 @@
 {-@ LIQUID "--reflection" @-}
-module Label (label, label') where
+module Label (label) where
 
 import TypeAliases
 import DSL
