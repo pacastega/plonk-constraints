@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-@ LIQUID "--reflection" @-}
 module Main (main) where
 

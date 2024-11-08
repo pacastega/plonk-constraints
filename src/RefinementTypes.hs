@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 {-@ LIQUID "--reflection" @-}
 
 {-# OPTIONS -Wno-unused-imports -Wno-missing-export-lists #-}

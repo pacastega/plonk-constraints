@@ -43,7 +43,20 @@ library
       Paths_plonk_constraints
   hs-source-dirs:
       src
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-missing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-unused-top-binds -Wno-incomplete-patterns -XGADTs -fplugin=LiquidHaskell
+  ghc-options:
+      -Wall
+      -Wcompat
+      -Widentities
+      -Wincomplete-record-updates
+      -Wno-incomplete-uni-patterns
+      -Wno-missing-export-lists
+      -Wmissing-home-modules
+      -Wpartial-fields
+      -Wredundant-constraints
+      -Wno-unused-top-binds
+      -Wno-incomplete-patterns
+      -XGADTs
+      -fplugin=LiquidHaskell
   build-depends:
       base >=4.7 && <5
     , containers
@@ -62,7 +75,20 @@ executable plonk-constraints-exe
       Paths_plonk_constraints
   hs-source-dirs:
       app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wno-missing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -Wno-unused-top-binds -Wno-incomplete-patterns -XGADTs  -fplugin=LiquidHaskell
+  ghc-options:
+      -Wall
+      -Wcompat
+      -Widentities
+      -Wincomplete-record-updates
+      -Wno-incomplete-uni-patterns
+      -Wno-missing-export-lists
+      -Wmissing-home-modules
+      -Wpartial-fields
+      -Wredundant-constraints
+      -Wno-unused-top-binds
+      -Wno-incomplete-patterns
+      -XGADTs
+      -fplugin=LiquidHaskell
   build-depends:
       base >=4.7 && <5
     , containers
