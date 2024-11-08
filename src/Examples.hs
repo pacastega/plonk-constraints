@@ -30,7 +30,7 @@ import Treekz
 
 type F p = PrimeField p
 type F17 = F 17
-type FF  = F 2131
+type PF  = F 2131
 
 -- Generic test function -------------------------------------------------------
 cyan :: String -> String
@@ -129,54 +129,54 @@ testBoolean = do
 -- Loop programs ---------------------------------------------------------------
 -- -- start * (base)^5
 -- {-@ loop1 :: DSL _ @-}
--- loop1 :: DSL FF
+-- loop1 :: DSL PF
 -- loop1 = foldl body (VAR "start") [1..5] where
 --   {-@ body :: {v:DSL _ | unpacked v} ->
 --               Int ->
 --               {v:DSL _ | unpacked v} @-}
---   body :: DSL FF -> Int -> DSL FF
+--   body :: DSL PF -> Int -> DSL PF
 --   body = (\p _ -> MUL p (VAR "base"))
 
 -- -- 5! = 120
 -- {-@ loop2 :: DSL _ @-}
--- loop2 :: DSL FF
+-- loop2 :: DSL PF
 -- loop2 = foldl body (CONST 1) [2..5] where
 --   {-@ body :: {v:DSL _ | unpacked v} ->
 --               Int ->
 --               {v:DSL _ | unpacked v} @-}
---   body :: DSL FF -> Int -> DSL FF
+--   body :: DSL PF -> Int -> DSL PF
 --   body = \p i -> MUL p (CONST $ fromIntegral i)
 
 -- -- 1 + 2 + 3 + 4 + 5 + 6 = 21
 -- {-@ loop3 :: DSL _ @-}
--- loop3 :: DSL FF
+-- loop3 :: DSL PF
 -- loop3 = foldl body (CONST 0) [1..6] where
 --   {-@ body :: {v:DSL _ | unpacked v} ->
 --               Int ->
 --               {v:DSL _ | unpacked v} @-}
---   body :: DSL FF -> Int -> DSL FF
+--   body :: DSL PF -> Int -> DSL PF
 --   body = \p i -> ADD p (CONST $ fromIntegral i)
 
 -- -- Polynomial evaluation:
 -- -- x_1 * x^(n-1) + x_2 * x^(n-2) + ... + x_(n-1) * x + x_n
 -- {-@ loop4 :: Btwn 1 39 -> DSL _ @-}
--- loop4 :: Int -> DSL FF
+-- loop4 :: Int -> DSL PF
 -- loop4 n = foldl body (CONST 0) [1..n] where
 --   body = \p i -> (VAR $ "coef" ++ show i) `ADD` (p `MUL` VAR "x") --FIXME:
 --   {-@ body :: {v:DSL _ | unpacked v} ->
 --               Btwn 1 40 ->
 --               {v:DSL _ | unpacked v} @-}
---   body :: DSL FF -> Int -> DSL FF
+--   body :: DSL PF -> Int -> DSL PF
 
 -- -- (base)^4 == 42
 -- {-@ loop5 :: DSL _ @-}
--- loop5 :: DSL FF
+-- loop5 :: DSL PF
 -- loop5 = (foldl body (VAR "base") [2..4]) `EQL` (CONST 42) where
 --   body = \p _ -> MUL p (VAR "base")
 --   {-@ body :: {v:DSL _ | unpacked v} ->
 --               Int ->
 --               {v:DSL _ | unpacked v} @-}
---   body :: DSL FF -> Int -> DSL FF
+--   body :: DSL PF -> Int -> DSL PF
 
 -- testLoops :: IO ()
 -- testLoops = do
@@ -197,7 +197,7 @@ testBoolean = do
 
 -- Vector programs -------------------------------------------------------------
 {-@ vec1 :: {v:DSL _ | vlength v = 3} @-}
-vec1 :: DSL FF
+vec1 :: DSL PF
 vec1 = (CONST 42)             `CONS`      -- 42
        (CONST 4 `SUB` VAR "a") `CONS`     -- 4 - a
        (VAR "b" `ADD` CONST 5) `CONS` NIL -- b + 5
@@ -210,38 +210,38 @@ range a b = if a == b then NIL else CONST a `CONS` (range (a+1) b)
 
 -- (range 1 5) but writing 42 in the 2nd position
 {-@ vec2 :: DSL _ @-}
-vec2 :: DSL FF
+vec2 :: DSL PF
 vec2 = set (range 1 5) 2 (CONST 42) where
 
 -- 3rd position of (range 1 5)
 {-@ vec3 :: DSL _ @-}
-vec3 :: DSL FF
+vec3 :: DSL PF
 vec3 = get (range 1 5) 3 where
 
 -- multiply two vectors component-wise
 {-@ vecMul :: a:{DSL _ | isVector a} ->
               b:{DSL _ | isVector b && vlength b = vlength a} ->
               c:{DSL _ | isVector c && vlength c = vlength a} @-}
-vecMul :: DSL FF -> DSL FF -> DSL FF
+vecMul :: DSL PF -> DSL PF -> DSL PF
 vecMul = vZipWith MUL
 
 -- [1, 2, 3] * [5, 6, 7] = [1*5, 2*6, 3*7] = [5, 12, 21]
 {-@ vec4 :: DSL _ @-}
-vec4 :: DSL FF
+vec4 :: DSL PF
 vec4 = vecMul (range 1 4) (range 5 8)
 
 {-@ vec5 :: {v:DSL _ | vlength v = 9} @-}
-vec5 :: DSL FF
+vec5 :: DSL PF
 vec5 = rotateL (range 1 10) 3
 
 {-@ vec6 :: {v:DSL _ | vlength v = 9} @-}
-vec6 :: DSL FF
+vec6 :: DSL PF
 vec6 = rotateR (range 1 10) 2
 
-vec7 :: DSL FF
+vec7 :: DSL PF
 vec7 = vecAdd (fromInt 3 2) (fromInt 3 3) -- 2 + 3, using 3 bits
 
-vec8 :: DSL FF
+vec8 :: DSL PF
 vec8 = vecAdd (fromHex ['a', '4']) (fromHex ['4', 'b']) where
 
 testVectors :: IO ()
