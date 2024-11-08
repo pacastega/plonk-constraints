@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DataKinds #-}
-{-# OPTIONS -Wno-incomplete-uni-patterns #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 module LogicGates where

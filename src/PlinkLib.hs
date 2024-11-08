@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-missing-signatures -Wno-name-shadowing #-}
 {-@ LIQUID "--reflection" @-}
 {-@ infix +++ @-}
 

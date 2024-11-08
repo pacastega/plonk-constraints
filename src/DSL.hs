@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-@ LIQUID "--ple" @-}
-{-@ LIQUID "--no-positivity-check" @-}
 {-@ LIQUID "--reflection" @-}
 module DSL where
 

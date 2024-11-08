@@ -1,7 +1,6 @@
 {-@ infix ! @-}
 {-# OPTIONS -Wno-unused-matches -Wno-unused-imports
             -Wno-redundant-constraints #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 

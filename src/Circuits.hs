@@ -1,7 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DataKinds #-}
 {-@ LIQUID "--reflection" @-}
-{-@ LIQUID "--ple" @-}
 module Circuits where
 
 import Constraints

@@ -1,5 +1,4 @@
 {-# OPTIONS -Wno-unused-imports #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 module Constraints (checkGate, satisfies, Circuit) where

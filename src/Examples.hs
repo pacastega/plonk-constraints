@@ -2,7 +2,6 @@
 {-@ LIQUID "--ple" @-}
 {-# OPTIONS -Wno-unused-imports #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE LambdaCase #-}
 
 module Examples ( testArithmetic
                 , testBoolean
