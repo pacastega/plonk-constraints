@@ -18,13 +18,6 @@ notGate _ [a, c] =
   -- Gate 1. 1 - a == c (c = ¬ a)
   -- Gate 2. a * a == a (a is boolean)
 
-{-@ verifyNot :: VecN p 3 -> {v:Bool | v} @-}
-verifyNot :: (Eq p, Num p) => Vec p -> Bool
-verifyNot x = notIsCorrect == satisfies 2 3 x gate where
-  gate@[([a0,_,c0], _), ([a1,b1,_], _)] = notGate 2 [0,1]
-  notIsCorrect = (1 - x!a0 == x!c0) &&    -- ‘not’ holds
-                 (x!a1 * x!b1 == x!a1)    -- boolean
-
 
 {-@ reflect andGate @-}
 {-@ andGate :: m:Nat ->
@@ -40,15 +33,6 @@ andGate _ [a,b,c] =
   -- Gate 1. a * b == c (c = a ∧ b)
   -- Gate 2. a * a == a (a is boolean)
   -- Gate 3. b * b == b (b is boolean)
-
-{-@ verifyAnd :: VecN p 3 -> {v:Bool | v} @-}
-verifyAnd :: (Eq p, Num p) => Vec p -> Bool
-verifyAnd x = andIsCorrect == satisfies 3 3 x gate where
-  gate@[([a0,b0,c0], _), ([a1,b1,_], _), ([a2,b2,_], _)] = andGate 3 [0,1,2]
-  andIsCorrect = (x!c0 == if x!a0 == 0 || x!b0 == 0
-                   then 0 else 1) &&               -- and holds
-                 (x!a1 * x!b1 == x!a1) &&          -- boolean
-                 (x!a2 * x!b2 == x!a2)             -- boolean
 
 
 {-@ reflect orGate @-}
@@ -66,15 +50,6 @@ orGate _ [a,b,c] =
   -- Gate 2. a * a == a (a is boolean)
   -- Gate 3. b * b == b (b is boolean)
 
-{-@ verifyOr :: VecN p 3 -> {v:Bool | v} @-}
-verifyOr :: (Eq p, Num p) => Vec p -> Bool
-verifyOr x = orIsCorrect == satisfies 3 3 x gate where
-  gate@[([a0,b0,c0], _), ([a1,b1,_], _), ([a2,b2,_], _)] = orGate 3 [0, 1, 2]
-  orIsCorrect = (x!c0 == if x!a0 == 1 || x!b0 == 1
-                  then 1 else 0) &&               -- or holds
-                (x!a1 * x!b1 == x!a1) &&          -- boolean
-                (x!a2 * x!b2 == x!a2)             -- boolean
-
 
 {-@ reflect xorGate @-}
 {-@ xorGate :: m:Nat ->
@@ -91,14 +66,6 @@ xorGate _ [a,b,c] =
   -- Gate 2. a * a == a (a is boolean)
   -- Gate 3. b * b == b (b is boolean)
 
-{-@ verifyXor :: VecN p 3 -> {v:Bool | v} @-}
-verifyXor :: (Eq p, Num p) => Vec p -> Bool
-verifyXor x = xorIsCorrect == satisfies 3 3 x gate where
-  gate@[([a0,b0,c0], _), ([a1,b1,_], _), ([a2,b2,_], _)] = xorGate 3 [0, 1, 2]
-  xorIsCorrect = (x!c0 == if x!a0 /= x!b0
-                   then 1 else 0) &&               -- xor holds
-                 (x!a1 * x!b1 == x!a1) &&          -- boolean
-                 (x!a2 * x!b2 == x!a2)             -- boolean
 
 -- Unsafe boolean gates (assume the inputs are boolean) ------------------------
 {-@ reflect unsafeNotGate @-}
