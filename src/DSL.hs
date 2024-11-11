@@ -122,14 +122,14 @@ unpacked (EQLC p _)  = unpacked p
 
 -- Labeled DSL
 data LDSL p i =
-  LWIRE                        i |
+  LWIRE                          i |
 
-  LVAR   String                i |
-  LCONST p                     i |
-  LADD   (LDSL p i) (LDSL p i) i |
-  LSUB   (LDSL p i) (LDSL p i) i |
-  LMUL   (LDSL p i) (LDSL p i) i |
-  LDIV   (LDSL p i) (LDSL p i) i |
+  LVAR   String                  i |
+  LCONST p                       i |
+  LADD   (LDSL p i) (LDSL p i)   i |
+  LSUB   (LDSL p i) (LDSL p i)   i |
+  LMUL   (LDSL p i) (LDSL p i)   i |
+  LDIV   (LDSL p i) (LDSL p i) i i |
 
   LNOT   (LDSL p i)            i |
   LAND   (LDSL p i) (LDSL p i) i |
@@ -153,14 +153,14 @@ type Env p i = M.Map (DSL p) i
 -- TODO: this could probably be avoided by using record syntax
 {-@ measure outputWire @-}
 outputWire :: LDSL p i -> i
-outputWire (LWIRE i)    = i
+outputWire (LWIRE i)      = i
 
-outputWire (LVAR _ i)   = i
-outputWire (LCONST _ i) = i
-outputWire (LADD _ _ i) = i
-outputWire (LSUB _ _ i) = i
-outputWire (LMUL _ _ i) = i
-outputWire (LDIV _ _ i) = i
+outputWire (LVAR _ i)     = i
+outputWire (LCONST _ i)   = i
+outputWire (LADD _ _ i)   = i
+outputWire (LSUB _ _ i)   = i
+outputWire (LMUL _ _ i)   = i
+outputWire (LDIV _ _ _ i) = i
 
 outputWire (LNOT _   i) = i
 outputWire (LAND _ _ i) = i
@@ -211,14 +211,14 @@ nWires (CONS p ps) = nWires p + nWires ps
 {-@ measure nGates @-}
 {-@ nGates :: LDSL p i -> Nat @-}
 nGates :: LDSL p i -> Int
-nGates (LWIRE _)      = 0
+nGates (LWIRE _)        = 0
 
-nGates (LVAR _ _)     = 0
-nGates (LCONST _ _)   = 1
-nGates (LADD p1 p2 _) = 1 + nGates p1 + nGates p2
-nGates (LSUB p1 p2 _) = 1 + nGates p1 + nGates p2
-nGates (LMUL p1 p2 _) = 1 + nGates p1 + nGates p2
-nGates (LDIV p1 p2 _) = 1 + nGates p1 + nGates p2
+nGates (LVAR _ _)       = 0
+nGates (LCONST _ _)     = 1
+nGates (LADD p1 p2 _)   = 1 + nGates p1 + nGates p2
+nGates (LSUB p1 p2 _)   = 1 + nGates p1 + nGates p2
+nGates (LMUL p1 p2 _)   = 1 + nGates p1 + nGates p2
+nGates (LDIV p1 p2 _ _) = 2 + nGates p1 + nGates p2
 
 nGates (LNOT p1    _) = 2 + nGates p1
 nGates (LAND p1 p2 _) = 3 + nGates p1 + nGates p2
@@ -261,12 +261,12 @@ compile m (LMUL p1 p2 i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (mulGate m [i1, i2, i]) c'
-compile m (LDIV p1 p2 i) = c
+compile m (LDIV p1 p2 w i) = c
   where
     c1 = compile m p1; c2 = compile m p2
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
-    c = append' (mulGate m [i, i2, i1]) c'
+    c = append' (divGate m [i1, i2, i, w]) c'
 compile m (LNOT p1 i) = c
   where
     c1 = compile m p1
@@ -348,11 +348,12 @@ semanticsAreCorrect m (LMUL p1 p2 i) input = correct where
   correct2 = semanticsAreCorrect m p2 input
   i1 = outputWire p1; i2 = outputWire p2
   correct = correct1 && correct2 && input!i == input!i1 * input!i2
-semanticsAreCorrect m (LDIV p1 p2 i) input = correct where
+semanticsAreCorrect m (LDIV p1 p2 w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   correct2 = semanticsAreCorrect m p2 input
   i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 && input!i * input!i2 == input!i1
+  correct = correct1 && correct2 && input!w * input!i2 == 1 &&
+    if input!i2 /= 0 then input!i == input!i1 / input!i2 else True
 semanticsAreCorrect m (LNOT p1 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1

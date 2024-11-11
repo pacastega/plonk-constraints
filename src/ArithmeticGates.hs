@@ -1,6 +1,7 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-module ArithmeticGates (addGate, mulGate, isZeroGate, isEqlCGate) where
+module ArithmeticGates (addGate, mulGate, divGate,
+                        isZeroGate, isEqlCGate) where
 
 import Constraints
 import Vec
@@ -38,6 +39,17 @@ verifyMul x = mulIsCorrect == satisfies 1 3 x gate where
   gate@[([a,b,c], _)] = mulGate 3 [0,1,2]
   mulIsCorrect = x!a * x!b == x!c
 
+{-@ reflect divGate @-}
+{-@ divGate :: m:Nat ->
+               ListN (Btwn 0 m) 4 ->
+               Circuit p 2 m @-}
+divGate :: Num p => Int -> [Int] -> Circuit p
+divGate _ [a, b, c, w] =
+  [([b, c, a], [ 0,  0, -1,  1,  0]), -- 1.
+   ([b, w, 0], [ 0,  0,  0,  1, -1])] -- 2.
+
+  -- Gate 1. a/b == c <=> 0 + 0 - a + b*c + 0 == 0
+  -- Gate 2. b*w == 1 (b is non-zero)
 
 {-@ reflect isZeroGate @-}
 {-@ isZeroGate :: m:Nat ->

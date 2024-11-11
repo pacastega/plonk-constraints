@@ -58,8 +58,8 @@ label' p nextIndex env = case M.lookup p env of
       where (i', p1', p2', env') = label2 i p1 p2 env
     MUL p1 p2 -> (i'+1, [LMUL p1' p2' i'], add (p,i') env')
       where (i', p1', p2', env') = label2 i p1 p2 env
-    DIV p1 p2 -> (i'+1, [LDIV p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+    DIV p1 p2 -> (w'+1, [LDIV p1' p2' w' i'], add (p,i') env')
+      where (i', p1', p2', env') = label2 i p1 p2 env; w' = i'+1
 
     NOT p1    -> (i'+1, [LNOT p1' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 (i+1) env

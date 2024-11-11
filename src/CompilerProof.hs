@@ -45,7 +45,7 @@ compileProof m (LMUL p1 p2 i) input =
   in compileProof m p1 input ?
      compileProof m p2 input ?
      satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LDIV p1 p2 i) input =
+compileProof m (LDIV p1 p2 w i) input =
   let n1 = nGates p1
       n2 = nGates p2
   in compileProof m p1 input ?

@@ -50,13 +50,16 @@ witnessGen m programs strValuation = toVector m valuation' where
       x1 = M.lookup (outputWire p1) valuation'
       x2 = M.lookup (outputWire p2) valuation'
       mult = (*) <$> x1 <*> x2
-    update sv (LDIV p1 p2 i) valuation = M.alter (updateWith div) i valuation'
+    update sv (LDIV p1 p2 w i) valuation = valuation3
       where
       valuation' = update sv p2 $ update sv p1 valuation
       x1 = M.lookup (outputWire p1) valuation'
       x2 = M.lookup (outputWire p2) valuation' >>=
         (\x -> if x /= 0 then Just x else Nothing)
       div = (/) <$> x1 <*> x2
+      wit = recip <$> x2
+      valuation2 = M.alter (updateWith wit) w valuation'
+      valuation3 = M.alter (updateWith div) i valuation2
     update sv (LNOT p1 i) valuation = M.alter (updateWith neg) i valuation'
       where
       valuation' = update sv p1 valuation

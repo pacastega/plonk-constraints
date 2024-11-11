@@ -46,7 +46,7 @@ parse p = case p of
   LADD p1 p2 i   -> N ("$+$" ++ wire [i])       [parse p1, parse p2]
   LSUB p1 p2 i   -> N ("$-$" ++ wire [i])       [parse p1, parse p2]
   LMUL p1 p2 i   -> N ("$\times$" ++ wire [i])  [parse p1, parse p2]
-  LDIV p1 p2 i   -> N ("$/$" ++ wire [i])       [parse p1, parse p2]
+  LDIV p1 p2 _ i -> N ("$/$" ++ wire [i])       [parse p1, parse p2]
 
   LNOT p1    i   -> N ("$\\neg$" ++ wire [i])    [parse p1]
   LAND p1 p2 i   -> N ("$\\wedge$" ++ wire [i]) [parse p1, parse p2]
