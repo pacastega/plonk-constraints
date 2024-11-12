@@ -78,7 +78,7 @@ label' p nextIndex env = case M.lookup p env of
       where (i', p1', p2', env') = label2 i p1 p2 env; w' = i'+1
 
     NOT p1    -> (i'+1, [LNOT p1' i'], add (p,i') env')
-      where (i', [p1'], env') = label' p1 (i+1) env
+      where (i', [p1'], env') = label' p1 i env
     AND p1 p2 -> (i'+1, [LAND p1' p2' i'], add (p,i') env')
       where (i', p1', p2', env') = label2 i p1 p2 env
     OR  p1 p2 -> (i'+1, [LOR  p1' p2' i'], add (p,i') env')
@@ -87,7 +87,7 @@ label' p nextIndex env = case M.lookup p env of
       where (i', p1', p2', env') = label2 i p1 p2 env
 
     UnsafeNOT p1    -> (i'+1, [LUnsafeNOT p1' i'], add (p,i') env')
-      where (i', [p1'], env') = label' p1 (i+1) env
+      where (i', [p1'], env') = label' p1 i env
     UnsafeAND p1 p2 -> (i'+1, [LUnsafeAND p1' p2' i'], add (p,i') env')
       where (i', p1', p2', env') = label2 i p1 p2 env
     UnsafeOR  p1 p2 -> (i'+1, [LUnsafeOR  p1' p2' i'], add (p,i') env')
