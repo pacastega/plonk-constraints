@@ -176,37 +176,6 @@ outputWire (LISZERO _ _ i) = i
 outputWire (LEQLC _ _ _ i) = i
 
 
--- An upper bound on the number of needed wires (e.g. if some (VAR s) is used
--- more than once in a program, it will be counted once for each appearance).
-{-@ measure nWires @-}
-{-@ nWires :: DSL p -> Nat @-}
-nWires :: DSL p -> Int
-nWires (VAR _)     = 1
-nWires (CONST _)   = 1
-
-nWires (ADD p1 p2) = 1 + nWires p1 + nWires p2
-nWires (SUB p1 p2) = 1 + nWires p1 + nWires p2
-nWires (MUL p1 p2) = 1 + nWires p1 + nWires p2
-nWires (DIV p1 p2) = 1 + nWires p1 + nWires p2
-
-nWires (NOT p1   ) = 1 + nWires p1
-nWires (AND p1 p2) = 1 + nWires p1 + nWires p2
-nWires (OR  p1 p2) = 1 + nWires p1 + nWires p2
-nWires (XOR p1 p2) = 1 + nWires p1 + nWires p2
-
-nWires (UnsafeNOT p1   ) = 1 + nWires p1
-nWires (UnsafeAND p1 p2) = 1 + nWires p1 + nWires p2
-nWires (UnsafeOR  p1 p2) = 1 + nWires p1 + nWires p2
-nWires (UnsafeXOR p1 p2) = 1 + nWires p1 + nWires p2
-
-nWires (EQL p1 p2) = 3 + nWires p1 + nWires p2
-nWires (ISZERO p1) = 2 + nWires p1
-nWires (EQLC p1 _) = 2 + nWires p1
-
-nWires (NIL)       = 0
-nWires (CONS p ps) = nWires p + nWires ps
-
-
 -- the number of gates needed to compile the program into a circuit
 {-@ measure nGates @-}
 {-@ nGates :: LDSL p i -> Nat @-}
