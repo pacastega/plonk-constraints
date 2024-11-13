@@ -51,6 +51,7 @@ compileProof m (LDIV p1 p2 w i) input =
   in compileProof m p1 input ?
      compileProof m p2 input ?
      satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
+compileProof m (LNZERO p1 w)    input = compileProof m p1 input
 compileProof m (LISZERO p1 w i) input = compileProof m p1 input
 compileProof m (LEQLC p1 k w i) input = compileProof m p1 input
 compileProof m (LNOT p1 i) input = compileProof m p1 input ?

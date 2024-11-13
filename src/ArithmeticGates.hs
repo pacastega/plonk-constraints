@@ -1,7 +1,6 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-module ArithmeticGates (addGate, mulGate, divGate,
-                        isZeroGate, isEqlCGate) where
+module ArithmeticGates where
 
 import Constraints
 import Vec
@@ -63,3 +62,11 @@ isEqlCGate _ k [a, w, c] =
 
   -- Gate 1. 1 - (a-k)*w == c <=> 0 + k*w - c - a*w + 1 == 0
   -- Gate 2. (a-k)*c == 0 (a is k, or c is false)
+
+{-@ reflect nonZeroGate @-}
+{-@ nonZeroGate :: m:Int ->
+                   ListN (Btwn 0 m) 2 ->
+                   Circuit p 1 m @-} -- 1 gate, m wires
+nonZeroGate :: Num p => Int -> [Int] -> Circuit p
+nonZeroGate _ [a, w] = [([a, w, 0], [0, 0, 0, 1, -1])]
+  -- a /= 0 <=> ∃w. a*w == 1 <=> 0 + 0 + 0 + a*w - 1 == 0
