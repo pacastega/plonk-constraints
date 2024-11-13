@@ -96,8 +96,6 @@ label' p nextIndex env = case M.lookup p env of
     UnsafeXOR p1 p2 -> (i'+1, [LUnsafeXOR p1' p2' i'], add (p,i') env')
       where (i', p1', p2', env') = label2 i p1 p2 env
 
-    NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
-      where (w', [p1'], env') = label' p1 i env
     ISZERO p1 -> (w'+1, [LISZERO p1' w' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env; w' = i'+1
     EQL p1 p2 -> label' (ISZERO (p1 `SUB` p2)) nextIndex env
@@ -108,3 +106,8 @@ label' p nextIndex env = case M.lookup p env of
     CONS h ts -> (i'', h' ++ ts', env'')
       where (i',  h',  env')  = label' h  i  env
             (i'', ts', env'') = label' ts i' env'
+
+    NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
+      where (w', [p1'], env') = label' p1 i env
+    BOOL p1  -> (i', [LBOOL p1'], env')
+      where (i', [p1'], env') = label' p1 i env

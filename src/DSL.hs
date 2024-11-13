@@ -39,7 +39,6 @@ data DSL p where
   UnsafeXOR :: DSL p -> DSL p -> DSL p -- unsafe logical xor
 
   -- Boolean constructors
-  NZERO  :: DSL p -> DSL p          -- non-zero assertion
   ISZERO :: DSL p -> DSL p          -- zero check
   EQL    :: DSL p -> DSL p -> DSL p -- equality check
   EQLC   :: DSL p -> p     -> DSL p -- equality check against a constant
@@ -47,6 +46,11 @@ data DSL p where
   -- Vectors
   NIL  :: DSL p
   CONS :: DSL p -> DSL p -> DSL p
+
+  -- (Non-expression) assertions
+  NZERO  :: DSL p -> DSL p -- non-zero assertion
+  BOOL   :: DSL p -> DSL p -- booleanity assertion
+
   deriving (Eq, Ord)
 
 infixr 5 `CONS`
@@ -73,7 +77,6 @@ data DSL p where
   UnsafeOR  :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
   UnsafeXOR :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
 
-  NZERO  :: {v:DSL p | unpacked v} -> DSL p
   ISZERO :: {v:DSL p | unpacked v} -> DSL p
   EQL    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
   EQLC   :: {v:DSL p | unpacked v} -> p                      -> DSL p
@@ -81,6 +84,8 @@ data DSL p where
   NIL  :: DSL p
   CONS :: head:{DSL p | unpacked head} -> tail:{DSL p | isVector tail} -> DSL p
 
+  NZERO  :: {v:DSL p | unpacked v} -> DSL p
+  BOOL   :: {v:DSL p | unpacked v} -> DSL p
 @-}
 
 {-@ measure vlength @-}
@@ -124,10 +129,11 @@ unpacked (UnsafeAND p1 p2) = unpacked p1 && unpacked p2
 unpacked (UnsafeOR  p1 p2) = unpacked p1 && unpacked p2
 unpacked (UnsafeXOR p1 p2) = unpacked p1 && unpacked p2
 
-unpacked (NZERO p)   = unpacked p
 unpacked (ISZERO p)  = unpacked p
 unpacked (EQLC p _)  = unpacked p
 
+unpacked (NZERO p)   = unpacked p
+unpacked (BOOL p)    = unpacked p
 
 -- Labeled DSL
 data LDSL p i =
@@ -150,9 +156,11 @@ data LDSL p i =
   LUnsafeOR    (LDSL p i) (LDSL p i) i |
   LUnsafeXOR   (LDSL p i) (LDSL p i) i |
 
-  LNZERO  (LDSL p i)           i |
   LISZERO (LDSL p i)         i i |
-  LEQLC   (LDSL p i) p       i i
+  LEQLC   (LDSL p i) p       i i |
+
+  LNZERO  (LDSL p i)           i |
+  LBOOL   (LDSL p i)
   deriving Show
 
 
@@ -184,9 +192,12 @@ outputWire (LUnsafeAND _ _ i) = i
 outputWire (LUnsafeOR  _ _ i) = i
 outputWire (LUnsafeXOR _ _ i) = i
 
-outputWire (LNZERO  _   w) = w --FIXME: assertions shouldn't have 'output wires'
 outputWire (LISZERO _ _ i) = i
 outputWire (LEQLC _ _ _ i) = i
+
+-- assertions
+outputWire (LNZERO p w) = outputWire p
+outputWire (LBOOL  p)   = outputWire p
 
 
 -- the number of gates needed to compile the program into a circuit
@@ -212,10 +223,11 @@ nGates (LUnsafeAND p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LUnsafeOR  p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LUnsafeXOR p1 p2 _) = 1 + nGates p1 + nGates p2
 
-nGates (LNZERO p1 _)    = 1 + nGates p1
 nGates (LISZERO p1 _ _) = 2 + nGates p1
 nGates (LEQLC p1 _ _ _) = 2 + nGates p1
 
+nGates (LNZERO p1 _)    = 1 + nGates p1
+nGates (LBOOL p1)       = 1 + nGates p1
 
 -- compile the program into a circuit including the output wire index
 {-@ reflect compile @-}
@@ -296,11 +308,6 @@ compile m (LUnsafeXOR p1 p2 i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (unsafeXorGate m [i1, i2, i]) c'
-compile m (LNZERO p1 w) = c
-  where
-    c1 = compile m p1
-    i1 = outputWire p1
-    c = append' (nonZeroGate m [i1, w]) c1
 compile m (LISZERO p1 w i) = c
   where
     c1 = compile m p1
@@ -311,6 +318,17 @@ compile m (LEQLC p1 k w i) = c
     c1 = compile m p1
     i1 = outputWire p1
     c = append' (isEqlCGate m k [i1, w, i]) c1
+
+compile m (LNZERO p1 w) = c
+  where
+    c1 = compile m p1
+    i1 = outputWire p1
+    c = append' (nonZeroGate m [i1, w]) c1
+compile m (LBOOL p1) = c
+  where
+    c1 = compile m p1
+    i1 = outputWire p1
+    c = append' (boolGate m i1) c1
 
 
 {-@ reflect semanticsAreCorrect @-}
@@ -392,10 +410,6 @@ semanticsAreCorrect m (LUnsafeXOR p1 p2 i) input = correct where
   i1 = outputWire p1; i2 = outputWire p2
   correct = correct1 && correct2 &&
     (input!i == input!i1 + input!i2 - 2*input!i1*input!i2)
-semanticsAreCorrect m (LNZERO p1 w) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  i1 = outputWire p1
-  correct = correct1 && (input!i1 * input!w == 1)
 semanticsAreCorrect m (LISZERO p1 w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
@@ -412,6 +426,14 @@ semanticsAreCorrect m (LEQLC p1 k w i) input = correct where
                         (if input!i1 == k
                          then input!i == 1
                          else input!i == 0 && input!w * (input!i1 - k) == 1)
+semanticsAreCorrect m (LNZERO p1 w) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  i1 = outputWire p1
+  correct = correct1 && (input!i1 * input!w == 1)
+semanticsAreCorrect m (LBOOL p1) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  i1 = outputWire p1
+  correct = correct1 && boolean (input!i1)
 
 {-# NOINLINE counter #-}
 counter :: IORef Int

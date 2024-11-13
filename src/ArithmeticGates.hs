@@ -70,3 +70,11 @@ isEqlCGate _ k [a, w, c] =
 nonZeroGate :: Num p => Int -> [Int] -> Circuit p
 nonZeroGate _ [a, w] = [([a, w, 0], [0, 0, 0, 1, -1])]
   -- a /= 0 <=> ∃w. a*w == 1 <=> 0 + 0 + 0 + a*w - 1 == 0
+
+{-@ reflect boolGate @-}
+{-@ boolGate :: m:Int ->
+                Btwn 0 m ->
+                Circuit p 1 m @-} -- 1 gate, m wires
+boolGate :: Num p => Int -> Int -> Circuit p
+boolGate _ a = [([a, a, 0], [-1, 0, 0, 1, 0])]
+  -- a ∈ {0,1} <=> a*(a-1) == 0 <=> -a + 0 + 0 + a*a + 0 == 0
