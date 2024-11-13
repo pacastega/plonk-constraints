@@ -237,7 +237,7 @@ addWithCarry :: Num p => (DSL p, DSL p)
 addWithCarry (x, y) (acc, (carry, store)) =
   ((sum `EQLC` 1) `UnsafeOR` (sum `EQLC` 3) `CONS` acc, -- new acc
    (VAR nextCarry,                                      -- new carry
-    store ++ [(nextCarry, (sum `EQLC` 2) `UnsafeOR` (sum `EQLC` 3))])
+    store ++ [DEF nextCarry $ (sum `EQLC` 2) `UnsafeOR` (sum `EQLC` 3)])
   )
 
   where

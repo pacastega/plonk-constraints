@@ -23,11 +23,10 @@ label program store = (m, labeledPrograms, labeledStore) where
 labelStore :: Ord p =>
               Store p -> Int -> Env p Int -> (Int, [LDSL p Int], Env p Int)
 labelStore [] nextIndex env = (nextIndex, [], env)
-labelStore ((name,def):ss) nextIndex env =
+labelStore (def:ss) nextIndex env =
   let i = nextIndex
       (i', [def'], env') = label' def i env
-      defWire = outputWire def'
-      (i'', ss', env'') = labelStore ss i' (add (VAR name, defWire) env')
+      (i'', ss', env'') = labelStore ss i' env'
   in (i'', def' : ss', env'')
 
 -- combinator to label programs with 2 arguments that need recursive labelling
@@ -65,6 +64,8 @@ label' p nextIndex env = case M.lookup p env of
   Just i  -> (nextIndex, [LWIRE i], env)
   Nothing -> let i = nextIndex in case p of
 
+    DEF s d -> (i', [d'], add (VAR s, outputWire d') env')
+      where (i', [d'], env') = label' d i env
     VAR s -> (i+1, [LVAR s i], add (p,i) env)
     CONST x -> (i+1, [LCONST x i], add (p,i) env)
 

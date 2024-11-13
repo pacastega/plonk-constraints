@@ -17,6 +17,7 @@ import System.IO.Unsafe
 
 data DSL p where
   -- Basic operations
+  DEF   :: String -> DSL p -> DSL p -- variable definition
   VAR   :: String -> DSL p -- variable
   CONST :: p      -> DSL p -- constant
 
@@ -52,6 +53,7 @@ infixr 5 `CONS`
 
 {-@
 data DSL p where
+  DEF   :: String -> {v:DSL p | unpacked v} -> DSL p
   VAR   :: String -> DSL p
   CONST :: p      -> DSL p
 
@@ -98,6 +100,7 @@ isVector _          = False
 unpacked :: DSL p -> Bool
 unpacked (EQL p1 p2) = unpacked p1 && unpacked p2
 
+unpacked (DEF _ p)   = unpacked p
 unpacked (VAR _)     = True
 unpacked (CONST _)   = True
 
@@ -152,8 +155,8 @@ data LDSL p i =
 type Env p i = M.Map (DSL p) i
 
 
-{-@ type Store p = [(String, {v:DSL p | unpacked v})] @-}
-type Store p = [(String, DSL p)]
+{-@ type Store p = [{v:DSL p | unpacked v}] @-}
+type Store p = [DSL p]
 
 -- TODO: this could probably be avoided by using record syntax
 {-@ measure outputWire @-}
