@@ -30,6 +30,7 @@ library
       Constraints
       DSL
       Examples
+      GlobalStore
       Label
       LogicGates
       PlinkLib

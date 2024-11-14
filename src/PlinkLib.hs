@@ -9,6 +9,8 @@ module PlinkLib where
 import DSL
 import Utils (pow)
 
+import GlobalStore
+
 -- List-like functions ---------------------------------------------------------
 {-@ fromList :: l:[{v:DSL p | unpacked v}] ->
                {v:DSL p | isVector v && vlength v = len l} @-}
@@ -243,3 +245,30 @@ addWithCarry (x, y) (acc, (carry, store)) =
   where
     sum = (x `ADD` y) `ADD` carry
     nextCarry = var "nextCarry"
+
+-- FIXME: this should use DSL types to ensure the argument is a vector of {0,1}
+{-@ fromBinary :: {v:DSL p | isVector v && vlength v > 0}
+               -> GlobalStore (DSL p) ({y:DSL p | unpacked y}) @-}
+fromBinary :: Num p => DSL p -> GlobalStore (DSL p) (DSL p)
+fromBinary v = go v (CONST 0) where
+  {-@ go :: {v:DSL p | isVector v} -> {acc:DSL p | unpacked acc}
+         -> GlobalStore (DSL p) ({res:DSL p | unpacked res}) @-}
+  go :: Num p => DSL p -> DSL p -> GlobalStore (DSL p) (DSL p)
+  go NIL         acc = pure acc
+  go (CONS x xs) acc = do
+    let bit = var "bit"
+    assert $ DEF bit x
+    assert $ BOOL (VAR bit)
+    go xs (VAR bit `ADD` (acc `MUL` CONST 2))
+
+{-@ addMod :: {m:DSL p | unpacked m}
+           -> {x:DSL p | unpacked x} -> {y:DSL p | unpacked y}
+           -> GlobalStore (DSL p) ({z:DSL p | unpacked z}) @-}
+addMod :: DSL p -> DSL p -> DSL p -> GlobalStore (DSL p) (DSL p)
+addMod modulus x y = do
+  let b = var "overflow"
+  let z = var "sum"
+  assert $ BOOL (VAR b)
+  assert $ (x `ADD` y) `EQA` (VAR z `ADD` (VAR b `MUL` modulus))
+  -- TODO: missing assertion that z is < modulus. lookup tables?
+  return (VAR z)

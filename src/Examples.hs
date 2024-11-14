@@ -7,6 +7,7 @@ module Examples ( testArithmetic
                 , testBoolean
                 -- , testLoops
                 , testVectors
+                , testMod
                 )
 where
 
@@ -27,6 +28,8 @@ import Label
 import WitnessGeneration
 
 import Treekz
+
+import GlobalStore
 
 type F p = PrimeField p
 type F17 = F 17
@@ -267,6 +270,11 @@ vec9 = (result, store) where
   result = result3
   store = store1 ++ store2 ++ store3
 
+-- {-@ vec10 :: (DSL PF, Store PF) @-}
+vec10 :: (DSL PF, Store PF)
+vec10 = (result, store) where
+  GStore result store = fromBinary $ PlinkLib.fromList $ map CONST [1,1,0,1]
+
 testVectors :: IO ()
 testVectors = do
   test vec1 [] (M.fromList [("a",1), ("b",2)]) -- [42,3,7]
@@ -283,3 +291,39 @@ testVectors = do
   (uncurry test) vec8 (M.empty)
 
   (uncurry test) vec9 (M.empty)
+  (uncurry test) vec10 M.empty
+
+-- Modular arithmetic examples -------------------------------------------------
+
+mod1 :: (DSL PF, Store PF)
+mod1 = (result, store) where
+  GStore result store = addMod (CONST 32) (VAR "x") (VAR "y")
+
+{-@ shiftAux :: GlobalStore (DSL p) ({v:DSL p | unpacked v}) @-}
+shiftAux :: Num p => GlobalStore (DSL p) (DSL p)
+shiftAux = do
+  let x = var "x"
+  let y = var "y"
+
+  let vec = PlinkLib.fromList $ map VAR ["b2", "b1", "b0"]
+  -- vecValue <- fromBinary vec
+  fromBinary vec >>= \x__ -> assert $ x__ `EQA` VAR x
+
+  -- shiftedValue <- fromBinary (shiftR vec 1)
+  fromBinary (shiftR vec 1) >>= \x__ -> assert $ x__ `EQA` VAR y
+
+  return (VAR y)
+
+
+shift :: (DSL PF, Store PF)
+shift = (result, store) where
+  GStore result store = shiftAux
+
+
+testMod :: IO ()
+testMod = do
+  (uncurry test) mod1 (M.fromList [("x",27), ("y",3)])
+  -- (uncurry test) mod1 (M.fromList [("x",27), ("y",3)])
+
+  (uncurry test') mod1 (M.fromList [("x",27), ("y",7)]) "treekz/addMod.tex"
+  (uncurry test) shift (M.fromList [("x",5) , ("y",2)])
