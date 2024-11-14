@@ -167,7 +167,6 @@ data LDSL p i =
 type Env p i = M.Map (DSL p) i
 
 
-{-@ type Store p = [{v:DSL p | unpacked v}] @-}
 type Store p = [DSL p]
 
 -- TODO: this could probably be avoided by using record syntax

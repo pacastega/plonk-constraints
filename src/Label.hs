@@ -25,9 +25,9 @@ labelStore :: Ord p =>
 labelStore [] nextIndex env = (nextIndex, [], env)
 labelStore (def:ss) nextIndex env =
   let i = nextIndex
-      (i', [def'], env') = label' def i env
+      (i', def', env') = label' def i env
       (i'', ss', env'') = labelStore ss i' env'
-  in (i'', def' : ss', env'')
+  in (i'', def' ++ ss', env'')
 
 -- combinator to label programs with 2 arguments that need recursive labelling
 {-@ lazy label2 @-}
