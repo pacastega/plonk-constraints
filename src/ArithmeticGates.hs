@@ -78,3 +78,11 @@ nonZeroGate _ [a, w] = [([a, w, 0], [0, 0, 0, 1, -1])]
 boolGate :: Num p => Int -> Int -> Circuit p
 boolGate _ a = [([a, a, 0], [-1, 0, 0, 1, 0])]
   -- a ∈ {0,1} <=> a*(a-1) == 0 <=> -a + 0 + 0 + a*a + 0 == 0
+
+{-@ reflect equalGate @-}
+{-@ equalGate :: m:Int ->
+                 ListN (Btwn 0 m) 2 ->
+                 Circuit p 1 m @-} -- 1 gate, m wires
+equalGate :: Num p => Int -> [Int] -> Circuit p
+equalGate _ [a, b] = [([a, b, 0], [1, -1, 0, 0, 0])]
+  -- a == b <=> a-b == 0

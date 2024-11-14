@@ -63,6 +63,7 @@ parse p = case p of
 
   LNZERO p1 w -> N ("$\\neq 0$" ++ wire [w]) [parse p1]
   LBOOL  p1   -> N ("$\\in \\{0,1\\}$") [parse p1]
+  LEQA  p1 p2 -> N ("$\\overset{!}{=}$") [parse p1, parse p2]
   where
     wire l = "\\textcolor{red}{\\tiny " ++ (intercalate "," (map show l)) ++ "}"
 
@@ -86,6 +87,7 @@ intro :: String
 intro = "\\documentclass{article}\n\
          \\\usepackage{tikz}\n\
          \\\usepackage[margin=0.5cm,landscape]{geometry}\n\
+         \\\usepackage{amsmath}\n\
          \\\begin{document}\n\
          \\\centering\n"
 

@@ -111,3 +111,5 @@ label' p nextIndex env = case M.lookup p env of
       where (w', [p1'], env') = label' p1 i env
     BOOL p1  -> (i', [LBOOL p1'], env')
       where (i', [p1'], env') = label' p1 i env
+    EQA p1 p2 -> (i', [LEQA p1' p2'], env')
+      where (i', p1', p2', env') = label2 i p1 p2 env

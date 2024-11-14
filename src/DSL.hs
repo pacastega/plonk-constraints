@@ -48,8 +48,9 @@ data DSL p where
   CONS :: DSL p -> DSL p -> DSL p
 
   -- (Non-expression) assertions
-  NZERO  :: DSL p -> DSL p -- non-zero assertion
-  BOOL   :: DSL p -> DSL p -- booleanity assertion
+  NZERO  :: DSL p -> DSL p          -- non-zero assertion
+  BOOL   :: DSL p -> DSL p          -- booleanity assertion
+  EQA    :: DSL p -> DSL p -> DSL p -- equality assertion
 
   deriving (Eq, Ord)
 
@@ -86,6 +87,7 @@ data DSL p where
 
   NZERO  :: {v:DSL p | unpacked v} -> DSL p
   BOOL   :: {v:DSL p | unpacked v} -> DSL p
+  EQA    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
 @-}
 
 {-@ measure vlength @-}
@@ -134,6 +136,7 @@ unpacked (EQLC p _)  = unpacked p
 
 unpacked (NZERO p)   = unpacked p
 unpacked (BOOL p)    = unpacked p
+unpacked (EQA p1 p2) = unpacked p1 && unpacked p2
 
 -- Labeled DSL
 data LDSL p i =
@@ -160,7 +163,8 @@ data LDSL p i =
   LEQLC   (LDSL p i) p       i i |
 
   LNZERO  (LDSL p i)           i |
-  LBOOL   (LDSL p i)
+  LBOOL   (LDSL p i)             |
+  LEQA    (LDSL p i) (LDSL p i)
   deriving Show
 
 
@@ -197,6 +201,7 @@ outputWire (LEQLC _ _ _ i) = i
 -- assertions
 outputWire (LNZERO p w) = outputWire p
 outputWire (LBOOL  p)   = outputWire p
+outputWire (LEQA p1 p2) = outputWire p2 --FIXME: assertions don't have output
 
 
 -- the number of gates needed to compile the program into a circuit
@@ -227,6 +232,7 @@ nGates (LEQLC p1 _ _ _) = 2 + nGates p1
 
 nGates (LNZERO p1 _)    = 1 + nGates p1
 nGates (LBOOL p1)       = 1 + nGates p1
+nGates (LEQA p1 p2)     = 1 + nGates p1 + nGates p2
 
 -- compile the program into a circuit including the output wire index
 {-@ reflect compile @-}
@@ -328,6 +334,12 @@ compile m (LBOOL p1) = c
     c1 = compile m p1
     i1 = outputWire p1
     c = append' (boolGate m i1) c1
+compile m (LEQA p1 p2) = c
+  where
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
+    c' = append' c1 c2
+    c = append' (equalGate m [i1, i2]) c'
 
 
 {-@ reflect semanticsAreCorrect @-}
@@ -433,6 +445,11 @@ semanticsAreCorrect m (LBOOL p1) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
   correct = correct1 && boolean (input!i1)
+semanticsAreCorrect m (LEQA p1 p2) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 && (input!i1 == input!i2)
 
 {-# NOINLINE counter #-}
 counter :: IORef Int
