@@ -130,7 +130,7 @@ witnessGen m programs strValuation = toVector m valuation' where
       valuation' = update sv p1 valuation
       witness = M.lookup (outputWire p1) valuation' >>=
         (\x -> if x /= 0 then Just (1/x) else Nothing)
-    update sv (LBOOL p1) valuation = valuation
+    update sv (LBOOL p1) valuation = update sv p1 valuation
     update sv (LEQA p1 p2) valuation = update sv p2 $ update sv p1 valuation
 
 
