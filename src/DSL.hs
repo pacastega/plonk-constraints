@@ -463,4 +463,4 @@ fresh () = (
        return x)
 
 var :: String -> String
-var name = name ++ "#" ++ show (unsafePerformIO $ fresh ())
+var name = name ++ "_" ++ show (unsafePerformIO $ fresh ())
