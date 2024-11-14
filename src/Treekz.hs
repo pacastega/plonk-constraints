@@ -45,7 +45,7 @@ parse p = case p of
   LCONST x i     -> N (show x ++ wire [i])      []
   LADD p1 p2 i   -> N ("$+$" ++ wire [i])       [parse p1, parse p2]
   LSUB p1 p2 i   -> N ("$-$" ++ wire [i])       [parse p1, parse p2]
-  LMUL p1 p2 i   -> N ("$\times$" ++ wire [i])  [parse p1, parse p2]
+  LMUL p1 p2 i   -> N ("$\\times$" ++ wire [i]) [parse p1, parse p2]
   LDIV p1 p2 _ i -> N ("$/$" ++ wire [i])       [parse p1, parse p2]
 
   LNOT p1    i   -> N ("$\\neg$" ++ wire [i])    [parse p1]
