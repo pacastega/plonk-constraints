@@ -299,25 +299,21 @@ mod1 :: (DSL PF, Store PF)
 mod1 = (result, store) where
   GStore result store = addMod (CONST 32) (VAR "x") (VAR "y")
 
-{-@ shiftAux :: GlobalStore (DSL p) ({v:DSL p | unpacked v}) @-}
-shiftAux :: Num p => GlobalStore (DSL p) (DSL p)
-shiftAux = do
-  let x = var "x"
-  let y = var "y"
-
-  let vec = PlinkLib.fromList $ map VAR ["b2", "b1", "b0"]
-  -- vecValue <- fromBinary vec
-  fromBinary vec >>= \x__ -> assert $ x__ `EQA` VAR x
-
-  -- shiftedValue <- fromBinary (shiftR vec 1)
-  fromBinary (shiftR vec 1) >>= \x__ -> assert $ x__ `EQA` VAR y
-
-  return (VAR y)
-
 
 shift :: (DSL PF, Store PF)
 shift = (result, store) where
-  GStore result store = shiftAux
+  GStore result store = do
+    let x = var "x"
+    let y = var "y"
+
+    let vec = PlinkLib.fromList $ map VAR ["b2", "b1", "b0"] :: DSL PF
+    vecValue <- fromBinary vec
+    assert $ vecValue `EQA` VAR x
+
+    shiftedValue <- fromBinary (shiftR vec 1)
+    assert $ shiftedValue `EQA` VAR y
+
+    return (VAR y)
 
 
 testMod :: IO ()
