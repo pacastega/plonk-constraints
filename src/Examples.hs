@@ -39,10 +39,10 @@ type PF  = F 2131
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
-{-@ test :: DSL _ -> Store p -> Valuation p -> IO () @-}
+{-@ test :: GlobalStore (DSL p) (DSL p) -> Valuation p -> IO () @-}
 test :: (Ord p, Fractional p, Show p) =>
-        DSL p -> Store p -> Valuation p -> IO ()
-test program store valuation = do
+        GlobalStore (DSL p) (DSL p) -> Valuation p -> IO ()
+test (GStore program store) valuation = do
   let (m, labeledBodies, labeledStore) = label program store
   let labeledPrograms = labeledStore ++ labeledBodies
 
@@ -60,10 +60,10 @@ test program store valuation = do
   putStrLn $ replicate 80 '='
 
 
-{-@ test' :: DSL _ -> Store p -> Valuation p -> String -> IO () @-}
+{-@ test' :: GlobalStore (DSL p) (DSL p) -> Valuation p -> String -> IO () @-}
 test' :: (Ord p, Fractional p, Show p) =>
-         DSL p -> Store p -> Valuation p -> String -> IO ()
-test' program store valuation tikzFilename = do
+         GlobalStore (DSL p) (DSL p) -> Valuation p -> String -> IO ()
+test' (GStore program store) valuation tikzFilename = do
   let (m, labeledBodies, labeledStore) = label program store
   let labeledPrograms = labeledStore ++ labeledBodies
 
@@ -103,9 +103,9 @@ arith3 = DIV (VAR "num") (VAR "den")
 testArithmetic :: IO ()
 testArithmetic = do
   -- (1+1)  + (1+1) = 4
-  test arith1 [] (M.fromList [("a",1), ("b",1), ("c",1), ("d",1)])
-  test arith2 [] (M.fromList [("a",7), ("b",3)])     -- (7+15) * (3+3) = 13
-  test arith3 [] (M.fromList [("num",3), ("den",9)]) -- 3 / 9          = 6
+  test (pure arith1) (M.fromList [("a",1), ("b",1), ("c",1), ("d",1)])
+  test (pure arith2) (M.fromList [("a",7), ("b",3)])     -- (7+15) * (3+3) = 13
+  test (pure arith3) (M.fromList [("num",3), ("den",9)]) -- 3 / 9          = 6
 
 -- Boolean programs ------------------------------------------------------------
 -- a == 0 || (a /= 0 && b == 1)
@@ -125,15 +125,15 @@ bool3 = (VAR "addsTo5" `ADD` CONST 2) `EQL` CONST 5
 
 testBoolean :: IO ()
 testBoolean = do
-  test bool1 [] (M.fromList [("a",0), ("b",3)]) -- a == 0
-  test bool1 [] (M.fromList [("a",1), ("b",0)]) -- a /= 0 && b == 0
-  test bool1 [] (M.fromList [("a",1), ("b",8)]) -- a /= 0 && b /= 0
+  test (pure bool1) (M.fromList [("a",0), ("b",3)]) -- a == 0
+  test (pure bool1) (M.fromList [("a",1), ("b",0)]) -- a /= 0 && b == 0
+  test (pure bool1) (M.fromList [("a",1), ("b",8)]) -- a /= 0 && b /= 0
 
-  test bool2 [] (M.fromList [("inv",5)]) -- 7 * 5 == 1 (== True)
-  test bool2 [] (M.fromList [("inv",7)]) -- 7 * 7 == 1 (== False)
+  test (pure bool2) (M.fromList [("inv",5)]) -- 7 * 5 == 1 (== True)
+  test (pure bool2) (M.fromList [("inv",7)]) -- 7 * 7 == 1 (== False)
 
-  test bool3 [] (M.fromList [("addsTo5",2)]) -- 2 + 2 == 5 (== False)
-  test bool3 [] (M.fromList [("addsTo5",3)]) -- 3 + 2 == 5 (== True)
+  test (pure bool3) (M.fromList [("addsTo5",2)]) -- 2 + 2 == 5 (== False)
+  test (pure bool3) (M.fromList [("addsTo5",3)]) -- 3 + 2 == 5 (== True)
 
 -- Loop programs ---------------------------------------------------------------
 -- -- start * (base)^5
@@ -247,62 +247,53 @@ vec5 = rotateL (range 1 10) 3
 vec6 :: DSL PF
 vec6 = rotateR (range 1 10) 2
 
-{-@ vec7 :: (DSL PF, Store PF) @-}
-vec7 :: (DSL PF, Store PF)
+{-@ vec7 :: GlobalStore (DSL PF) (DSL PF) @-}
+vec7 :: GlobalStore (DSL PF) (DSL PF)
 vec7 = vecAdd (fromInt 3 2) (fromInt 3 3) -- 2 + 3, using 3 bits
 
-{-@ vec8 :: (DSL PF, Store PF) @-}
-vec8 :: (DSL PF, Store PF)
+{-@ vec8 :: GlobalStore (DSL PF) (DSL PF) @-}
+vec8 :: GlobalStore (DSL PF) (DSL PF)
 vec8 = vecAdd (fromHex ['f', 'e']) (fromHex ['0', '5']) where
 
-{-@ vec9 :: (DSL PF, Store PF) @-}
-vec9 :: (DSL PF, Store PF)
-vec9 = (result, store) where
-  v1 = fromHex ['1','8','9','4','b','1','3','f']
-  v2 = fromHex ['c','a','f','9','1','9','5','e']
-  v3 = fromHex ['1','8','9','4','1','9','5','e']
-  v4 = fromHex ['c','a','f','9','b','1','3','f']
+{-@ vec9 :: GlobalStore (DSL PF) (DSL PF) @-}
+vec9 :: GlobalStore (DSL PF) (DSL PF)
+vec9 = do
+  let v1 = fromHex ['1','8','9','4','b','1','3','f']
+  let v2 = fromHex ['c','a','f','9','1','9','5','e']
+  let v3 = fromHex ['1','8','9','4','1','9','5','e']
+  let v4 = fromHex ['c','a','f','9','b','1','3','f']
+  pure v1 >>= vecAdd v2 >>= vecAdd v3 >>= vecAdd v4
 
-  (result1, store1) = v1      `vecAdd` v2
-  (result2, store2) = result1 `vecAdd` v3
-  (result3, store3) = result2 `vecAdd` v4
-
-  result = result3
-  store = store1 ++ store2 ++ store3
-
--- {-@ vec10 :: (DSL PF, Store PF) @-}
-vec10 :: (DSL PF, Store PF)
-vec10 = (result, store) where
-  GStore result store = fromBinary $ PlinkLib.fromList $ map CONST [1,1,0,1]
+{-@ vec10 :: GlobalStore (DSL PF) (DSL PF) @-}
+vec10 :: GlobalStore (DSL PF) (DSL PF)
+vec10 = fromBinary $ PlinkLib.fromList $ map CONST [1,1,0,1]
 
 testVectors :: IO ()
 testVectors = do
-  test vec1 [] (M.fromList [("a",1), ("b",2)]) -- [42,3,7]
+  test (pure vec1) (M.fromList [("a",1), ("b",2)]) -- [42,3,7]
 
-  test vec2 [] (M.empty) -- [1,2,42,4]
-  test vec3 [] (M.empty) -- 4
-  test vec4 [] (M.empty) -- [5,12,21]
+  test (pure vec2) M.empty -- [1,2,42,4]
+  test (pure vec3) M.empty -- 4
+  test (pure vec4) M.empty -- [5,12,21]
 
-  test vec5 [] (M.empty) -- [4,5,6,7,8,9,1,2,3]
-  test vec6 [] (M.empty) -- [8,9,1,2,3,4,5,6,7]
+  test (pure vec5) M.empty -- [4,5,6,7,8,9,1,2,3]
+  test (pure vec6) M.empty -- [8,9,1,2,3,4,5,6,7]
 
-  (uncurry test) vec7 (M.empty) -- "treekz/test_addition.tex" -- [1,0,1]
+  test vec7 M.empty -- "treekz/test_addition.tex" -- [1,0,1]
 
-  (uncurry test) vec8 (M.empty)
+  test vec8 M.empty
 
-  (uncurry test) vec9 (M.empty)
-  (uncurry test) vec10 M.empty
+  test vec9 M.empty
+  test vec10 M.empty
 
 -- Modular arithmetic examples -------------------------------------------------
 
-mod1 :: (DSL PF, Store PF)
-mod1 = (result, store) where
-  GStore result store = addMod (CONST 32) (VAR "x") (VAR "y")
+mod1 :: GlobalStore (DSL PF) (DSL PF)
+mod1 = addMod (CONST 32) (VAR "x") (VAR "y")
 
 
-shift :: (DSL PF, Store PF)
-shift = (result, store) where
-  GStore result store = do
+shift :: GlobalStore (DSL PF) (DSL p)
+shift = do
     let x = var "x"
     let y = var "y"
 
@@ -318,8 +309,8 @@ shift = (result, store) where
 
 testMod :: IO ()
 testMod = do
-  (uncurry test) mod1 (M.fromList [("x",27), ("y",3)])
-  -- (uncurry test) mod1 (M.fromList [("x",27), ("y",3)])
+  test mod1 (M.fromList [("x",27), ("y",3)])
+  -- test mod1 (M.fromList [("x",27), ("y",3)])
 
-  (uncurry test') mod1 (M.fromList [("x",27), ("y",7)]) "treekz/addMod.tex"
-  (uncurry test) shift (M.fromList [("x",5) , ("y",2)])
+  test' mod1 (M.fromList [("x",27), ("y",7)]) "treekz/addMod.tex"
+  test shift (M.fromList [("x",5) , ("y",2)])

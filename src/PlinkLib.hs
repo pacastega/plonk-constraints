@@ -210,9 +210,10 @@ fromHex (c:cs) = go c +++ (fromHex cs) where
 
 {-@ vecAdd :: u:{DSL p | isVector u} ->
               v:{DSL p | isVector v && vlength v = vlength u} ->
-              ({w:DSL p | isVector w && vlength w = vlength u}, Store p) @-}
-vecAdd :: Num p => DSL p -> DSL p -> (DSL p, Store p)
-vecAdd u v = (result, store)
+              GlobalStore (DSL p)
+                          ({w:DSL p | isVector w && vlength w = vlength u}) @-}
+vecAdd :: Num p => DSL p -> DSL p -> GlobalStore (DSL p) (DSL p)
+vecAdd u v = GStore result store
   where
     (result, (_, store)) = aux u v
 
