@@ -78,9 +78,8 @@ vMap :: (DSL p -> DSL p) -> DSL p -> DSL p
 vMap _  (NIL)       = NIL
 vMap op (CONS x xs) = op x `CONS` vMap op xs
 
---FIXME: termination should be provable
 {-@ lazy vChunk @-}
-{-@ vChunk :: n:Nat -> v:{DSL p | isVector v && (vlength v) mod n = 0}
+{-@ vChunk :: n:Nat1 -> v:{DSL p | isVector v && (vlength v) mod n = 0}
            -> {l:[{w:DSL p | isVector w && vlength w = n}]
                 | n * len l = vlength v}
             / [vlength v] @-}
