@@ -297,7 +297,7 @@ shift = do
     let x = var "x"
     let y = var "y"
 
-    let vec = PlinkLib.fromList $ map VAR ["b2", "b1", "b0"] :: DSL PF
+    let vec = vecVar 3 "bits"
     vecValue <- fromBinary vec
     assert $ vecValue `EQA` VAR x
 

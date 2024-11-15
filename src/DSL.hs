@@ -464,3 +464,8 @@ fresh () = (
 
 var :: String -> String
 var name = name ++ "_" ++ show (unsafePerformIO $ fresh ())
+
+{-@ vecVar :: n:Nat -> String -> {v:DSL p | isVector v && vlength v = n} @-}
+vecVar :: Int -> String -> DSL p
+vecVar 0 _ = NIL
+vecVar n s = VAR (var s) `CONS` vecVar (n-1) s
