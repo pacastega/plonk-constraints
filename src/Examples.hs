@@ -8,8 +8,11 @@ module Examples ( testArithmetic
                 -- , testLoops
                 , testVectors
                 , testMod
+                , testSha
                 )
 where
+
+import Data.Char (ord)
 
 import qualified Data.Map as M
 import Data.FiniteField.PrimeField
@@ -28,6 +31,7 @@ import Label
 import WitnessGeneration
 
 import Treekz
+import SHA256
 
 import GlobalStore
 
@@ -307,3 +311,24 @@ testMod = do
 
   test' mod1 (M.fromList [("x",27), ("y",7)]) "treekz/addMod.tex"
   test shift (M.fromList [("x",5) , ("y",2)])
+
+-- SHA256 examples -------------------------------------------------------------
+
+{-@ assume ord :: Char -> Btwn 0 256 @-}
+
+{-@ sha256 :: {s:String | len s < pow 2 61} ->
+              GlobalStore (DSL p) ({res:DSL p | isVector res}) @-}
+sha256 :: Num p => String -> GlobalStore (DSL p) (DSL p)
+sha256 = processMsg . padding . toBits where
+  {-@ toBits :: s:String
+             -> {v:DSL p | isVector v && vlength v = 8 * len s} @-}
+  toBits :: Num p => String -> DSL p
+  toBits [] = NIL
+  toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
+
+sha256_1 :: GlobalStore (DSL PF) (DSL PF)
+sha256_1 = sha256 "Hello, world!"
+
+testSha :: IO ()
+testSha = do
+  test sha256_1 M.empty

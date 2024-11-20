@@ -11,3 +11,4 @@ main = do
   -- testLoops
   -- testVectors
   testMod
+  testSha
