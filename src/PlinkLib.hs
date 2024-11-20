@@ -246,10 +246,10 @@ addWithCarry (x, y) (acc, (carry, store)) =
     nextCarry = var "nextCarry"
 
 -- FIXME: this should use DSL types to ensure the argument is a vector of {0,1}
-{-@ fromBinary :: {v:DSL p | isVector v && vlength v > 0}
+{-@ binaryValue :: {v:DSL p | isVector v && vlength v > 0}
                -> GlobalStore (DSL p) ({y:DSL p | unpacked y}) @-}
-fromBinary :: Num p => DSL p -> GlobalStore (DSL p) (DSL p)
-fromBinary v = go v (CONST 0) where
+binaryValue :: Num p => DSL p -> GlobalStore (DSL p) (DSL p)
+binaryValue v = go v (CONST 0) where
   {-@ go :: {v:DSL p | isVector v} -> {acc:DSL p | unpacked acc}
          -> GlobalStore (DSL p) ({res:DSL p | unpacked res}) @-}
   go :: Num p => DSL p -> DSL p -> GlobalStore (DSL p) (DSL p)
@@ -259,6 +259,25 @@ fromBinary v = go v (CONST 0) where
     assert $ DEF bit x
     assert $ BOOL (VAR bit)
     go xs (VAR bit `ADD` (acc `MUL` CONST 2))
+
+{-@ fromBinary :: {v:DSL p | isVector v && vlength v > 0}
+               -> GlobalStore (DSL p) ({x:DSL p | unpacked x}) @-}
+fromBinary :: Num p => DSL p -> GlobalStore (DSL p) (DSL p)
+fromBinary vec = do
+  let x = VAR (var "x")
+  val <- binaryValue vec
+  assert $ val `EQA` x
+  return x
+
+{-@ toBinary :: n:Nat1 -> {x:DSL p | unpacked x}
+             -> GlobalStore (DSL p) ({v:DSL p | isVector v && vlength v = n}) @-}
+toBinary :: Num p => Int -> DSL p -> GlobalStore (DSL p) (DSL p)
+toBinary n x = do
+  let vec = vecVar n "bits"
+  val <- binaryValue vec
+  assert $ val `EQA` x
+  return vec
+
 
 {-@ addMod :: {m:DSL p | unpacked m}
            -> {x:DSL p | unpacked x} -> {y:DSL p | unpacked y}

@@ -292,19 +292,12 @@ mod1 :: GlobalStore (DSL PF) (DSL PF)
 mod1 = addMod (CONST 32) (VAR "x") (VAR "y")
 
 
-shift :: GlobalStore (DSL PF) (DSL p)
+shift :: GlobalStore (DSL PF) (DSL PF)
 shift = do
-    let x = var "x"
-    let y = var "y"
-
-    let vec = vecVar 3 "bits"
-    vecValue <- fromBinary vec
-    assert $ vecValue `EQA` VAR x
-
-    shiftedValue <- fromBinary (shiftR vec 1)
-    assert $ shiftedValue `EQA` VAR y
-
-    return (VAR y)
+  let x = VAR (var "x")
+  vec <- toBinary 3 x
+  y   <- fromBinary (shiftR vec 1)
+  return y
 
 
 testMod :: IO ()
