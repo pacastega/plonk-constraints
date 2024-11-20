@@ -34,6 +34,7 @@ library
       Label
       LogicGates
       PlinkLib
+      SHA256
       TypeAliases
       Utils
       Vec

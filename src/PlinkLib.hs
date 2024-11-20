@@ -39,6 +39,18 @@ set (CONS p ps) i x = CONS p (set ps (i-1) x)
 
 infixr 5 +++
 
+{-@ vConcat :: vs:[{v:DSL p | isVector v}]
+            -> {v:DSL p | isVector v && vlength v = lengths vs} @-}
+vConcat :: [DSL p] -> DSL p
+vConcat ([])   = NIL
+vConcat (p:ps) = p +++ vConcat ps
+
+{-@ reflect lengths @-}
+{-@ lengths :: [{v:DSL p | isVector v}] -> Nat @-}
+lengths :: [DSL p] -> Int
+lengths [] = 0
+lengths (p:ps) = vlength p + lengths ps
+
 {-@ vTakeDrop :: n:Nat -> u:{DSL p | isVector u && vlength u >= n} ->
                 ({v:DSL p | isVector v && vlength v = n},
                  {w:DSL p | isVector w && vlength w = (vlength u) - n}) @-}

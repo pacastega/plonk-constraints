@@ -40,3 +40,15 @@ mkList2 x y = [x, y]
 {-@ reflect mkList3 @-}
 mkList3 :: a -> a -> a -> [a]
 mkList3 x y z = [x, y, z]
+
+{-@ zipWith' :: (a -> b -> c)
+             -> xs:[a]
+             -> ys:{[b] | len ys = len xs}
+             -> zs:{[c] | len zs = len xs} @-}
+zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith' _ [] []         = []
+zipWith' f (x:xs) (y:ys) = f x y : zipWith' f xs ys
+
+{-@ assume sequence' :: ms:[m a] -> m {l:[a] | len l = len ms} @-}
+sequence' :: Monad m => [m a] -> m [a]
+sequence' = sequence
