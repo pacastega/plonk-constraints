@@ -25,7 +25,7 @@ labelStore :: Ord p =>
 labelStore [] nextIndex env = (nextIndex, [], env)
 labelStore (def:ss) nextIndex env =
   let i = nextIndex
-      (i', def', env') = label' def i env
+      (i', def', env') = labelStore' def i env
       (i'', ss', env'') = labelStore ss i' env'
   in (i'', def' ++ ss', env'')
 
@@ -64,8 +64,6 @@ label' p nextIndex env = case M.lookup p env of
   Just i  -> (nextIndex, [LWIRE i], env)
   Nothing -> let i = nextIndex in case p of
 
-    DEF s d -> (i', [d'], add (VAR s, outputWire d') env')
-      where (i', [d'], env') = label' d i env
     VAR s -> (i+1, [LVAR s i], add (p,i) env)
     CONST x -> (i+1, [LCONST x i], add (p,i) env)
 
@@ -107,6 +105,17 @@ label' p nextIndex env = case M.lookup p env of
       where (i',  h',  env')  = label' h  i  env
             (i'', ts', env'') = label' ts i' env'
 
+{-@ lazy labelStore' @-}
+{-@ labelStore' :: assertion:(Assertion p) ->
+                   m0:Nat -> Env p (Btwn 0 m0) ->
+                   (m:{Int | m >= m0}, [LDSL p Int], Env p Int)
+             <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
+              \_ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
+labelStore' :: Ord p => Assertion p -> Int -> Env p Int
+            -> (Int, [LDSL p Int], Env p Int)
+labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
+    DEF s d -> (i', [d'], add (VAR s, outputWire d') env')
+      where (i', [d'], env') = label' d i env
     NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
       where (w', [p1'], env') = label' p1 i env
     BOOL p1  -> (i', [LBOOL p1'], env')

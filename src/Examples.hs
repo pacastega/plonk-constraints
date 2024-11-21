@@ -43,9 +43,9 @@ type PF  = F 2131
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
-{-@ test :: GlobalStore (DSL p) (DSL p) -> Valuation p -> IO () @-}
+{-@ test :: GlobalStore (Assertion p) (DSL p) -> Valuation p -> IO () @-}
 test :: (Ord p, Fractional p, Show p) =>
-        GlobalStore (DSL p) (DSL p) -> Valuation p -> IO ()
+        GlobalStore (Assertion p) (DSL p) -> Valuation p -> IO ()
 test (GStore program store) valuation = do
   let (m, labeledBodies, labeledStore) = label program store
   let labeledPrograms = labeledStore ++ labeledBodies
@@ -64,9 +64,9 @@ test (GStore program store) valuation = do
   putStrLn $ replicate 80 '='
 
 
-{-@ test' :: GlobalStore (DSL p) (DSL p) -> Valuation p -> String -> IO () @-}
+{-@ test' :: GlobalStore (Assertion p) (DSL p) -> Valuation p -> String -> IO () @-}
 test' :: (Ord p, Fractional p, Show p) =>
-         GlobalStore (DSL p) (DSL p) -> Valuation p -> String -> IO ()
+         GlobalStore (Assertion p) (DSL p) -> Valuation p -> String -> IO ()
 test' (GStore program store) valuation tikzFilename = do
   let (m, labeledBodies, labeledStore) = label program store
   let labeledPrograms = labeledStore ++ labeledBodies
@@ -251,16 +251,16 @@ vec5 = rotateL (range 1 10) 3
 vec6 :: DSL PF
 vec6 = rotateR (range 1 10) 2
 
-{-@ vec7 :: GlobalStore (DSL PF) (DSL PF) @-}
-vec7 :: GlobalStore (DSL PF) (DSL PF)
+{-@ vec7 :: GlobalStore (Assertion PF) (DSL PF) @-}
+vec7 :: GlobalStore (Assertion PF) (DSL PF)
 vec7 = vecAdd (fromInt 3 2) (fromInt 3 3) -- 2 + 3, using 3 bits
 
-{-@ vec8 :: GlobalStore (DSL PF) (DSL PF) @-}
-vec8 :: GlobalStore (DSL PF) (DSL PF)
+{-@ vec8 :: GlobalStore (Assertion PF) (DSL PF) @-}
+vec8 :: GlobalStore (Assertion PF) (DSL PF)
 vec8 = vecAdd (fromHex ['f', 'e']) (fromHex ['0', '5']) where
 
-{-@ vec9 :: GlobalStore (DSL PF) (DSL PF) @-}
-vec9 :: GlobalStore (DSL PF) (DSL PF)
+{-@ vec9 :: GlobalStore (Assertion PF) (DSL PF) @-}
+vec9 :: GlobalStore (Assertion PF) (DSL PF)
 vec9 = do
   let v1 = fromHex ['1','8','9','4','b','1','3','f']
   let v2 = fromHex ['c','a','f','9','1','9','5','e']
@@ -268,8 +268,8 @@ vec9 = do
   let v4 = fromHex ['c','a','f','9','b','1','3','f']
   pure v1 >>= vecAdd v2 >>= vecAdd v3 >>= vecAdd v4
 
-{-@ vec10 :: GlobalStore (DSL PF) (DSL PF) @-}
-vec10 :: GlobalStore (DSL PF) (DSL PF)
+{-@ vec10 :: GlobalStore (Assertion PF) (DSL PF) @-}
+vec10 :: GlobalStore (Assertion PF) (DSL PF)
 vec10 = fromBinary $ PlinkLib.fromList $ map CONST [1,1,0,1]
 
 testVectors :: IO ()
@@ -292,11 +292,11 @@ testVectors = do
 
 -- Modular arithmetic examples -------------------------------------------------
 
-mod1 :: GlobalStore (DSL PF) (DSL PF)
+mod1 :: GlobalStore (Assertion PF) (DSL PF)
 mod1 = addMod (CONST 32) (VAR "x") (VAR "y")
 
 
-shift :: GlobalStore (DSL PF) (DSL PF)
+shift :: GlobalStore (Assertion PF) (DSL PF)
 shift = do
   let x = VAR (var "x")
   vec <- toBinary 3 x
@@ -317,8 +317,8 @@ testMod = do
 {-@ assume ord :: Char -> Btwn 0 256 @-}
 
 {-@ sha256 :: {s:String | len s < pow 2 61} ->
-              GlobalStore (DSL p) ({res:DSL p | isVector res}) @-}
-sha256 :: Num p => String -> GlobalStore (DSL p) (DSL p)
+              GlobalStore (Assertion p) ({res:DSL p | isVector res}) @-}
+sha256 :: Num p => String -> GlobalStore (Assertion p) (DSL p)
 sha256 = processMsg . padding . toBits where
   {-@ toBits :: s:String
              -> {v:DSL p | isVector v && vlength v = 8 * len s} @-}
@@ -326,7 +326,7 @@ sha256 = processMsg . padding . toBits where
   toBits [] = NIL
   toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
 
-sha256_1 :: GlobalStore (DSL PF) (DSL PF)
+sha256_1 :: GlobalStore (Assertion PF) (DSL PF)
 sha256_1 = sha256 "Hello, world!"
 
 testSha :: IO ()

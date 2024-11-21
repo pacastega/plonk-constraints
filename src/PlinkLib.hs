@@ -220,9 +220,9 @@ fromHex (c:cs) = go c +++ (fromHex cs) where
 
 {-@ vecAdd :: u:{DSL p | isVector u} ->
               v:{DSL p | isVector v && vlength v = vlength u} ->
-              GlobalStore (DSL p)
+              GlobalStore (Assertion p)
                           ({w:DSL p | isVector w && vlength w = vlength u}) @-}
-vecAdd :: Num p => DSL p -> DSL p -> GlobalStore (DSL p) (DSL p)
+vecAdd :: Num p => DSL p -> DSL p -> GlobalStore (Assertion p) (DSL p)
 vecAdd u v = GStore result store
   where
     (result, (_, store)) = aux u v
@@ -259,12 +259,12 @@ addWithCarry (x, y) (acc, (carry, store)) =
 
 -- FIXME: this should use DSL types to ensure the argument is a vector of {0,1}
 {-@ binaryValue :: {v:DSL p | isVector v && vlength v > 0}
-               -> GlobalStore (DSL p) ({y:DSL p | unpacked y}) @-}
-binaryValue :: Num p => DSL p -> GlobalStore (DSL p) (DSL p)
+               -> GlobalStore (Assertion p) ({y:DSL p | unpacked y}) @-}
+binaryValue :: Num p => DSL p -> GlobalStore (Assertion p) (DSL p)
 binaryValue v = go v (CONST 0) where
   {-@ go :: {v:DSL p | isVector v} -> {acc:DSL p | unpacked acc}
-         -> GlobalStore (DSL p) ({res:DSL p | unpacked res}) @-}
-  go :: Num p => DSL p -> DSL p -> GlobalStore (DSL p) (DSL p)
+         -> GlobalStore (Assertion p) ({res:DSL p | unpacked res}) @-}
+  go :: Num p => DSL p -> DSL p -> GlobalStore (Assertion p) (DSL p)
   go NIL         acc = pure acc
   go (CONS x xs) acc = do
     let bit = var "bit"
@@ -273,8 +273,8 @@ binaryValue v = go v (CONST 0) where
     go xs (VAR bit `ADD` (acc `MUL` CONST 2))
 
 {-@ fromBinary :: {v:DSL p | isVector v && vlength v > 0}
-               -> GlobalStore (DSL p) ({x:DSL p | unpacked x}) @-}
-fromBinary :: Num p => DSL p -> GlobalStore (DSL p) (DSL p)
+               -> GlobalStore (Assertion p) ({x:DSL p | unpacked x}) @-}
+fromBinary :: Num p => DSL p -> GlobalStore (Assertion p) (DSL p)
 fromBinary vec = do
   let x = VAR (var "x")
   val <- binaryValue vec
@@ -282,8 +282,9 @@ fromBinary vec = do
   return x
 
 {-@ toBinary :: n:Nat1 -> {x:DSL p | unpacked x}
-             -> GlobalStore (DSL p) ({v:DSL p | isVector v && vlength v = n}) @-}
-toBinary :: Num p => Int -> DSL p -> GlobalStore (DSL p) (DSL p)
+             -> GlobalStore (Assertion p)
+                            ({v:DSL p | isVector v && vlength v = n}) @-}
+toBinary :: Num p => Int -> DSL p -> GlobalStore (Assertion p) (DSL p)
 toBinary n x = do
   let vec = vecVar n "bits"
   val <- binaryValue vec
@@ -293,8 +294,8 @@ toBinary n x = do
 
 {-@ addMod :: {m:DSL p | unpacked m}
            -> {x:DSL p | unpacked x} -> {y:DSL p | unpacked y}
-           -> GlobalStore (DSL p) ({z:DSL p | unpacked z}) @-}
-addMod :: DSL p -> DSL p -> DSL p -> GlobalStore (DSL p) (DSL p)
+           -> GlobalStore (Assertion p) ({z:DSL p | unpacked z}) @-}
+addMod :: DSL p -> DSL p -> DSL p -> GlobalStore (Assertion p) (DSL p)
 addMod modulus x y = do
   let b = var "overflow"
   let z = var "sum"

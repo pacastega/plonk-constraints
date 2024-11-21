@@ -17,7 +17,6 @@ import System.IO.Unsafe
 
 data DSL p where
   -- Basic operations
-  DEF   :: String -> DSL p -> DSL p -- variable definition
   VAR   :: String -> DSL p -- variable
   CONST :: p      -> DSL p -- constant
 
@@ -46,20 +45,21 @@ data DSL p where
   -- Vectors
   NIL  :: DSL p
   CONS :: DSL p -> DSL p -> DSL p
-
-  -- (Non-expression) assertions
-  NZERO  :: DSL p -> DSL p          -- non-zero assertion
-  BOOL   :: DSL p -> DSL p          -- booleanity assertion
-  EQA    :: DSL p -> DSL p -> DSL p -- equality assertion
-
   deriving (Eq, Ord)
 
 infixr 5 `CONS`
 
+-- (Non-expression) assertions
+data Assertion p where
+  DEF    :: String -> DSL p -> Assertion p -- variable definition
+  NZERO  :: DSL p           -> Assertion p -- non-zero assertion
+  BOOL   :: DSL p           -> Assertion p -- booleanity assertion
+  EQA    :: DSL p  -> DSL p -> Assertion p -- equality assertion
+  deriving (Eq, Ord)
+
 
 {-@
 data DSL p where
-  DEF   :: String -> {v:DSL p | unpacked v} -> DSL p
   VAR   :: String -> DSL p
   CONST :: p      -> DSL p
 
@@ -84,10 +84,14 @@ data DSL p where
 
   NIL  :: DSL p
   CONS :: head:{DSL p | unpacked head} -> tail:{DSL p | isVector tail} -> DSL p
+@-}
 
-  NZERO  :: {v:DSL p | unpacked v} -> DSL p
-  BOOL   :: {v:DSL p | unpacked v} -> DSL p
-  EQA    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+{-@
+data Assertion p where
+  DEF    :: String                 -> {v:DSL p | unpacked v} -> Assertion p
+  NZERO  :: {v:DSL p | unpacked v}                           -> Assertion p
+  BOOL   :: {v:DSL p | unpacked v}                           -> Assertion p
+  EQA    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> Assertion p
 @-}
 
 {-@ measure vlength @-}
@@ -109,7 +113,6 @@ isVector _          = False
 unpacked :: DSL p -> Bool
 unpacked (EQL p1 p2) = unpacked p1 && unpacked p2
 
-unpacked (DEF _ p)   = unpacked p
 unpacked (VAR _)     = True
 unpacked (CONST _)   = True
 
@@ -133,10 +136,6 @@ unpacked (UnsafeXOR p1 p2) = unpacked p1 && unpacked p2
 
 unpacked (ISZERO p)  = unpacked p
 unpacked (EQLC p _)  = unpacked p
-
-unpacked (NZERO p)   = unpacked p
-unpacked (BOOL p)    = unpacked p
-unpacked (EQA p1 p2) = unpacked p1 && unpacked p2
 
 -- Labeled DSL
 data LDSL p i =
@@ -171,7 +170,7 @@ data LDSL p i =
 type Env p i = M.Map (DSL p) i
 
 
-type Store p = [DSL p]
+type Store p = [Assertion p]
 
 -- TODO: this could probably be avoided by using record syntax
 {-@ measure outputWire @-}
