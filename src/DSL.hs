@@ -137,6 +137,44 @@ unpacked (UnsafeXOR p1 p2) = unpacked p1 && unpacked p2
 unpacked (ISZERO p)  = unpacked p
 unpacked (EQLC p _)  = unpacked p
 
+type Valuation p = M.Map String p
+
+{-@ eval :: {v:DSL p | unpacked v} -> Valuation p -> Maybe p @-}
+eval :: (Fractional p, Eq p) => DSL p -> Valuation p -> Maybe p
+eval program v = case program of
+  VAR name -> M.lookup name v
+  CONST x  -> Just x
+
+  -- Arithmetic operations
+  ADD p1 p2 -> (+) <$> eval p1 v <*> eval p2 v
+  SUB p1 p2 -> (-) <$> eval p1 v <*> eval p2 v
+  MUL p1 p2 -> (*) <$> eval p1 v <*> eval p2 v
+  DIV p1 p2 -> (/) <$> eval p1 v <*> (eval p2 v >>= \x ->
+                                     if x /= 0 then Just x else Nothing)
+
+  -- Boolean operations (assume inputs are binary)
+  NOT p1    -> (\x -> if x == 1 then 0 else 1) <$> eval p1 v
+  AND p1 p2 -> (\x y -> if x == 0 || y == 0 then 0 else 1)
+               <$> eval p1 v <*> eval p2 v
+  OR  p1 p2 -> (\x y -> if x == 1 || y == 1 then 1 else 0)
+               <$> eval p1 v <*> eval p2 v
+  XOR p1 p2 -> (\x y -> if x /= y then 1 else 0)
+               <$> eval p1 v <*> eval p2 v
+
+  UnsafeNOT p1    -> (\x -> if x == 1 then 0 else 1) <$> eval p1 v
+  UnsafeAND p1 p2 -> (\x y -> if x == 0 || y == 0 then 0 else 1)
+                     <$> eval p1 v <*> eval p2 v
+  UnsafeOR  p1 p2 -> (\x y -> if x == 1 || y == 1 then 1 else 0)
+                     <$> eval p1 v <*> eval p2 v
+  UnsafeXOR p1 p2 -> (\x y -> if x /= y then 1 else 0)
+                     <$> eval p1 v <*> eval p2 v
+
+  ISZERO p1 -> (\x -> if x == 0 then 1 else 0) <$> eval p1 v
+  EQL p1 p2 -> (\x y -> if x == y then 1 else 0)
+                <$> eval p1 v <*> eval p2 v
+  EQLC p1 y -> (\x -> if x == y then 1 else 0) <$> eval p1 v
+
+
 -- Labeled DSL
 data LDSL p i =
   LWIRE                          i |

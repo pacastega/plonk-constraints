@@ -13,8 +13,6 @@ updateWith Nothing  _        = Nothing
 updateWith (Just x) Nothing  = Just x
 updateWith (Just x) (Just y) = if x == y then Just x else Nothing
 
-type Valuation p = M.Map String p
-
 {-@ witnessGen :: m:Nat ->
                   [LDSL p (Btwn 0 m)] ->
                   Valuation p ->
