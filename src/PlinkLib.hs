@@ -218,44 +218,6 @@ fromHex (c:cs) = go c +++ (fromHex cs) where
   go 'E' = fromList $ map CONST [1,1,1,0]
   go 'F' = fromList $ map CONST [1,1,1,1]
 
-{-@ vecAdd :: u:{DSL p | isVector u} ->
-              v:{DSL p | isVector v && vlength v = vlength u} ->
-              GlobalStore (Assertion p)
-                          ({w:DSL p | isVector w && vlength w = vlength u}) @-}
-vecAdd :: Num p => DSL p -> DSL p -> GlobalStore (Assertion p) (DSL p)
-vecAdd u v = GStore result store
-  where
-    (result, (_, store)) = aux u v
-
-    {-@ aux :: x:{DSL p | isVector x}
-            -> y:{DSL p | isVector y && vlength y = vlength x}
-            -> res:{({z:DSL p | isVector z},
-                       ({c:DSL p | unpacked c}, Store p))
-                    | vlength (fst res) = vlength x} @-}
-    aux :: Num p => DSL p -> DSL p -> (DSL p, (DSL p, Store p))
-    aux (NIL)       (NIL)       = (NIL, (CONST 0, []))
-    aux (CONS u us) (CONS v vs) = addWithCarry (u, v) (aux us vs)
-
-
-{-@ addWithCarry :: ({x:DSL p | unpacked x}, {y:DSL p | unpacked y})
-                 -> acc:({v:DSL p | isVector v},
-                           ({v:DSL p | unpacked v}, Store p))
-                 -> res:{({v:DSL p | isVector v},
-                           ({v:DSL p | unpacked v}, Store p))
-                         | vlength (fst res) = 1 + vlength (fst acc)}
-@-} --TODO: change "fst" to "fst3" and go back to triples
-addWithCarry :: Num p => (DSL p, DSL p)
-             -> (DSL p, (DSL p, Store p))
-             -> (DSL p, (DSL p, Store p))
-addWithCarry (x, y) (acc, (carry, store)) =
-  ((sum `EQLC` 1) `UnsafeOR` (sum `EQLC` 3) `CONS` acc, -- new acc
-   (VAR nextCarry,                                      -- new carry
-    store ++ [DEF nextCarry $ (sum `EQLC` 2) `UnsafeOR` (sum `EQLC` 3)])
-  )
-
-  where
-    sum = (x `ADD` y) `ADD` carry
-    nextCarry = var "nextCarry"
 
 -- FIXME: this should use DSL types to ensure the argument is a vector of {0,1}
 {-@ binaryValue :: {v:DSL p | isVector v && vlength v > 0}
