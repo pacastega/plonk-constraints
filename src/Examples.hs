@@ -13,7 +13,6 @@ module Examples ( testArithmetic
 where
 
 import GHC.TypeNats (KnownNat)
-import Data.Char (ord)
 
 import qualified Data.Map as M
 import Data.FiniteField.PrimeField
@@ -335,18 +334,6 @@ testMod = do
 
 -- SHA256 examples -------------------------------------------------------------
 
-{-@ assume ord :: Char -> Btwn 0 256 @-}
-
-{-@ sha256 :: {s:String | len s < pow 2 61} ->
-              GlobalStore p ({res:DSL p | isVector res}) @-}
-sha256 :: (Integral p, Fractional p, Ord p) => String -> GlobalStore p (DSL p)
-sha256 = processMsg . padding . toBits where
-  {-@ toBits :: s:String
-             -> {v:DSL p | isVector v && vlength v = 8 * len s} @-}
-  toBits :: Num p => String -> DSL p
-  toBits [] = NIL
-  toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
-
 sha256_1 :: GlobalStore BigPF (DSL BigPF)
 sha256_1 = sha256 "Hello, world!"
 
@@ -355,8 +342,6 @@ sha256_2 = sha256 ""
 
 sha256_3 :: GlobalStore BigPF (DSL BigPF)
 sha256_3 = sha256 "The quick brown fox jumps over the lazy dog"
-
-
 
 testSha :: IO ()
 testSha = do

@@ -2,13 +2,14 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ infix +++ @-}
-module SHA256 (padding, processMsg) where
+module SHA256 (sha256) where
 
 import DSL
 import PlinkLib
 import Utils
 import GlobalStore
 
+import Data.Char (ord)
 
 {-@ h :: ListN Word 8 @-}
 h :: Num p => [DSL p]
@@ -242,3 +243,14 @@ compress = aux 64 where
     newA <- temp1 `plus` temp2
     newE <- d `plus` temp1
     return $ [newA, a, b, c, newE, e, f, g]
+
+{-@ assume ord :: Char -> Btwn 0 256 @-}
+
+{-@ sha256 :: {s:String | len s < pow 2 61} ->
+              GlobalStore p ({res:DSL p | isVector res}) @-}
+sha256 :: (Integral p, Fractional p, Ord p) => String -> GlobalStore p (DSL p)
+sha256 = processMsg . padding . toBits where
+  {-@ toBits :: s:String -> {v:DSL p | isVector v && vlength v = 8 * len s} @-}
+  toBits :: Num p => String -> DSL p
+  toBits [] = NIL
+  toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
