@@ -1,9 +1,6 @@
 {-@ LIQUID "--reflection" @-}
 module GlobalStore where
 
--- import Control.Monad.Writer
--- type GlobalStore a b = Writer [(String, b)] a
-
 -- TODO: swap arguments of GStore
 
 import DSL
