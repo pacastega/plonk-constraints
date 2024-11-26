@@ -283,26 +283,9 @@ vec5 = rotateL (range 1 10) 3
 vec6 :: DSL PF
 vec6 = rotateR (range 1 10) 2
 
--- {-@ vec7 :: GlobalStore (Assertion PF) (DSL PF) @-}
--- vec7 :: GlobalStore (Assertion PF) (DSL PF)
--- vec7 = vecAdd (fromInt 3 2) (fromInt 3 3) -- 2 + 3, using 3 bits
-
--- {-@ vec8 :: GlobalStore (Assertion PF) (DSL PF) @-}
--- vec8 :: GlobalStore (Assertion PF) (DSL PF)
--- vec8 = vecAdd (fromHex ['f', 'e']) (fromHex ['0', '5']) where
-
--- {-@ vec9 :: GlobalStore (Assertion PF) (DSL PF) @-}
--- vec9 :: GlobalStore (Assertion PF) (DSL PF)
--- vec9 = do
---   let v1 = fromHex ['1','8','9','4','b','1','3','f']
---   let v2 = fromHex ['c','a','f','9','1','9','5','e']
---   let v3 = fromHex ['1','8','9','4','1','9','5','e']
---   let v4 = fromHex ['c','a','f','9','b','1','3','f']
---   pure v1 >>= vecAdd v2 >>= vecAdd v3 >>= vecAdd v4
-
-{-@ vec10 :: GlobalStore PF (DSL PF) @-}
-vec10 :: GlobalStore PF (DSL PF)
-vec10 = fromBinary $ PlinkLib.fromList $ map CONST [1,1,0,1]
+{-@ vec7 :: GlobalStore PF (DSL PF) @-}
+vec7 :: GlobalStore PF (DSL PF)
+vec7 = fromBinary $ PlinkLib.fromList $ map CONST [1,1,0,1]
 
 testVectors :: IO ()
 testVectors = do
@@ -315,12 +298,7 @@ testVectors = do
   test (pure vec5) M.empty -- [4,5,6,7,8,9,1,2,3]
   test (pure vec6) M.empty -- [8,9,1,2,3,4,5,6,7]
 
-  -- test vec7 M.empty -- "treekz/test_addition.tex" -- [1,0,1]
-
-  -- test vec8 M.empty
-
-  -- test vec9 M.empty
-  test vec10 M.empty
+  test vec7 M.empty -- 0b1101 = 13
 
 -- Modular arithmetic examples -------------------------------------------------
 
