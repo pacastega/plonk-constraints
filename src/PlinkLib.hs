@@ -7,9 +7,14 @@
 module PlinkLib where
 
 import DSL
-import Utils (pow)
+import Utils (pow, map')
 
 import GlobalStore
+
+-- General functions for variables ---------------------------------------------
+{-@ vecVar :: strs:[String] -> {v:DSL p | isVector v && vlength v = len strs} @-}
+vecVar :: [String] -> DSL p
+vecVar strs = fromList (map' VAR strs)
 
 -- List-like functions ---------------------------------------------------------
 {-@ fromList :: l:[{v:DSL p | unpacked v}] ->
@@ -221,47 +226,79 @@ fromHex (c:cs) = go c +++ (fromHex cs) where
 
 -- FIXME: this should use DSL types to ensure the argument is a vector of {0,1}
 {-@ binaryValue :: {v:DSL p | isVector v && vlength v > 0}
-               -> GlobalStore (Assertion p) ({y:DSL p | unpacked y}) @-}
-binaryValue :: Num p => DSL p -> GlobalStore (Assertion p) (DSL p)
+               -> GlobalStore p ({y:DSL p | unpacked y}) @-}
+binaryValue :: (Integral p, Fractional p, Eq p) =>
+               DSL p -> GlobalStore p (DSL p)
 binaryValue v = go v (CONST 0) where
   {-@ go :: {v:DSL p | isVector v} -> {acc:DSL p | unpacked acc}
-         -> GlobalStore (Assertion p) ({res:DSL p | unpacked res}) @-}
-  go :: Num p => DSL p -> DSL p -> GlobalStore (Assertion p) (DSL p)
+         -> GlobalStore p ({res:DSL p | unpacked res}) @-}
+  go :: (Integral p, Fractional p, Eq p) =>
+        DSL p -> DSL p -> GlobalStore p (DSL p)
   go NIL         acc = pure acc
   go (CONS x xs) acc = do
-    let bit = var "bit"
-    assert $ DEF bit x
+    let bit = var "bit" -- auxiliary variable to not grow programs exponentially
+    define bit (eval x) -- hint for witness generation
+    assert $ DEF bit x  -- constrain it to have the correct value
     assert $ BOOL (VAR bit)
     go xs (VAR bit `ADD` (acc `MUL` CONST 2))
 
+{-@ binaryRepr :: n:Nat -> p -> ListN p n @-}
+binaryRepr :: (Integral p, Eq p) => Int -> p -> [p]
+binaryRepr n = go 0 [] . toInteger where
+  {-@ go :: m:{Nat | m <= n} ->
+            ListN p m ->
+            Integer ->
+            ListN p n / [n-m] @-}
+  go :: Num p => Int -> [p] -> Integer -> [p]
+  go m acc x
+    | m == n    = acc
+    | otherwise = let (q, r) = divMod x 2
+                  in go (m+1) (fromIntegral r : acc) q
+
 {-@ fromBinary :: {v:DSL p | isVector v && vlength v > 0}
-               -> GlobalStore (Assertion p) ({x:DSL p | unpacked x}) @-}
-fromBinary :: Num p => DSL p -> GlobalStore (Assertion p) (DSL p)
+               -> GlobalStore p ({x:DSL p | unpacked x}) @-}
+fromBinary :: (Integral p, Fractional p, Eq p) =>
+              DSL p -> GlobalStore p (DSL p)
 fromBinary vec = do
-  let x = VAR (var "x")
+  let x' = var "x"
+  let x = VAR x'
+
   val <- binaryValue vec
   assert $ val `EQA` x
+  define x' (eval val) -- evaluate `val` (value) to a field element
   return x
 
 {-@ toBinary :: n:Nat1 -> {x:DSL p | unpacked x}
-             -> GlobalStore (Assertion p)
-                            ({v:DSL p | isVector v && vlength v = n}) @-}
-toBinary :: Num p => Int -> DSL p -> GlobalStore (Assertion p) (DSL p)
+             -> GlobalStore p ({v:DSL p | isVector v && vlength v = n}) @-}
+toBinary :: (Integral p, Fractional p, Eq p) =>
+            Int -> DSL p -> GlobalStore p (DSL p)
 toBinary n x = do
-  let vec = vecVar n "bits"
+  let vec' = vars n "bits"
+  let vec = vecVar vec'
+
   val <- binaryValue vec
   assert $ val `EQA` x
+  defineVec vec' (\v -> binaryRepr n <$> eval x v)
   return vec
 
 
 {-@ addMod :: {m:DSL p | unpacked m}
            -> {x:DSL p | unpacked x} -> {y:DSL p | unpacked y}
-           -> GlobalStore (Assertion p) ({z:DSL p | unpacked z}) @-}
-addMod :: DSL p -> DSL p -> DSL p -> GlobalStore (Assertion p) (DSL p)
+           -> GlobalStore p ({z:DSL p | unpacked z}) @-}
+addMod :: (Integral p, Fractional p, Ord p) =>
+          DSL p -> DSL p -> DSL p -> GlobalStore p (DSL p)
 addMod modulus x y = do
   let b = var "overflow"
   let z = var "sum"
   assert $ BOOL (VAR b)
   assert $ (x `ADD` y) `EQA` (VAR z `ADD` (VAR b `MUL` modulus))
   -- TODO: missing assertion that z is < modulus. lookup tables?
+  define b (\v -> (\x y m -> if x + y < m then 0 else 1)
+                   <$> eval x v <*> eval y v
+                   <*> (eval modulus v >>=
+                        \x -> if x /= 0 then Just x else Nothing))
+  define z (\v -> (\x y m -> (x + y) `mod` m)
+                   <$> eval x v <*> eval y v
+                   <*> (eval modulus v >>=
+                        \x -> if x /= 0 then Just x else Nothing))
   return (VAR z)

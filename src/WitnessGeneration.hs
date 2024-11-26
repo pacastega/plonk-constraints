@@ -1,6 +1,6 @@
 {-# OPTIONS -Wno-name-shadowing #-}
 {-@ LIQUID "--reflection" @-}
-module WitnessGeneration (witnessGen, Valuation) where
+module WitnessGeneration (extend, witnessGen, Valuation) where
 
 import Utils (boolean)
 import Vec
@@ -12,6 +12,9 @@ updateWith :: Eq p => Maybe p -> Maybe p -> Maybe p
 updateWith Nothing  _        = Nothing
 updateWith (Just x) Nothing  = Just x
 updateWith (Just x) (Just y) = if x == y then Just x else Nothing
+
+extend :: Valuation p -> (Valuation p -> [(String, p)]) -> Valuation p
+extend valuation hints = valuation `M.union` (M.fromList $ hints valuation)
 
 {-@ witnessGen :: m:Nat ->
                   [LDSL p (Btwn 0 m)] ->

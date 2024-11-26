@@ -12,10 +12,12 @@ module Examples ( testArithmetic
                 )
 where
 
+import GHC.TypeNats (KnownNat)
 import Data.Char (ord)
 
 import qualified Data.Map as M
 import Data.FiniteField.PrimeField
+import qualified Data.FiniteField.PrimeField as PF (toInteger)
 import Vec
 import PlinkLib
 
@@ -38,20 +40,48 @@ import GlobalStore
 type F p = PrimeField p
 type F17 = F 17
 type PF  = F 2131
+type BigPF = F 65454111407
+
+-- Arguably sketchy instances for using `mod' ----------------------------------
+instance KnownNat p => Real (PrimeField p) where
+  toRational = toRational . PF.toInteger
+
+instance KnownNat p => Integral (PrimeField p) where
+  toInteger = PF.toInteger
+  quot = wrapper quot
+  rem = wrapper rem
+  div = wrapper div
+  mod = wrapper mod
+  quotRem x y = (wrapper quot x y, wrapper rem x y)
+  divMod x y = (wrapper div x y, wrapper mod x y)
+
+{-@ wrapper :: (Integer -> {y:Integer | y /= 0} -> Integer)
+            -> (PrimeField p -> PrimeField p -> PrimeField p) @-}
+wrapper :: KnownNat p
+        => (Integer -> Integer -> Integer)
+        -> (PrimeField p -> PrimeField p -> PrimeField p)
+wrapper op x y = do
+  let x' = PF.toInteger x
+  let y' = PF.toInteger y
+  {-@ assume y' :: {v:_ | v /= 0} @-}
+  fromInteger (x' `op` y')
+--------------------------------------------------------------------------------
 
 -- Generic test function -------------------------------------------------------
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
-{-@ test :: GlobalStore (Assertion p) (DSL p) -> Valuation p -> IO () @-}
+{-@ test :: GlobalStore p (DSL p) -> Valuation p -> IO () @-}
 test :: (Ord p, Fractional p, Show p) =>
-        GlobalStore (Assertion p) (DSL p) -> Valuation p -> IO ()
-test (GStore program store) valuation = do
+        GlobalStore p (DSL p) -> Valuation p -> IO ()
+test (GStore program store hints) valuation = do
+  let valuation' = extend valuation hints
+
   let (m, labeledBodies, labeledStore) = label program store
   let labeledPrograms = labeledStore ++ labeledBodies
 
   let circuit = concatMap (compile m) labeledPrograms
-  let input = witnessGen m labeledPrograms valuation
+  let input = witnessGen m labeledPrograms valuation'
   let output = map (\p -> input ! outputWire p) labeledBodies
   let output' = map (\p -> input ! outputWire p) labeledStore
 
@@ -64,15 +94,17 @@ test (GStore program store) valuation = do
   putStrLn $ replicate 80 '='
 
 
-{-@ test' :: GlobalStore (Assertion p) (DSL p) -> Valuation p -> String -> IO () @-}
+{-@ test' :: GlobalStore p (DSL p) -> Valuation p -> String -> IO () @-}
 test' :: (Ord p, Fractional p, Show p) =>
-         GlobalStore (Assertion p) (DSL p) -> Valuation p -> String -> IO ()
-test' (GStore program store) valuation tikzFilename = do
+         GlobalStore p (DSL p) -> Valuation p -> String -> IO ()
+test' (GStore program store hints) valuation tikzFilename = do
+  let valuation' = extend valuation hints
+
   let (m, labeledBodies, labeledStore) = label program store
   let labeledPrograms = labeledStore ++ labeledBodies
 
   let circuit = concatMap (compile m) labeledPrograms
-  let input = witnessGen m labeledPrograms valuation
+  let input = witnessGen m labeledPrograms valuation'
   let output = map (\p -> input ! outputWire p) labeledBodies
   let output' = map (\p -> input ! outputWire p) labeledStore
 
@@ -268,8 +300,8 @@ vec6 = rotateR (range 1 10) 2
 --   let v4 = fromHex ['c','a','f','9','b','1','3','f']
 --   pure v1 >>= vecAdd v2 >>= vecAdd v3 >>= vecAdd v4
 
-{-@ vec10 :: GlobalStore (Assertion PF) (DSL PF) @-}
-vec10 :: GlobalStore (Assertion PF) (DSL PF)
+{-@ vec10 :: GlobalStore PF (DSL PF) @-}
+vec10 :: GlobalStore PF (DSL PF)
 vec10 = fromBinary $ PlinkLib.fromList $ map CONST [1,1,0,1]
 
 testVectors :: IO ()
@@ -292,33 +324,44 @@ testVectors = do
 
 -- Modular arithmetic examples -------------------------------------------------
 
-mod1 :: GlobalStore (Assertion PF) (DSL PF)
+mod1 :: GlobalStore PF (DSL PF)
 mod1 = addMod (CONST 32) (VAR "x") (VAR "y")
 
 
-shift :: GlobalStore (Assertion PF) (DSL PF)
+shift :: GlobalStore PF (DSL PF)
 shift = do
-  let x = VAR (var "x")
+  let x = VAR "x"
   vec <- toBinary 3 x
   y   <- fromBinary (shiftR vec 1)
   return y
 
 
+rotate :: GlobalStore PF (DSL PF)
+rotate = do
+  let x = VAR "x"
+  vec <- toBinary 5 x
+  res <- fromBinary (rotateR vec 2)
+  return res
+
+
 testMod :: IO ()
 testMod = do
-  test mod1 (M.fromList [("x",27), ("y",3)])
-  -- test mod1 (M.fromList [("x",27), ("y",3)])
+  test mod1 (M.fromList [("x",27), ("y",3)]) -- 27 + 3 (mod 32) = 30
+  test mod1 (M.fromList [("x",27), ("y",7)]) -- 27 + 7 (mod 32) = 2
+  test shift (M.fromList [("x",5)])          -- 5 >> 1 = 2
 
-  test' mod1 (M.fromList [("x",27), ("y",7)]) "treekz/addMod.tex"
-  test shift (M.fromList [("x",5) , ("y",2)])
+  test rotate (M.fromList [("x", 11)]) -- 11 = 010|11 -> 11|010 = 26
+  test rotate (M.fromList [("x", 15)]) -- 15 = 011|11 -> 11|011 = 27
+  test rotate (M.fromList [("x", 13)]) -- 13 = 011|01 -> 01|011 = 11
+  test rotate (M.fromList [("x",  6)]) --  6 = 001|10 -> 10|001 = 17
 
 -- SHA256 examples -------------------------------------------------------------
 
 {-@ assume ord :: Char -> Btwn 0 256 @-}
 
 {-@ sha256 :: {s:String | len s < pow 2 61} ->
-              GlobalStore (Assertion p) ({res:DSL p | isVector res}) @-}
-sha256 :: Num p => String -> GlobalStore (Assertion p) (DSL p)
+              GlobalStore p ({res:DSL p | isVector res}) @-}
+sha256 :: (Integral p, Fractional p, Ord p) => String -> GlobalStore p (DSL p)
 sha256 = processMsg . padding . toBits where
   {-@ toBits :: s:String
              -> {v:DSL p | isVector v && vlength v = 8 * len s} @-}
@@ -326,9 +369,19 @@ sha256 = processMsg . padding . toBits where
   toBits [] = NIL
   toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
 
-sha256_1 :: GlobalStore (Assertion PF) (DSL PF)
+sha256_1 :: GlobalStore BigPF (DSL BigPF)
 sha256_1 = sha256 "Hello, world!"
+
+sha256_2 :: GlobalStore BigPF (DSL BigPF)
+sha256_2 = sha256 ""
+
+sha256_3 :: GlobalStore BigPF (DSL BigPF)
+sha256_3 = sha256 "The quick brown fox jumps over the lazy dog"
+
+
 
 testSha :: IO ()
 testSha = do
   test sha256_1 M.empty
+  test sha256_2 M.empty
+  test sha256_3 M.empty
