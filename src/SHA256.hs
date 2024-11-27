@@ -117,7 +117,7 @@ padding msg = msg +++ (fromList [true]) +++ (vReplicate k false) +++ len
          -> GlobalStore p ({z:DSL p | unpacked z}) @-}
 plus :: (Integral p, Fractional p, Ord p) =>
         DSL p -> DSL p -> GlobalStore p (DSL p)
-plus = addMod (CONST (2^32))
+plus = addMod 32 -- addition modulo 2^32
 
 
 {-@ processMsg :: {msg:DSL p | isVector msg && (vlength msg) mod 512 = 0}

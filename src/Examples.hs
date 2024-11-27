@@ -302,7 +302,7 @@ testVectors = do
 -- Modular arithmetic examples -------------------------------------------------
 
 mod1 :: GlobalStore PF (DSL PF)
-mod1 = addMod (CONST 32) (VAR "x") (VAR "y")
+mod1 = addMod 5 (VAR "x") (VAR "y")
 
 
 shift :: GlobalStore PF (DSL PF)

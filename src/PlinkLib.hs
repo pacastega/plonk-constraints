@@ -220,23 +220,23 @@ toBinary n x = do
   return vec
 
 
-{-@ addMod :: {m:DSL p | unpacked m}
+-- x + y (mod 2^e)
+{-@ addMod :: Nat1
            -> {x:DSL p | unpacked x} -> {y:DSL p | unpacked y}
            -> GlobalStore p ({z:DSL p | unpacked z}) @-}
 addMod :: (Integral p, Fractional p, Ord p) =>
-          DSL p -> DSL p -> DSL p -> GlobalStore p (DSL p)
-addMod modulus x y = do
+          Int -> DSL p -> DSL p -> GlobalStore p (DSL p)
+addMod e x y = do
+  let modulus = 2^e
   let b = var "overflow"
   let z = var "sum"
   assert $ BOOL (VAR b)
-  assert $ (x `ADD` y) `EQA` (VAR z `ADD` (VAR b `MUL` modulus))
-  -- TODO: missing assertion that z is < modulus. lookup tables?
-  define b (\v -> (\x y m -> if x + y < m then 0 else 1)
-                   <$> eval x v <*> eval y v
-                   <*> (eval modulus v >>=
-                        \x -> if x /= 0 then Just x else Nothing))
-  define z (\v -> (\x y m -> (x + y) `mod` m)
-                   <$> eval x v <*> eval y v
-                   <*> (eval modulus v >>=
-                        \x -> if x /= 0 then Just x else Nothing))
+  assert $ (x `ADD` y) `EQA` (VAR z `ADD` (VAR b `MUL` CONST modulus))
+
+  _evidence <- toBinary e (VAR z) -- z can be encoded using ‘e’ bits
+
+  define b (\v -> (\x y -> if x + y < modulus then 0 else 1)
+                   <$> eval x v <*> eval y v)
+  define z (\v -> (\x y -> (x + y) `mod` modulus)
+                   <$> eval x v <*> eval y v)
   return (VAR z)
