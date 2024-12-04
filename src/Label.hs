@@ -6,6 +6,8 @@ import DSL
 
 import qualified Data.Map as M
 
+type Env p i = M.Map (DSL p) i
+
 {-@ label :: DSL p
           -> Store p
           -> (m:Nat, [LDSL p Int], [LDSL p Int])

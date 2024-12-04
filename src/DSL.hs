@@ -205,9 +205,6 @@ data LDSL p i =
   deriving Show
 
 
-type Env p i = M.Map (DSL p) i
-
-
 type Store p = [Assertion p]
 
 -- TODO: this could probably be avoided by using record syntax
