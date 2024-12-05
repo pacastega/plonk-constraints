@@ -1,3 +1,4 @@
+{-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-@ LIQUID "--reflection" @-}
 module DSL where
@@ -15,135 +16,166 @@ import qualified Data.Map as M
 import Data.IORef
 import System.IO.Unsafe
 
-data DSL p where
+-- for use with DataKinds
+-- data Ty = TF | TInt32 | TByte | TBool | TVec Ty deriving (Eq, Show)
+
+data DSL p t where
   -- Basic operations
-  VAR   :: String -> DSL p -- variable
-  CONST :: p      -> DSL p -- constant
+  VAR   :: String -> DSL p t -- variable (the exact type is determined by Γ)
+  CONST :: p      -> DSL p p -- constant (of type p, i.e. prime field)
+  -- TODO: add constants of other types (integers, booleans...)
+  TRUE  :: DSL p Bool
+  FALSE :: DSL p Bool
 
   -- Arithmetic operations
-  ADD :: DSL p -> DSL p -> DSL p -- field addition
-  SUB :: DSL p -> DSL p -> DSL p -- field substraction
-  MUL :: DSL p -> DSL p -> DSL p -- field multiplication
-  DIV :: DSL p -> DSL p -> DSL p -- field division
+  ADD :: Num t => DSL p t -> DSL p t -> DSL p t        -- addition
+  SUB :: Num t => DSL p t -> DSL p t -> DSL p t        -- substraction
+  MUL :: Num t => DSL p t -> DSL p t -> DSL p t        -- multiplication
+  DIV :: Fractional t => DSL p t -> DSL p t -> DSL p t -- division
 
   -- Boolean operations
-  NOT :: DSL p -> DSL p          -- logical not
-  AND :: DSL p -> DSL p -> DSL p -- logical and
-  OR  :: DSL p -> DSL p -> DSL p -- logical or
-  XOR :: DSL p -> DSL p -> DSL p -- logical xor
+  NOT :: DSL p Bool -> DSL p Bool               -- logical not
+  AND :: DSL p Bool -> DSL p Bool -> DSL p Bool -- logical and
+  OR  :: DSL p Bool -> DSL p Bool -> DSL p Bool -- logical or
+  XOR :: DSL p Bool -> DSL p Bool -> DSL p Bool -- logical xor
 
-  UnsafeNOT :: DSL p -> DSL p          -- unsafe logical not
-  UnsafeAND :: DSL p -> DSL p -> DSL p -- unsafe logical and
-  UnsafeOR  :: DSL p -> DSL p -> DSL p -- unsafe logical or
-  UnsafeXOR :: DSL p -> DSL p -> DSL p -- unsafe logical xor
+  UnsafeNOT :: DSL p Bool -> DSL p Bool               -- unsafe logical not
+  UnsafeAND :: DSL p Bool -> DSL p Bool -> DSL p Bool -- unsafe logical and
+  UnsafeOR  :: DSL p Bool -> DSL p Bool -> DSL p Bool -- unsafe logical or
+  UnsafeXOR :: DSL p Bool -> DSL p Bool -> DSL p Bool -- unsafe logical xor
 
   -- Boolean constructors
-  ISZERO :: DSL p -> DSL p          -- zero check
-  EQL    :: DSL p -> DSL p -> DSL p -- equality check
-  EQLC   :: DSL p -> p     -> DSL p -- equality check against a constant
+  ISZERO :: DSL p p            -> DSL p Bool -- zero check
+  EQL    :: DSL p p -> DSL p p -> DSL p Bool -- equality check
+  EQLC   :: DSL p p -> p       -> DSL p Bool -- equality check against constant
 
   -- Vectors
-  NIL  :: DSL p
-  CONS :: DSL p -> DSL p -> DSL p
-  deriving (Eq, Ord)
+  NIL  :: DSL p [t]
+  CONS :: DSL p t -> DSL p [t] -> DSL p [t]
+
+deriving instance Eq p  => Eq  (DSL p t)
+deriving instance Ord p => Ord (DSL p t)
 
 infixr 5 `CONS`
 
 -- (Non-expression) assertions
 data Assertion p where
-  DEF    :: String -> DSL p -> Assertion p -- variable definition
-  NZERO  :: DSL p           -> Assertion p -- non-zero assertion
-  BOOL   :: DSL p           -> Assertion p -- booleanity assertion
-  EQA    :: DSL p  -> DSL p -> Assertion p -- equality assertion
-  deriving (Eq, Ord)
+  DEF    :: String  -> DSL p t -> Assertion p -- variable definition
+  NZERO  :: DSL p p            -> Assertion p -- non-zero assertion
+  BOOL   :: DSL p p            -> Assertion p -- booleanity assertion
+  EQA    :: DSL p p -> DSL p p -> Assertion p -- equality assertion
 
+toDSLBool :: Integral a => a -> DSL p Bool
+toDSLBool x = if (fromIntegral x == 0) then FALSE else TRUE
 
 {-@
-data DSL p where
-  VAR   :: String -> DSL p
-  CONST :: p      -> DSL p
+data DSL p t where
+  VAR   :: String -> DSL p t
+  CONST :: p      -> DSL p p
+  TRUE  :: DSL p Bool
+  FALSE :: DSL p Bool
 
-  ADD :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  SUB :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  MUL :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  DIV :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  ADD :: {v:DSL p t | scalar v} -> {u:DSL p t | scalar u} -> DSL p t
+  SUB :: {v:DSL p t | scalar v} -> {u:DSL p t | scalar u} -> DSL p t
+  MUL :: {v:DSL p t | scalar v} -> {u:DSL p t | scalar u} -> DSL p t
+  DIV :: {v:DSL p t | scalar v} -> {u:DSL p t | scalar u} -> DSL p t
 
-  NOT :: {v:DSL p | unpacked v}                           -> DSL p
-  AND :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  OR  :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  XOR :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  NOT :: {v:DSL p Bool | scalar v} ->                              DSL p Bool
+  AND :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
+  OR  :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
+  XOR :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
 
-  UnsafeNOT :: {v:DSL p | unpacked v} -> DSL p
-  UnsafeAND :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  UnsafeOR  :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  UnsafeXOR :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
+  UnsafeNOT :: {v:DSL p Bool | scalar v} ->                         DSL p Bool
+  UnsafeAND :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
+  UnsafeOR  :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
+  UnsafeXOR :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
 
-  ISZERO :: {v:DSL p | unpacked v} -> DSL p
-  EQL    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> DSL p
-  EQLC   :: {v:DSL p | unpacked v} -> p                      -> DSL p
+  ISZERO :: {v:DSL p p | scalar v} ->                           DSL p Bool
+  EQL    :: {v:DSL p p | scalar v} -> {u:DSL p p | scalar u} -> DSL p Bool
+  EQLC   :: {v:DSL p p | scalar v} -> p                      -> DSL p Bool
 
-  NIL  :: DSL p
-  CONS :: head:{DSL p | unpacked head} -> tail:{DSL p | isVector tail} -> DSL p
+  NIL  :: DSL _ [t]
+  CONS :: DSL _ t -> {tail:DSL _ [t] | vector tail} -> DSL _ [t]
 @-}
 
 {-@
 data Assertion p where
-  DEF    :: String                 -> {v:DSL p | unpacked v} -> Assertion p
-  NZERO  :: {v:DSL p | unpacked v}                           -> Assertion p
-  BOOL   :: {v:DSL p | unpacked v}                           -> Assertion p
-  EQA    :: {v:DSL p | unpacked v} -> {u:DSL p | unpacked u} -> Assertion p
+  DEF    :: String                 -> DSL p t                -> Assertion p
+  NZERO  :: {v:DSL p p | scalar v}                           -> Assertion p
+  BOOL   :: {v:DSL p p | scalar v}                           -> Assertion p
+  EQA    :: {v:DSL p p | scalar v} -> {u:DSL p p | scalar u} -> Assertion p
 @-}
 
 {-@ measure vlength @-}
-{-@ vlength :: DSL p -> Nat @-}
-vlength :: DSL p -> Int
+{-@ vlength :: DSL p t -> Nat @-}
+vlength :: DSL p t -> Int
 vlength (NIL)       = 0
 vlength (CONS _ ps) = 1 + vlength ps
 vlength _           = 1
 
-{-@ measure isVector @-} -- TODO: this should use types
-isVector :: DSL p -> Bool
-isVector (NIL)      = True
-isVector (CONS _ _) = True
-isVector _          = False
+{-@ measure scalar @-}
+scalar :: DSL p t -> Bool
+scalar (NIL)     = False
+scalar (CONS {}) = False
+scalar _         = True
 
+{-@ measure vector @-}
+vector :: DSL p t -> Bool
+vector (NIL)     = True
+vector (CONS {}) = True
+vector _         = False
 
-{-@ measure unpacked @-}
-{-@ unpacked :: DSL p -> Bool @-}
-unpacked :: DSL p -> Bool
-unpacked (EQL p1 p2) = unpacked p1 && unpacked p2
+-- TODO: how to declare variables with type annotations
+-- declare :: t:Ty -> String -> {p:DSL p | type p = t}
+-- type TyEnv = M.Map String Ty
 
-unpacked (VAR _)     = True
-unpacked (CONST _)   = True
+-- {-@ measure typecheck @-}
+-- typecheck :: TyEnv -> DSL p -> Ty -> Bool
+-- typecheck γ = check where
+--   check :: DSL p -> Ty -> Bool
+--   check program τ = case program of
+--     VAR s   -> matches (M.lookup γ s) τ
+--     CONST _ -> (τ == TF)
 
-unpacked (NIL)       = False
-unpacked (CONS _ _)  = False
+--     ADD p1 p2 -> (τ == TF) && (check p1 TF) && (check p2 TF)
+--     SUB p1 p2 -> (τ == TF) && (check p1 TF) && (check p2 TF)
+--     MUL p1 p2 -> (τ == TF) && (check p1 TF) && (check p2 TF)
+--     DIV p1 p2 -> (τ == TF) && (check p1 TF) && (check p2 TF)
 
-unpacked (ADD p1 p2) = unpacked p1 && unpacked p2
-unpacked (SUB p1 p2) = unpacked p1 && unpacked p2
-unpacked (MUL p1 p2) = unpacked p1 && unpacked p2
-unpacked (DIV p1 p2) = unpacked p1 && unpacked p2
+--     NOT p1    -> (τ == TBool) && (check p1 TBool)
+--     AND p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
+--     OR  p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
+--     XOR p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
 
-unpacked (NOT p)     = unpacked p
-unpacked (AND p1 p2) = unpacked p1 && unpacked p2
-unpacked (OR  p1 p2) = unpacked p1 && unpacked p2
-unpacked (XOR p1 p2) = unpacked p1 && unpacked p2
+--     UnsafeNOT p1    -> (τ == TBool) && (check p1 TBool)
+--     UnsafeAND p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
+--     UnsafeOR  p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
+--     UnsafeXOR p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
 
-unpacked (UnsafeNOT p)     = unpacked p
-unpacked (UnsafeAND p1 p2) = unpacked p1 && unpacked p2
-unpacked (UnsafeOR  p1 p2) = unpacked p1 && unpacked p2
-unpacked (UnsafeXOR p1 p2) = unpacked p1 && unpacked p2
+--     EQL p1 p2 -> (τ == TBool) && (check p1 TF) && (check p2 TF)
+--     ISZERO p1 -> (τ == TBool) && (check p1 TF)
+--     EQLC p1 _ -> (τ == TBool) && (check p1 TF)
 
-unpacked (ISZERO p)  = unpacked p
-unpacked (EQLC p _)  = unpacked p
+--     NIL       -> case τ of
+--       Vec _ -> True; otherwise -> False
+--     CONS h ts -> case τ of
+--       Vec τ' -> (check h τ') && (check ts (Vec τ'))
+--       _      -> False
+
+--   matches :: Maybe Ty -> Ty -> Bool
+--   matches mτ τ = case mτ of Nothing -> False; Just τ' -> (τ == τ')
+
 
 type Valuation p = M.Map String p
 
-{-@ eval :: {v:DSL p | unpacked v} -> Valuation p -> Maybe p @-}
-eval :: (Fractional p, Eq p) => DSL p -> Valuation p -> Maybe p
+-- TODO: how to deal with vectors? just forbid them in the precondition?
+{-@ eval :: {v:DSL p t | scalar v} -> Valuation p -> Maybe p @-}
+eval :: (Fractional p, Eq p) => DSL p t -> Valuation p -> Maybe p
 eval program v = case program of
   VAR name -> M.lookup name v
   CONST x  -> Just x
+  TRUE     -> Just 1
+  FALSE    -> Just 0
 
   -- Arithmetic operations
   ADD p1 p2 -> (+) <$> eval p1 v <*> eval p2 v

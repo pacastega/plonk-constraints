@@ -6,7 +6,8 @@ import DSL
 
 import qualified Data.Map as M
 
-type Env p i = M.Map (DSL p) i
+type Env p i = M.Map (DSL p t) i -- FIXME: not in scope: type variable `t`
+-- But I would like an environment for DSL programs with heterogeneous types
 
 {-@ label :: DSL p
           -> Store p
@@ -68,6 +69,8 @@ label' p nextIndex env = case M.lookup p env of
 
     VAR s -> (i+1, [LVAR s i], add (p,i) env)
     CONST x -> (i+1, [LCONST x i], add (p,i) env)
+    TRUE  -> label' (CONST 1) nextIndex env
+    FALSE -> label' (CONST 0) nextIndex env
 
     ADD p1 p2 -> (i'+1, [LADD p1' p2' i'], add (p,i') env')
       where (i', p1', p2', env') = label2 i p1 p2 env

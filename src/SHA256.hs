@@ -4,6 +4,8 @@
 {-@ infix +++ @-}
 module SHA256 (sha256) where
 
+import Prelude hiding (Word)
+
 import DSL
 import PlinkLib
 import Utils
@@ -11,8 +13,10 @@ import GlobalStore
 
 import Data.Char (ord)
 
-{-@ h :: ListN Word 8 @-}
-h :: Num p => [DSL p]
+type Word p = DSL p p
+
+{-@ h :: ListN (Word p) 8 @-}
+h :: Num p => [Word p]
 h = [ CONST 0x6a09e667
     , CONST 0xbb67ae85
     , CONST 0x3c6ef372
@@ -23,8 +27,8 @@ h = [ CONST 0x6a09e667
     , CONST 0x5be0cd19
     ]
 
-{-@ k :: ListN Word 64 @-}
-k :: Num p => [DSL p]
+{-@ k :: ListN (Word p) 64 @-}
+k :: Num p => [Word p]
 k = [ CONST 0x428a2f98
     , CONST 0x71374491
     , CONST 0xb5c0fbcf
@@ -98,13 +102,11 @@ k = [ CONST 0x428a2f98
     , CONST 0xc67178f2
     ]
 
-{-@ padding :: msg:{DSL p | isVector msg && vlength msg < pow 2 64}
-            -> {res:DSL p | isVector res && (vlength res) mod 512 = 0} @-}
-padding :: Num p => DSL p -> DSL p
-padding msg = msg +++ (fromList [true]) +++ (vReplicate k false) +++ len
+{-@ padding :: msg:{DSL p [Bool] | vlength msg < pow 2 64}
+            -> {res:DSL p [Bool] | (vlength res) mod 512 = 0} @-}
+padding :: Num p => DSL p [Bool] -> DSL p [Bool]
+padding msg = msg +++ (fromList [TRUE]) +++ (vReplicate k FALSE) +++ len
   where
-    true = CONST 1; false = CONST 0
-
     l = vlength msg
     -- 512*c is the smallest multiple of 512 above l+1+64
     c = (l+64) `div` 512 + 1
@@ -113,30 +115,30 @@ padding msg = msg +++ (fromList [true]) +++ (vReplicate k false) +++ len
     {-@ k :: {k:Btwn 0 512 | l+1+k+64 = 512*c} @-}
     len = fromInt 64 l -- convert length to binary using 64 bits
 
-{-@ plus :: {x:DSL p | unpacked x} -> {y:DSL p | unpacked y}
-         -> GlobalStore p ({z:DSL p | unpacked z}) @-}
+{-@ plus :: {x:DSL p p} -> {y:DSL p p}
+         -> GlobalStore p (z:DSL p p) @-}
 plus :: (Integral p, Fractional p, Ord p) =>
-        DSL p -> DSL p -> GlobalStore p (DSL p)
+        DSL p p -> DSL p p -> GlobalStore p (DSL p p)
 plus = addMod 32 -- addition modulo 2^32
 
 
-{-@ processMsg :: {msg:DSL p | isVector msg && (vlength msg) mod 512 = 0}
-               -> GlobalStore p ({res:DSL p | isVector res}) @-}
+{-@ processMsg :: {msg:DSL p [Bool] | (vlength msg) mod 512 = 0}
+               -> GlobalStore p (DSL p [Bool]) @-}
 -- TODO: can we prove the resulting length is what it should be?
 processMsg :: (Integral p, Fractional p, Ord p) =>
-              DSL p -> GlobalStore p (DSL p)
+              DSL p [Bool] -> GlobalStore p (DSL p [Bool])
 processMsg msg = do
   let chunks = vChunk 512 msg -- split into 512-bit chunks
   finalHashes <- foldl processChunk (pure h) chunks -- process all the chunks
   finalHashes' <- sequence' $ map (toBinary 32) finalHashes -- convert to binary
   return $ vConcat finalHashes' -- concatenate all the hashes
 
-{-@ processChunk :: GlobalStore p (ListN Word 8)
-                 -> {v:DSL p | isVector v && vlength v = 512}
-                 -> GlobalStore p (ListN Word 8) @-}
+{-@ processChunk :: GlobalStore p (ListN (Word p) 8)
+                 -> {v:DSL p [Bool] | vlength v = 512}
+                 -> GlobalStore p (ListN (Word p) 8) @-}
 processChunk :: (Integral p, Fractional p, Ord p) =>
-                GlobalStore p [DSL p] -> DSL p
-             -> GlobalStore p [DSL p]
+                GlobalStore p [Word p] -> DSL p [Bool]
+             -> GlobalStore p [Word p]
 processChunk currentHash chunk = do
   let words = vChunk 32 chunk -- split chunk as list of 16 32-bit words
   words' <- sequence' $ map fromBinary words -- convert to list of 16 32-bit ints
@@ -149,22 +151,18 @@ processChunk currentHash chunk = do
 
   return finalHashes
 
-
-{-@ type Word = {w:DSL p | unpacked w} @-}
-{-@ type Word32 = {w:DSL p | isVector w && vlength w = 32} @-}
-
-{-@ extend :: ListN Word 16 -> GlobalStore p (ListN Word 64) @-}
+{-@ extend :: ListN (Word p) 16 -> GlobalStore p (ListN (Word p) 64) @-}
 extend :: (Integral p, Fractional p, Ord p) =>
-          [DSL p] -> GlobalStore p [DSL p]
+          [Word p] -> GlobalStore p [Word p]
 extend ws = go 16 (pure ws) where
 
   {-@ go :: n:{Int | 16 <= n && n <= 64}
-         -> GlobalStore p (ListN Word n)
-         -> GlobalStore p (ListN Word 64)
+         -> GlobalStore p (ListN (Word p) n)
+         -> GlobalStore p (ListN (Word p) 64)
           / [64-n] @-}
   go :: (Integral p, Fractional p, Ord p) =>
-        Int -> GlobalStore p [DSL p]
-     -> GlobalStore p [DSL p]
+        Int -> GlobalStore p [Word p]
+     -> GlobalStore p [Word p]
   go i acc
     | i == 64   = acc
     | otherwise = do
@@ -181,28 +179,28 @@ extend ws = go 16 (pure ws) where
         tmp <- return (ws!!(i-16)) >>= plus s0 >>= plus (ws!!(i-7)) >>= plus s1
         go (i+1) (return (ws ++ [tmp]))
 
-{-@ compress :: GlobalStore p (ListN Word 8) -> ListN Word 64
-             -> GlobalStore p (ListN Word 8) @-}
+{-@ compress :: GlobalStore p (ListN (Word p) 8) -> ListN (Word p) 64
+             -> GlobalStore p (ListN (Word p) 8) @-}
 compress :: (Integral p, Fractional p, Ord p) =>
-            GlobalStore p [DSL p] -> [DSL p]
-         -> GlobalStore p [DSL p]
+            GlobalStore p [Word p] -> [Word p]
+         -> GlobalStore p [Word p]
 compress = aux 64 where
 
   {-@ aux :: l:{Nat | l <= 64}
-          -> GlobalStore p (ListN Word 8)
-          -> ListN Word l
-          -> GlobalStore p (ListN Word 8) @-}
+          -> GlobalStore p (ListN (Word p) 8)
+          -> ListN (Word p) l
+          -> GlobalStore p (ListN (Word p) 8) @-}
   aux :: (Integral p, Fractional p, Ord p) =>
-         Int -> GlobalStore p [DSL p] -> [DSL p]
-      -> GlobalStore p [DSL p]
+         Int -> GlobalStore p [Word p] -> [Word p]
+      -> GlobalStore p [Word p]
   aux 0 acc []     = acc
   aux l acc (p:ps) = aux (l-1) (go (64-l) acc p) ps
 
-  {-@ go :: Btwn 0 64 -> GlobalStore p (ListN Word 8) -> Word
-         -> GlobalStore p (ListN Word 8) @-}
+  {-@ go :: Btwn 0 64 -> GlobalStore p (ListN (Word p) 8) -> Word p
+         -> GlobalStore p (ListN (Word p) 8) @-}
   go :: (Integral p, Fractional p, Ord p)
-     => Int -> GlobalStore p [DSL p] -> DSL p
-     -> GlobalStore p [DSL p]
+     => Int -> GlobalStore p [Word p] -> Word p
+     -> GlobalStore p [Word p]
   go i currentHash w = do
     l <- currentHash
     let [a,b,c,d,e,f,g,h] = l
@@ -247,10 +245,11 @@ compress = aux 64 where
 {-@ assume ord :: Char -> Btwn 0 256 @-}
 
 {-@ sha256 :: {s:String | len s < pow 2 61} ->
-              GlobalStore p ({res:DSL p | isVector res}) @-}
-sha256 :: (Integral p, Fractional p, Ord p) => String -> GlobalStore p (DSL p)
+              GlobalStore p (res:DSL p [Bool]) @-}
+sha256 :: (Integral p, Fractional p, Ord p)
+       => String -> GlobalStore p (DSL p [Bool])
 sha256 = processMsg . padding . toBits where
-  {-@ toBits :: s:String -> {v:DSL p | isVector v && vlength v = 8 * len s} @-}
-  toBits :: Num p => String -> DSL p
+  {-@ toBits :: s:String -> {v:DSL p [Bool] | vlength v = 8 * len s} @-}
+  toBits :: Num p => String -> DSL p [Bool]
   toBits [] = NIL
   toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
