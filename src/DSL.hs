@@ -16,6 +16,9 @@ import qualified Data.Map as M
 import Data.IORef
 import System.IO.Unsafe
 
+
+import Language.Haskell.Liquid.ProofCombinators
+
 -- for use with DataKinds
 -- data Ty = TF | TInt32 | TByte | TBool | TVec Ty deriving (Eq, Show)
 
@@ -106,12 +109,26 @@ data Assertion p where
   EQA    :: {v:DSL p p | scalar v} -> {u:DSL p p | scalar u} -> Assertion p
 @-}
 
-{-@ measure vlength @-}
-{-@ vlength :: DSL p t -> Nat @-}
-vlength :: DSL p t -> Int
+{-@ assume isVector :: DSL p [t] -> {v:DSL p [t] | vector v} @-}
+isVector :: DSL p [t] -> DSL p [t]
+isVector d = d
+
+{-@ assert :: b:{Bool | b} -> a -> {v:a | b} @-}
+assert :: Bool -> a -> a
+assert _ x = x
+
+{-@ f :: {d:DSL p t | vector d && (not (vector d))}
+      -> {v:a | false} @-}
+f :: DSL p t -> a
+f d = error ""
+
+-- {-@ measure vlength @-}
+{-@ vlength :: DSL p [t] -> Nat @-}
+vlength :: DSL p [t] -> Int
 vlength (NIL)       = 0
 vlength (CONS _ ps) = 1 + vlength ps
-vlength _           = 1
+vlength d@(VAR _)   = (flip const) (isVector d) (f d)
+vlength d           = (flip const) (isVector d) (f d)
 
 {-@ measure scalar @-}
 scalar :: DSL p t -> Bool
