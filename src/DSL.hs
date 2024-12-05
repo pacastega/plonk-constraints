@@ -1,6 +1,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-@ LIQUID "--reflection" @-}
+
 module DSL where
 
 import Constraints
@@ -109,26 +110,16 @@ data Assertion p where
   EQA    :: {v:DSL p p | scalar v} -> {u:DSL p p | scalar u} -> Assertion p
 @-}
 
-{-@ assume isVector :: DSL p [t] -> {v:DSL p [t] | vector v} @-}
+{-@ assume isVector :: d:DSL p [t] -> {v:DSL p [t] | vector v && v = d} @-}
 isVector :: DSL p [t] -> DSL p [t]
 isVector d = d
 
-{-@ assert :: b:{Bool | b} -> a -> {v:a | b} @-}
-assert :: Bool -> a -> a
-assert _ x = x
-
-{-@ f :: {d:DSL p t | vector d && (not (vector d))}
-      -> {v:a | false} @-}
-f :: DSL p t -> a
-f d = error ""
-
--- {-@ measure vlength @-}
+{- measure vlength @-}
 {-@ vlength :: DSL p [t] -> Nat @-}
 vlength :: DSL p [t] -> Int
 vlength (NIL)       = 0
 vlength (CONS _ ps) = 1 + vlength ps
-vlength d@(VAR _)   = (flip const) (isVector d) (f d)
-vlength d           = (flip const) (isVector d) (f d)
+vlength d           = (flip const) (isVector d) (error "undefined")  
 
 {-@ measure scalar @-}
 scalar :: DSL p t -> Bool

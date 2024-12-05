@@ -1,4 +1,5 @@
 {-@ LIQUID "--reflection" @-}
+{-# LANGUAGE RankNTypes #-}
 module Label (label) where
 
 import TypeAliases
@@ -6,7 +7,7 @@ import DSL
 
 import qualified Data.Map as M
 
-type Env p i = M.Map (DSL p t) i -- FIXME: not in scope: type variable `t`
+type Env p i = forall t. M.Map (DSL p t) i -- FIXME: not in scope: type variable `t`
 -- But I would like an environment for DSL programs with heterogeneous types
 
 {-@ label :: DSL p
