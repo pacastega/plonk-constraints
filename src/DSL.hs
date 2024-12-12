@@ -28,39 +28,39 @@ scalarType (TVec _) = False
 scalarType _        = True
 
 
-data DSL p where
-  -- Basic operations
-  VAR   :: String -> Ty -> DSL p -- variable
-  CONST :: p      -> DSL p -- constant (of type p, i.e. prime field)
-  -- TODO: add constants of other types (integers, booleans...)
-  TRUE  :: DSL p
-  FALSE :: DSL p
+data DSL p =
+    -- Basic operations
+    VAR String Ty -- variable
+  | CONST p       -- constant (of type p, i.e. prime field)
+    -- TODO: add constants of other types (integers, booleans...)
+  | TRUE
+  | FALSE
 
-  -- Arithmetic operations
-  ADD :: DSL p -> DSL p -> DSL p -- addition
-  SUB :: DSL p -> DSL p -> DSL p -- substraction
-  MUL :: DSL p -> DSL p -> DSL p -- multiplication
-  DIV :: DSL p -> DSL p -> DSL p -- division
+    -- Arithmetic operations
+  | ADD (DSL p) (DSL p) -- addition
+  | SUB (DSL p) (DSL p) -- substraction
+  | MUL (DSL p) (DSL p) -- multiplication
+  | DIV (DSL p) (DSL p) -- division
 
-  -- Boolean operations
-  NOT :: DSL p -> DSL p          -- logical not
-  AND :: DSL p -> DSL p -> DSL p -- logical and
-  OR  :: DSL p -> DSL p -> DSL p -- logical or
-  XOR :: DSL p -> DSL p -> DSL p -- logical xor
+    -- Boolean operations
+  | NOT (DSL p)         -- logical not
+  | AND (DSL p) (DSL p) -- logical and
+  | OR  (DSL p) (DSL p) -- logical or
+  | XOR (DSL p) (DSL p) -- logical xor
 
-  UnsafeNOT :: DSL p -> DSL p          -- unsafe logical not
-  UnsafeAND :: DSL p -> DSL p -> DSL p -- unsafe logical and
-  UnsafeOR  :: DSL p -> DSL p -> DSL p -- unsafe logical or
-  UnsafeXOR :: DSL p -> DSL p -> DSL p -- unsafe logical xor
+  | UnsafeNOT (DSL p)         -- unsafe logical not
+  | UnsafeAND (DSL p) (DSL p) -- unsafe logical and
+  | UnsafeOR  (DSL p) (DSL p) -- unsafe logical or
+  | UnsafeXOR (DSL p) (DSL p) -- unsafe logical xor
 
-  -- Boolean constructors
-  ISZERO :: DSL p          -> DSL p -- zero check
-  EQL    :: DSL p -> DSL p -> DSL p -- equality check
-  EQLC   :: DSL p -> p     -> DSL p -- equality check against constant
+    -- Boolean constructors
+  | ISZERO (DSL p)         -- zero check
+  | EQL    (DSL p) (DSL p) -- equality check
+  | EQLC   (DSL p) p       -- equality check against constant
 
-  -- Vectors
-  NIL  :: Ty -> DSL p
-  CONS :: DSL p -> DSL p -> DSL p
+    -- Vectors
+  | NIL Ty
+  | CONS (DSL p) (DSL p)
   deriving (Eq, Ord)
 
 infixr 5 `CONS`
@@ -158,18 +158,18 @@ inferType (CONS h ts)
 
 
 -- (Non-expression) assertions
-data Assertion p where
-  DEF    :: String  -> DSL p -> Assertion p -- variable definition
-  NZERO  :: DSL p            -> Assertion p -- non-zero assertion
-  BOOL   :: DSL p            -> Assertion p -- booleanity assertion
-  EQA    :: DSL p   -> DSL p -> Assertion p -- equality assertion
+data Assertion p =
+    DEF   String  (DSL p) -- variable definition
+  | NZERO (DSL p)         -- non-zero assertion
+  | BOOL  (DSL p)         -- booleanity assertion
+  | EQA   (DSL p) (DSL p) -- equality assertion
 
 {-@
-data Assertion p where
-  DEF    :: String      -> ScalarDSL p -> Assertion p
-  NZERO  :: ScalarDSL p                -> Assertion p
-  BOOL   :: ScalarDSL p                -> Assertion p
-  EQA    :: ScalarDSL p -> ScalarDSL p -> Assertion p
+data Assertion p =
+    DEF   String        (ScalarDSL p)
+  | NZERO (ScalarDSL p)
+  | BOOL  (ScalarDSL p)
+  | EQA   (ScalarDSL p) (ScalarDSL p)
 @-}
 
 

@@ -56,7 +56,6 @@ library
       -Wredundant-constraints
       -Wno-unused-top-binds
       -Wno-incomplete-patterns
-      -XGADTSyntax
       -fplugin=LiquidHaskell
   build-depends:
       base >=4.7 && <5
@@ -85,7 +84,6 @@ executable plonk-constraints-exe
       -Wredundant-constraints
       -Wno-unused-top-binds
       -Wno-incomplete-patterns
-      -XGADTSyntax
       -fplugin=LiquidHaskell
   build-depends:
       base >=4.7 && <5
