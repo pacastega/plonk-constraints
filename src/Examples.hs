@@ -1,5 +1,6 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
+{-@ LIQUID "--ple-with-undecided-guards" @-}
 {-# OPTIONS -Wno-unused-imports #-}
 {-# LANGUAGE DataKinds #-}
 
@@ -70,7 +71,7 @@ wrapper op x y = do
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
-{-@ test :: GlobalStore p (DSL p) -> Valuation p -> IO () @-}
+{-@ test :: GlobalStore p (TypedDSL p) -> Valuation p -> IO () @-}
 test :: (Ord p, Fractional p, Show p) =>
         GlobalStore p (DSL p) -> Valuation p -> IO ()
 test (GStore program store hints) valuation = do
@@ -93,7 +94,7 @@ test (GStore program store hints) valuation = do
   putStrLn $ replicate 80 '='
 
 
-{-@ test' :: GlobalStore p (DSL p) -> Valuation p -> String -> IO () @-}
+{-@ test' :: GlobalStore p (TypedDSL p) -> Valuation p -> String -> IO () @-}
 test' :: (Ord p, Fractional p, Show p) =>
          GlobalStore p (DSL p) -> Valuation p -> String -> IO ()
 test' (GStore program store hints) valuation tikzFilename = do
@@ -121,19 +122,19 @@ test' (GStore program store hints) valuation tikzFilename = do
 
 -- Arithmetic programs ---------------------------------------------------------
 -- (a + b) + (c + d)
-{-@ arith1 :: v:DSL _ @-}
+{-@ arith1 :: {v:DSL F17 | typed v TF} @-}
 arith1 :: DSL F17
-arith1 = ADD (ADD (VAR "a") (VAR "b")) (ADD (VAR "c") (VAR "d"))
+arith1 = ADD (ADD (VAR "a" TF) (VAR "b" TF)) (ADD (VAR "c" TF) (VAR "d" TF))
 
 -- (a + 15) * (b + 3)
-{-@ arith2 :: v:DSL _ @-}
+{-@ arith2 :: {v:DSL F17 | typed v TF} @-}
 arith2 :: DSL F17
-arith2 = MUL (ADD (VAR "a") (CONST 15)) (ADD (VAR "b") (CONST 3))
+arith2 = MUL (ADD (VAR "a" TF) (CONST 15)) (ADD (VAR "b" TF) (CONST 3))
 
 -- num / den
-{-@ arith3 :: DSL _ @-}
+{-@ arith3 :: {v:DSL F17 | typed v TF} @-}
 arith3 :: DSL F17
-arith3 = DIV (VAR "num") (VAR "den")
+arith3 = DIV (VAR "num" TF) (VAR "den" TF)
 
 testArithmetic :: IO ()
 testArithmetic = do
@@ -144,19 +145,20 @@ testArithmetic = do
 
 -- Boolean programs ------------------------------------------------------------
 -- a == 0 || (a /= 0 && b == 1)
-{-@ bool1 :: DSL _ @-}
+{-@ bool1 :: {v:DSL F17 | typed v TBool} @-}
 bool1 :: DSL F17
-bool1 = ISZERO (VAR "a") `OR` (NOT (ISZERO (VAR "a")) `AND` (ISZERO (VAR "b")))
+bool1 = ISZERO (VAR "a" TF) `OR`
+        (NOT (ISZERO (VAR "a" TF)) `AND` (ISZERO (VAR "b" TF)))
 
 -- 7 * inv == 1
-{-@ bool2 :: DSL _ @-}
+{-@ bool2 :: {v:DSL F17 | typed v TBool} @-}
 bool2 :: DSL F17
-bool2 = (CONST 7 `MUL` VAR "inv") `EQL` CONST 1
+bool2 = (CONST 7 `MUL` VAR "inv" TF) `EQL` CONST 1
 
 -- addTo5 + 2 == 5
-{-@ bool3 :: DSL _ @-}
+{-@ bool3 :: {v:DSL F17 | typed v TBool} @-}
 bool3 :: DSL F17
-bool3 = (VAR "addsTo5" `ADD` CONST 2) `EQL` CONST 5
+bool3 = (VAR "addsTo5" TF `ADD` CONST 2) `EQL` CONST 5
 
 testBoolean :: IO ()
 testBoolean = do
@@ -240,51 +242,51 @@ testBoolean = do
 --   test loop5 (M.fromList [("base",627)]) -- 627^4 == 42 (mod 2131)
 
 -- Vector programs -------------------------------------------------------------
-{-@ vec1 :: {v:DSL _ | vlength v = 3} @-}
+{-@ vec1 :: {v:DSL PF | typed v (TVec TF) && vlength v = 3} @-}
 vec1 :: DSL PF
-vec1 = (CONST 42)             `CONS`      -- 42
-       (CONST 4 `SUB` VAR "a") `CONS`     -- 4 - a
-       (VAR "b" `ADD` CONST 5) `CONS` NIL -- b + 5
+vec1 = (CONST 42)                    `CONS`        -- 42
+       (CONST 4    `SUB` VAR "a" TF) `CONS`        -- 4 - a
+       (VAR "b" TF `ADD` CONST 5)    `CONS` NIL TF -- b + 5
 
 {-@ range :: lo:p -> hi:{p | hi >= lo} ->
-             {res:DSL _ | isVector res && vlength res = hi-lo}
+             {res:DSL p | typed res (TVec TF) && vlength res = hi-lo}
           / [hi-lo] @-}
 range :: (Ord p, Num p) => p -> p -> DSL p
-range a b = if a == b then NIL else CONST a `CONS` (range (a+1) b)
+range a b = if a == b then NIL TF else CONST a `CONS` (range (a+1) b)
 
 -- (range 1 5) but writing 42 in the 2nd position
-{-@ vec2 :: DSL _ @-}
+{-@ vec2 :: {v:DSL PF | typed v (TVec TF)} @-}
 vec2 :: DSL PF
-vec2 = set (range 1 5) 2 (CONST 42) where
+vec2 = set TF (range 1 5) 2 (CONST 42) where
 
 -- 3rd position of (range 1 5)
-{-@ vec3 :: DSL _ @-}
+{-@ vec3 :: {v:DSL PF | typed v TF} @-}
 vec3 :: DSL PF
-vec3 = get (range 1 5) 3 where
+vec3 = get TF (range 1 5) 3 where
 
 -- multiply two vectors component-wise
-{-@ vecMul :: a:{DSL _ | isVector a} ->
-              b:{DSL _ | isVector b && vlength b = vlength a} ->
-              c:{DSL _ | isVector c && vlength c = vlength a} @-}
-vecMul :: DSL PF -> DSL PF -> DSL PF
-vecMul = vZipWith MUL
+{-@ vecMul :: a:{DSL p | typed a (TVec TF)} ->
+              b:{DSL p | typed b (TVec TF) && vlength b = vlength a} ->
+              c:{DSL p | typed c (TVec TF) && vlength c = vlength a} @-}
+vecMul :: DSL p -> DSL p -> DSL p
+vecMul = vZipWith TF TF TF MUL
 
 -- [1, 2, 3] * [5, 6, 7] = [1*5, 2*6, 3*7] = [5, 12, 21]
-{-@ vec4 :: DSL _ @-}
+{-@ vec4 :: {v:DSL PF | typed v (TVec TF)} @-}
 vec4 :: DSL PF
 vec4 = vecMul (range 1 4) (range 5 8)
 
-{-@ vec5 :: {v:DSL _ | vlength v = 9} @-}
+{-@ vec5 :: {v:DSL PF | typed v (TVec TF) && vlength v = 9} @-}
 vec5 :: DSL PF
-vec5 = rotateL (range 1 10) 3
+vec5 = rotateL TF (range 1 10) 3
 
-{-@ vec6 :: {v:DSL _ | vlength v = 9} @-}
+{-@ vec6 :: {v:DSL PF | typed v (TVec TF) && vlength v = 9} @-}
 vec6 :: DSL PF
-vec6 = rotateR (range 1 10) 2
+vec6 = rotateR TF (range 1 10) 2
 
-{-@ vec7 :: GlobalStore PF (DSL PF) @-}
+{-@ vec7 :: GlobalStore PF ({v:DSL PF | typed v TF}) @-}
 vec7 :: GlobalStore PF (DSL PF)
-vec7 = fromBinary $ PlinkLib.fromList $ map CONST [1,1,0,1]
+vec7 = fromBinary $ PlinkLib.fromList TBool $ map toDSLBool [1,1,0,1]
 
 testVectors :: IO ()
 testVectors = do
@@ -301,23 +303,26 @@ testVectors = do
 
 -- Modular arithmetic examples -------------------------------------------------
 
+{-@ mod1 :: GlobalStore PF ({v:DSL PF | typed v TF}) @-}
 mod1 :: GlobalStore PF (DSL PF)
-mod1 = addMod 5 (VAR "x") (VAR "y")
+mod1 = addMod 5 (VAR "x" TF) (VAR "y" TF)
 
 
+{-@ shift :: GlobalStore PF ({v:DSL PF | typed v TF}) @-}
 shift :: GlobalStore PF (DSL PF)
 shift = do
-  let x = VAR "x"
+  let x = VAR "x" TF
   vec <- toBinary 3 x
   y   <- fromBinary (shiftR vec 1)
   return y
 
 
+{-@ rotate :: GlobalStore PF ({v:DSL PF | typed v TF}) @-}
 rotate :: GlobalStore PF (DSL PF)
 rotate = do
-  let x = VAR "x"
+  let x = VAR "x" TF
   vec <- toBinary 5 x
-  res <- fromBinary (rotateR vec 2)
+  res <- fromBinary (rotateR TBool vec 2)
   return res
 
 
@@ -334,12 +339,15 @@ testMod = do
 
 -- SHA256 examples -------------------------------------------------------------
 
+{-@ sha256_1 :: GlobalStore BigPF ({v:DSL BigPF | typed v (TVec TBool)}) @-}
 sha256_1 :: GlobalStore BigPF (DSL BigPF)
 sha256_1 = sha256 "Hello, world!"
 
+{-@ sha256_2 :: GlobalStore BigPF ({v:DSL BigPF | typed v (TVec TBool)}) @-}
 sha256_2 :: GlobalStore BigPF (DSL BigPF)
 sha256_2 = sha256 ""
 
+{-@ sha256_3 :: GlobalStore BigPF ({v:DSL BigPF | typed v (TVec TBool)}) @-}
 sha256_3 :: GlobalStore BigPF (DSL BigPF)
 sha256_3 = sha256 "The quick brown fox jumps over the lazy dog"
 

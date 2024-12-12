@@ -2,7 +2,7 @@
                 -fno-cse -fno-full-laziness #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-{-@ infix +++ @-}
+{-@ LIQUID "--ple-with-undecided-guards" @-}
 
 module PlinkLib where
 
@@ -12,171 +12,192 @@ import Utils (pow, map')
 import GlobalStore
 
 -- General functions for variables ---------------------------------------------
-{-@ vecVar :: strs:[String] -> {v:DSL p [t] | vlength v = len strs} @-}
-vecVar :: [String] -> DSL p [t]
-vecVar strs = fromList (map' VAR strs)
+{-@ vecVar :: strs:[String] -> τ:ScalarTy
+           -> {v:DSL p | typed v (TVec τ) && vlength v = len strs} @-}
+vecVar :: [String] -> Ty -> DSL p
+vecVar strs τ = fromList τ (map' (\s -> VAR s τ) strs)
 
 -- List-like functions ---------------------------------------------------------
-{-@ fromList :: l:[{v:DSL p t | scalar v}] ->
-               {v:DSL p [t] | vector v && vlength v = len l} @-}
-fromList :: [DSL p t] -> DSL p [t]
-fromList []     = NIL
-fromList (x:xs) = x `CONS` fromList xs
+{-@ fromList :: τ:Ty
+             -> l:[{v:DSL p | typed v τ}]
+             -> {v:DSL p | typed v (TVec τ) && vlength v = len l} @-}
+fromList :: Ty -> [DSL p] -> DSL p
+fromList τ []     = NIL τ
+fromList τ (x:xs) = x `CONS` fromList τ xs
 
-{-@ get :: v:{DSL p [t] | vector v} -> Btwn 0 (vlength v) -> DSL p t @-}
-get :: DSL p [t] -> Int -> DSL p t
-get (CONS p _ ) 0 = p
-get (CONS _ ps) i = get ps (i-1)
+{-@ get :: τ:Ty -> v:{DSL p | typed v (TVec τ)} -> Btwn 0 (vlength v)
+        -> {v:DSL p | typed v τ} @-}
+get :: Ty -> DSL p -> Int -> DSL p
+get _ (CONS p _ ) 0 = p
+get τ (CONS _ ps) i = get τ ps (i-1)
 
-{-@ set :: v:{DSL p [t] | vector v} -> Btwn 0 (vlength v) ->
-           {x:DSL p t | scalar x} ->
-           {u:DSL p [t] | vector u && vlength u = vlength v} @-}
-set :: DSL p [t] -> Int -> DSL p t -> DSL p [t]
-set (CONS _ ps) 0 x = CONS x ps
-set (CONS p ps) i x = CONS p (set ps (i-1) x)
+{-@ set :: τ:Ty
+        -> v:{DSL p | typed v (TVec τ)} -> Btwn 0 (vlength v)
+        -> {x:DSL p | typed x τ}
+        -> {u:DSL p | typed u (TVec τ) && vlength u = vlength v} @-}
+set :: Ty -> DSL p -> Int -> DSL p -> DSL p
+set _ (CONS _ ps) 0 x = CONS x ps
+set τ (CONS p ps) i x = CONS p (set τ ps (i-1) x)
 
-{-@ (+++) :: u:{DSL p [t] | vector u} ->
-             v:{DSL p [t] | vector v} ->
-             {w:DSL p [t] | vlength w = vlength u + vlength v} @-}
-(+++) :: DSL p [t] -> DSL p [t] -> DSL p [t]
-(NIL)       +++ ys = ys
-(CONS x xs) +++ ys = CONS x (xs +++ ys)
+{-@ vAppend :: τ:Ty
+            -> u:{DSL p | typed u (TVec τ)}
+            -> v:{DSL p | typed v (TVec τ)}
+            -> {w:DSL p | typed w (TVec τ)
+                       && vlength w = vlength u + vlength v} @-}
+vAppend :: Ty -> DSL p -> DSL p -> DSL p
+vAppend τ (NIL _)     ys = ys
+vAppend τ (CONS x xs) ys = CONS x (vAppend τ xs ys)
 
-infixr 5 +++
-
-{-@ vConcat :: vs:[{u:DSL p [t] | vector u}]
-            -> {v:DSL p [t] | vector v && vlength v = lengths vs} @-}
-vConcat :: [DSL p [t]] -> DSL p [t]
-vConcat ([])   = NIL
-vConcat (p:ps) = p +++ vConcat ps
+{-@ vConcat :: τ:Ty
+            -> vs:[{u:DSL p | typed u (TVec τ)}]
+            -> {v:DSL p | typed v (TVec τ) && vlength v = lengths vs} @-}
+vConcat :: Ty -> [DSL p] -> DSL p
+vConcat τ ([])   = NIL τ
+vConcat τ (p:ps) = vAppend τ p (vConcat τ ps)
 
 {-@ reflect lengths @-}
-{-@ lengths :: [{v:DSL p [t] | vector v}] -> Nat @-}
-lengths :: [DSL p [t]] -> Int
+{-@ lengths :: [DSL p] -> Nat @-}
+lengths :: [DSL p] -> Int
 lengths [] = 0
 lengths (p:ps) = vlength p + lengths ps
 
-{-@ vTakeDrop :: n:Nat -> u:{DSL p [t] | vector u && vlength u >= n} ->
-                ({v:DSL p [t] | vector v && vlength v = n},
-                 {w:DSL p [t] | vector w && vlength w = (vlength u) - n}) @-}
-vTakeDrop :: Int -> DSL p [t] -> (DSL p [t], DSL p [t])
-vTakeDrop 0 xs          = (NIL, xs)
-vTakeDrop n (CONS x xs) = let (ys, zs) = vTakeDrop (n-1) xs in (CONS x ys, zs)
+{-@ vTakeDrop :: τ:Ty -> n:Nat -> u:{DSL p | typed u (TVec τ) && vlength u >= n}
+              -> ({v:DSL p | typed v (TVec τ) && vlength v = n},
+                  {w:DSL p | typed w (TVec τ) && vlength w = (vlength u) - n})
+@-}
+vTakeDrop :: Ty -> Int -> DSL p -> (DSL p, DSL p)
+vTakeDrop τ 0 xs          = (NIL τ, xs)
+vTakeDrop τ n (CONS x xs) = let (ys, zs) = vTakeDrop τ (n-1) xs
+                            in (CONS x ys, zs)
 
-{-@ vReplicate :: n:Nat -> {p:DSL p t | scalar p} ->
-                  {v:DSL p [t] | vector v && vlength v = n} @-}
-vReplicate :: Int -> DSL p t -> DSL p [t]
-vReplicate 0 _ = NIL
-vReplicate n p = CONS p (vReplicate (n-1) p)
+{-@ vReplicate :: τ:Ty -> n:Nat -> {p:DSL p | typed p τ}
+               -> {v:DSL p | typed v (TVec τ) && vlength v = n} @-}
+vReplicate :: Ty -> Int -> DSL p -> DSL p
+vReplicate τ 0 _ = NIL τ
+vReplicate τ n p = CONS p (vReplicate τ (n-1) p)
 
-{-@ vZip :: u:{DSL p [t] | vector u} ->
-            v:{DSL p [t] | vector v && vlength v = vlength u} ->
-            w:{[({x:DSL p t | scalar x},
-                 {y:DSL p t | scalar y})] |
+{-@ vZip :: τ:Ty
+         -> u:{DSL p | typed u (TVec τ)}
+         -> v:{DSL p | typed v (TVec τ) && vlength v = vlength u}
+         -> w:{[({x:DSL p | typed x τ},
+                 {y:DSL p | typed y τ})] |
                  len w = vlength u} @-}
-vZip :: DSL p [t] -> DSL p [t] -> [(DSL p t, DSL p t)]
-vZip (NIL)       (NIL)       = []
-vZip (CONS x xs) (CONS y ys) = (x,y) : vZip xs ys
+vZip :: Ty -> DSL p -> DSL p -> [(DSL p, DSL p)]
+vZip τ (NIL _)     (NIL _)     = []
+vZip τ (CONS x xs) (CONS y ys) = (x,y) : vZip τ xs ys
 
-{-@ vZipWith :: op:(DSL p t -> DSL p t -> DSL p t) ->
-                u:{DSL p [t] | vector u} ->
-                v:{DSL p [t] | vector v && vlength v = vlength u} ->
-                w:{DSL p [t] | vector w && vlength w = vlength u} @-}
-vZipWith :: (DSL p t -> DSL p t -> DSL p t)
-         -> DSL p [t] -> DSL p [t] -> DSL p [t]
-vZipWith _  (NIL)       (NIL)       = NIL
-vZipWith op (CONS x xs) (CONS y ys) = op x y `CONS` vZipWith op xs ys
+{-@ vZipWith :: τ1:Ty -> τ2:Ty -> τ3:Ty
+             -> op:({a:DSL p | typed a τ1} ->
+                    {b:DSL p | typed b τ2} ->
+                    {c:DSL p | typed c τ3})
+             -> u:{DSL p | typed u (TVec τ1)}
+             -> v:{DSL p | typed v (TVec τ2) && vlength v = vlength u}
+             -> w:{DSL p | typed w (TVec τ3) && vlength w = vlength u} @-}
+vZipWith :: Ty -> Ty -> Ty
+         -> (DSL p -> DSL p -> DSL p)
+         -> DSL p -> DSL p -> DSL p
+vZipWith _  _  τ3 _  (NIL _)     (NIL _)     = NIL τ3
+vZipWith τ1 τ2 τ3 op (CONS x xs) (CONS y ys) =
+  op x y `CONS` vZipWith τ1 τ2 τ3 op xs ys
 
-{-@ vMap :: op:(DSL p t -> DSL p t)
-         -> u:{DSL p [t] | vector u}
-         -> v:{DSL p [t] | vector v && vlength v = vlength u} @-}
-vMap :: (DSL p t -> DSL p t) -> DSL p [t] -> DSL p [t]
-vMap _  (NIL)       = NIL
-vMap op (CONS x xs) = op x `CONS` vMap op xs
+{-@ vMap :: τ1:Ty -> τ2:Ty ->
+            op:({a:DSL p | typed a τ1} -> {b:DSL p | typed b τ2})
+         -> u:{DSL p | typed u (TVec τ1)}
+         -> v:{DSL p | typed v (TVec τ2) && vlength v = vlength u} @-}
+vMap :: Ty -> Ty -> (DSL p -> DSL p) -> DSL p -> DSL p
+vMap _  τ2 _  (NIL _)       = NIL τ2
+vMap τ1 τ2 op (CONS x xs) = op x `CONS` vMap τ1 τ2 op xs
 
-{-@ vChunk :: n:Nat1 -> v:{DSL p [t] | vector v && (vlength v) mod n = 0}
-           -> {l:[{w:DSL p [t] | vector w && vlength w = n}]
+{-@ vChunk :: τ:Ty -> n:Nat1
+           -> v:{DSL p | typed v (TVec τ) && (vlength v) mod n = 0}
+           -> {l:[{w:DSL p | typed w (TVec τ) && vlength w = n}]
                 | n * len l = vlength v}
             / [vlength v] @-}
-vChunk :: Int -> DSL p [t] -> [DSL p [t]]
-vChunk _ NIL = []
-vChunk n xs  = let (ys, zs) = vTakeDrop n xs in ys : (vChunk n zs)
+vChunk :: Ty -> Int -> DSL p -> [DSL p]
+vChunk _ _ (NIL _) = []
+vChunk τ n xs      = let (ys, zs) = vTakeDrop τ n xs in ys : (vChunk τ n zs)
 
 -- Bitwise operations ----------------------------------------------------------
-{-@ vNot :: u:{DSL p [Bool] | vector u} ->
-            w:{DSL p [Bool] | vector w && vlength w = vlength u} @-}
-vNot = vMap NOT
+{-@ vNot :: u:{DSL p | typed u (TVec TBool)}
+         -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
+vNot = vMap TBool TBool NOT
 
-{-@ vAnd :: u:{DSL p [Bool] | vector u} ->
-            v:{DSL p [Bool] | vector v && vlength v = vlength u} ->
-            w:{DSL p [Bool] | vector w && vlength w = vlength u} @-}
-vAnd = vZipWith AND
+{-@ vAnd :: u:{DSL p | typed u (TVec TBool)}
+         -> v:{DSL p | typed v (TVec TBool) && vlength v = vlength u}
+         -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
+vAnd = vZipWith TBool TBool TBool AND
 
-{-@ vOr :: u:{DSL p [Bool] | vector u} ->
-           v:{DSL p [Bool] | vector v && vlength v = vlength u} ->
-           w:{DSL p [Bool] | vector w && vlength w = vlength u} @-}
-vOr = vZipWith OR
+{-@ vOr :: u:{DSL p | typed u (TVec TBool)}
+        -> v:{DSL p | typed v (TVec TBool) && vlength v = vlength u}
+        -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
+vOr = vZipWith TBool TBool TBool OR
 
-{-@ vXor :: u:{DSL p [Bool] | vector u} ->
-            v:{DSL p [Bool] | vector v && vlength v = vlength u} ->
-            w:{DSL p [Bool] | vector w && vlength w = vlength u} @-}
-vXor = vZipWith XOR
+{-@ vXor :: u:{DSL p | typed u (TVec TBool)} ->
+            v:{DSL p | typed v (TVec TBool) && vlength v = vlength u} ->
+            w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
+vXor = vZipWith TBool TBool TBool XOR
 
 -- Shift & rotate --------------------------------------------------------------
-{-@ rotateL :: u:{DSL p [t] | vector u} -> Btwn 0 (vlength u) ->
-               {v:DSL p [t] | vector v && vlength v = vlength u} @-}
-rotateL :: DSL p [t] -> Int -> DSL p [t]
-rotateL xs n = let (ys, zs) = vTakeDrop n xs in zs +++ ys
+{-@ rotateL :: τ:Ty
+            -> u:{DSL p | typed u (TVec τ)} -> Btwn 0 (vlength u)
+            -> {v:DSL p | typed v (TVec τ) && vlength v = vlength u} @-}
+rotateL :: Ty -> DSL p -> Int -> DSL p
+rotateL τ xs n = let (ys, zs) = vTakeDrop τ n xs
+                 in vAppend τ zs ys
 
-{-@ rotateR :: u:{DSL p [t] | vector u} -> Btwn 0 (vlength u) ->
-               {v:DSL p [t] | vector v && vlength v = vlength u} @-}
-rotateR :: DSL p [t] -> Int -> DSL p [t]
-rotateR xs n = let (ys, zs) = vTakeDrop (vlength xs - n) xs in zs +++ ys
+{-@ rotateR :: τ:Ty
+            -> u:{DSL p | typed u (TVec τ)} -> Btwn 0 (vlength u)
+            -> {v:DSL p | typed v (TVec τ) && vlength v = vlength u} @-}
+rotateR :: Ty -> DSL p -> Int -> DSL p
+rotateR τ xs n = let (ys, zs) = vTakeDrop τ (vlength xs - n) xs
+                 in vAppend τ zs ys
 
-{-@ shiftL :: u:{DSL p [Bool] | vector u} -> Btwn 0 (vlength u) ->
-              {v:DSL p [Bool] | vector v && vlength v = vlength u} @-}
-shiftL :: Num p => DSL p [Bool] -> Int -> DSL p [Bool]
-shiftL xs n = let (_, zs) = vTakeDrop n xs in
-  zs +++ vReplicate n FALSE
+{-@ shiftL :: u:{DSL p | typed u (TVec TBool)} -> Btwn 0 (vlength u)
+           -> {v:DSL p | typed v (TVec TBool) && vlength v = vlength u} @-}
+shiftL :: Num p => DSL p -> Int -> DSL p
+shiftL xs n = let (_, zs) = vTakeDrop TBool n xs in
+  vAppend TBool zs (vReplicate TBool n FALSE)
 
-{-@ shiftR :: u:{DSL p [Bool] | vector u} -> Btwn 0 (vlength u) ->
-              {v:DSL p [Bool] | vector v && vlength v = vlength u} @-}
-shiftR :: Num p => DSL p [Bool] -> Int -> DSL p [Bool]
-shiftR xs n = let (ys, _) = vTakeDrop (vlength xs - n) xs in
-  vReplicate n FALSE +++ ys
+{-@ shiftR :: u:{DSL p | typed u (TVec TBool)} -> Btwn 0 (vlength u) ->
+              {v:DSL p | typed v (TVec TBool) && vlength v = vlength u} @-}
+shiftR :: Num p => DSL p -> Int -> DSL p
+shiftR xs n = let (ys, _) = vTakeDrop TBool (vlength xs - n) xs in
+  vAppend TBool (vReplicate TBool n FALSE) ys
 
 -- Integers mod 2^n -----------------------------------------------------------
 {-@ fromInt :: n:Nat -> x:Btwn 0 (pow 2 n) ->
-              {v:DSL p [Bool] | vector v && vlength v = n} @-}
-fromInt :: Num p => Int -> Int -> DSL p [Bool]
-fromInt n = go 0 NIL where
+              {v:DSL p | typed v (TVec TBool) && vlength v = n} @-}
+fromInt :: Num p => Int -> Int -> DSL p
+fromInt n = go 0 (NIL TBool) where
   {-@ go :: m:{Nat | m <= n} ->
-            {acc:DSL p [Bool] | vector acc && vlength acc = m} ->
+            {acc:DSL p | typed acc (TVec TBool) && vlength acc = m} ->
             x:Btwn 0 (pow 2 n) ->
-            {v:DSL p [Bool] | vector v && vlength v = n} / [n-m] @-}
-  go :: Num p => Int -> DSL p [Bool] -> Int -> DSL p [Bool]
+            {v:DSL p | typed v (TVec TBool) && vlength v = n} / [n-m] @-}
+  go :: Num p => Int -> DSL p -> Int -> DSL p
   go m acc x
     | m == n    = acc
     | otherwise = let (q, r) = divMod x 2; r' = toDSLBool r
                   in go (m+1) (r' `CONS` acc) q
 
 
-{-@ binaryValue :: {v:DSL p [Bool] | vector v && vlength v > 0}
-                -> GlobalStore p (DSL p p) @-}
+{-@ binaryValue :: {v:DSL p | typed v (TVec TBool) && vlength v > 0}
+                -> GlobalStore p ({d:DSL p | typed d TF}) @-}
 binaryValue :: (Integral p, Fractional p, Eq p) =>
-               DSL p [Bool] -> GlobalStore p (DSL p p)
+               DSL p -> GlobalStore p (DSL p)
 binaryValue v = go v (CONST 0) where
-  {-@ go :: {v:DSL p [Bool] | vector v} -> acc:DSL p p
-         -> GlobalStore p (DSL p p) @-}
+  {-@ go :: {v:DSL p | typed v (TVec TBool)} -> {acc:DSL p | typed acc TF}
+         -> GlobalStore p ({d:DSL p | typed d TF}) @-}
   go :: (Integral p, Fractional p, Eq p) =>
-        DSL p [Bool] -> DSL p p -> GlobalStore p (DSL p p)
-  go NIL         acc = pure acc
+        DSL p -> DSL p -> GlobalStore p (DSL p)
+  go (NIL _)     acc = pure acc
   go (CONS x xs) acc = do
-    let bit = var "bit" -- auxiliary variable to not grow programs exponentially
-    define bit (eval x) -- hint for witness generation
-    assert $ DEF bit x  -- constrain it to have the correct value
-    assert $ BOOL (VAR bit)
-    go xs (VAR bit `ADD` (acc `MUL` CONST 2))
+    let bit' = var "bit" -- auxiliary variable to not grow programs exponentially
+    let bit = VAR bit' TF
+
+    define bit' (eval x) -- hint for witness generation
+    assert $ DEF bit' x  -- constrain it to have the correct value
+    assert $ BOOL bit    -- bit ∈ {0,1}, even if we treat it as a number
+    go xs (bit `ADD` (acc `MUL` CONST 2))
 
 {-@ binaryRepr :: n:Nat -> p -> ListN p n @-}
 binaryRepr :: (Integral p, Eq p) => Int -> p -> [p]
@@ -191,26 +212,27 @@ binaryRepr n = go 0 [] . toInteger where
     | otherwise = let (q, r) = divMod x 2
                   in go (m+1) (fromIntegral r : acc) q
 
-{-@ fromBinary :: {v:DSL p [Bool] | vector v && vlength v > 0}
-               -> GlobalStore p (DSL p p) @-}
+{-@ fromBinary :: {v:DSL p | typed v (TVec TBool) && vlength v > 0}
+               -> GlobalStore p ({d:DSL p | typed d TF}) @-}
 fromBinary :: (Integral p, Fractional p, Eq p) =>
-              DSL p [Bool] -> GlobalStore p (DSL p p)
+              DSL p -> GlobalStore p (DSL p)
 fromBinary vec = do
   let x' = var "x"
-  let x = VAR x'
+  let x = VAR x' TF
 
   val <- binaryValue vec
   assert $ val `EQA` x
   define x' (eval val) -- evaluate `val` (value) to a field element
   return x
 
-{-@ toBinary :: n:Nat1 -> DSL p p
-             -> GlobalStore p ({v:DSL p [Bool] | vector v && vlength v = n}) @-}
+{-@ toBinary :: n:Nat1 -> {d:DSL p | typed d TF}
+             -> GlobalStore p ({v:DSL p | typed v (TVec TBool)
+                                       && vlength v = n}) @-}
 toBinary :: (Integral p, Fractional p, Eq p) =>
-            Int -> DSL p p -> GlobalStore p (DSL p [Bool])
+            Int -> DSL p -> GlobalStore p (DSL p)
 toBinary n x = do
   let vec' = vars n "bits"
-  let vec = vecVar vec'
+  let vec = vecVar vec' TBool
 
   val <- binaryValue vec
   assert $ val `EQA` x
@@ -220,21 +242,26 @@ toBinary n x = do
 
 -- x + y (mod 2^e)
 {-@ addMod :: Nat1
-           -> DSL p p -> DSL p p
-           -> GlobalStore p (DSL p p) @-}
+           -> {x:DSL p | typed x TF} -> {y:DSL p | typed y TF}
+           -> GlobalStore p ({z:DSL p | typed z TF}) @-}
 addMod :: (Integral p, Fractional p, Ord p) =>
-          Int -> DSL p p -> DSL p p -> GlobalStore p (DSL p p)
+          Int -> DSL p -> DSL p -> GlobalStore p (DSL p)
 addMod e x y = do
   let modulus = 2^e
-  let b = var "overflow"
-  let z = var "sum"
-  assert $ BOOL (VAR b)
-  assert $ (x `ADD` y) `EQA` (VAR z `ADD` (VAR b `MUL` CONST modulus))
 
-  _evidence <- toBinary e (VAR z) -- z can be encoded using ‘e’ bits
+  let b' = var "overflow"
+  let b = VAR b' TF
 
-  define b (\v -> (\x y -> if x + y < modulus then 0 else 1)
+  let z' = var "sum"
+  let z = VAR z' TF
+
+  assert $ BOOL b
+  assert $ (x `ADD` y) `EQA` (z `ADD` (b `MUL` CONST modulus))
+
+  _evidence <- toBinary e z -- z can be encoded using ‘e’ bits
+
+  define b' (\v -> (\x y -> if x + y < modulus then 0 else 1)
                    <$> eval x v <*> eval y v)
-  define z (\v -> (\x y -> (x + y) `mod` modulus)
+  define z' (\v -> (\x y -> (x + y) `mod` modulus)
                    <$> eval x v <*> eval y v)
-  return (VAR z)
+  return z

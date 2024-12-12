@@ -1,6 +1,8 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
+{-@ LIQUID "--ple-with-undecided-guards" @-}
 
 module DSL where
 
@@ -17,170 +19,167 @@ import qualified Data.Map as M
 import Data.IORef
 import System.IO.Unsafe
 
+data Ty = TF | TInt32 | TByte | TBool | TVec Ty deriving (Eq, Ord, Show)
+{-@ type ScalarTy = {τ:Ty | scalarType τ} @-}
 
-import Language.Haskell.Liquid.ProofCombinators
+{-@ measure scalarType @-}
+scalarType :: Ty -> Bool
+scalarType (TVec _) = False
+scalarType _        = True
 
--- for use with DataKinds
--- data Ty = TF | TInt32 | TByte | TBool | TVec Ty deriving (Eq, Show)
 
-data DSL p t where
+data DSL p where
   -- Basic operations
-  VAR   :: String -> DSL p t -- variable (the exact type is determined by Γ)
-  CONST :: p      -> DSL p p -- constant (of type p, i.e. prime field)
+  VAR   :: String -> Ty -> DSL p -- variable
+  CONST :: p      -> DSL p -- constant (of type p, i.e. prime field)
   -- TODO: add constants of other types (integers, booleans...)
-  TRUE  :: DSL p Bool
-  FALSE :: DSL p Bool
+  TRUE  :: DSL p
+  FALSE :: DSL p
 
   -- Arithmetic operations
-  ADD :: Num t => DSL p t -> DSL p t -> DSL p t        -- addition
-  SUB :: Num t => DSL p t -> DSL p t -> DSL p t        -- substraction
-  MUL :: Num t => DSL p t -> DSL p t -> DSL p t        -- multiplication
-  DIV :: Fractional t => DSL p t -> DSL p t -> DSL p t -- division
+  ADD :: DSL p -> DSL p -> DSL p -- addition
+  SUB :: DSL p -> DSL p -> DSL p -- substraction
+  MUL :: DSL p -> DSL p -> DSL p -- multiplication
+  DIV :: DSL p -> DSL p -> DSL p -- division
 
   -- Boolean operations
-  NOT :: DSL p Bool -> DSL p Bool               -- logical not
-  AND :: DSL p Bool -> DSL p Bool -> DSL p Bool -- logical and
-  OR  :: DSL p Bool -> DSL p Bool -> DSL p Bool -- logical or
-  XOR :: DSL p Bool -> DSL p Bool -> DSL p Bool -- logical xor
+  NOT :: DSL p -> DSL p          -- logical not
+  AND :: DSL p -> DSL p -> DSL p -- logical and
+  OR  :: DSL p -> DSL p -> DSL p -- logical or
+  XOR :: DSL p -> DSL p -> DSL p -- logical xor
 
-  UnsafeNOT :: DSL p Bool -> DSL p Bool               -- unsafe logical not
-  UnsafeAND :: DSL p Bool -> DSL p Bool -> DSL p Bool -- unsafe logical and
-  UnsafeOR  :: DSL p Bool -> DSL p Bool -> DSL p Bool -- unsafe logical or
-  UnsafeXOR :: DSL p Bool -> DSL p Bool -> DSL p Bool -- unsafe logical xor
+  UnsafeNOT :: DSL p -> DSL p          -- unsafe logical not
+  UnsafeAND :: DSL p -> DSL p -> DSL p -- unsafe logical and
+  UnsafeOR  :: DSL p -> DSL p -> DSL p -- unsafe logical or
+  UnsafeXOR :: DSL p -> DSL p -> DSL p -- unsafe logical xor
 
   -- Boolean constructors
-  ISZERO :: DSL p p            -> DSL p Bool -- zero check
-  EQL    :: DSL p p -> DSL p p -> DSL p Bool -- equality check
-  EQLC   :: DSL p p -> p       -> DSL p Bool -- equality check against constant
+  ISZERO :: DSL p          -> DSL p -- zero check
+  EQL    :: DSL p -> DSL p -> DSL p -- equality check
+  EQLC   :: DSL p -> p     -> DSL p -- equality check against constant
 
   -- Vectors
-  NIL  :: DSL p [t]
-  CONS :: DSL p t -> DSL p [t] -> DSL p [t]
-
-deriving instance Eq p  => Eq  (DSL p t)
-deriving instance Ord p => Ord (DSL p t)
+  NIL  :: Ty -> DSL p
+  CONS :: DSL p -> DSL p -> DSL p
+  deriving (Eq, Ord)
 
 infixr 5 `CONS`
 
--- (Non-expression) assertions
-data Assertion p where
-  DEF    :: String  -> DSL p t -> Assertion p -- variable definition
-  NZERO  :: DSL p p            -> Assertion p -- non-zero assertion
-  BOOL   :: DSL p p            -> Assertion p -- booleanity assertion
-  EQA    :: DSL p p -> DSL p p -> Assertion p -- equality assertion
 
-toDSLBool :: Integral a => a -> DSL p Bool
+{-@ measure vlength @-}
+{-@ vlength :: DSL p -> Nat @-}
+vlength :: DSL p -> Int
+vlength (NIL _)     = 0
+vlength (CONS _ ps) = 1 + vlength ps
+vlength _           = 1
+
+{-@ toDSLBool :: a -> {v:DSL p | typed v TBool} @-}
+toDSLBool :: Integral a => a -> DSL p
 toDSLBool x = if (fromIntegral x == 0) then FALSE else TRUE
 
-{-@
-data DSL p t where
-  VAR   :: String -> DSL p t
-  CONST :: p      -> DSL p p
-  TRUE  :: DSL p Bool
-  FALSE :: DSL p Bool
 
-  ADD :: {v:DSL p t | scalar v} -> {u:DSL p t | scalar u} -> DSL p t
-  SUB :: {v:DSL p t | scalar v} -> {u:DSL p t | scalar u} -> DSL p t
-  MUL :: {v:DSL p t | scalar v} -> {u:DSL p t | scalar u} -> DSL p t
-  DIV :: {v:DSL p t | scalar v} -> {u:DSL p t | scalar u} -> DSL p t
+{-@ reflect typed @-}
+typed :: DSL p -> Ty -> Bool
+typed p τ = inferType p == Just τ
 
-  NOT :: {v:DSL p Bool | scalar v} ->                              DSL p Bool
-  AND :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
-  OR  :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
-  XOR :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
+{-@ type ScalarDSL p = {d:DSL p | scalar d} @-}
+{-@ type TypedDSL p = {d:DSL p | wellTyped d} @-}
 
-  UnsafeNOT :: {v:DSL p Bool | scalar v} ->                         DSL p Bool
-  UnsafeAND :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
-  UnsafeOR  :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
-  UnsafeXOR :: {v:DSL p Bool | scalar v} -> {u:DSL p Bool | scalar u} -> DSL p Bool
+{-@ reflect wellTyped @-}
+wellTyped :: DSL p -> Bool
+wellTyped p = case inferType p of
+  Just _ -> True
+  Nothing -> False
 
-  ISZERO :: {v:DSL p p | scalar v} ->                           DSL p Bool
-  EQL    :: {v:DSL p p | scalar v} -> {u:DSL p p | scalar u} -> DSL p Bool
-  EQLC   :: {v:DSL p p | scalar v} -> p                      -> DSL p Bool
+{-@ reflect scalar @-}
+scalar :: DSL p -> Bool
+scalar p = case inferType p of
+  Just (TVec _) -> False
+  Just _        -> True
+  otherwise     -> False
 
-  NIL  :: DSL _ [t]
-  CONS :: DSL _ t -> {tail:DSL _ [t] | vector tail} -> DSL _ [t]
-@-}
+
+{-@ measure inferType @-}
+{-@ inferType :: d:DSL p -> Maybe Ty @-}
+inferType :: DSL p -> Maybe Ty
+-- TODO: allow vector variables
+inferType (VAR _ τ) = if scalarType τ then Just τ else Nothing
+inferType (CONST _) = Just TF
+inferType (TRUE)    = Just TBool
+inferType (FALSE)   = Just TBool
+
+inferType (ADD p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
+                        then Just TF else Nothing
+inferType (SUB p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
+                        then Just TF else Nothing
+inferType (MUL p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
+                        then Just TF else Nothing
+inferType (DIV p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
+                        then Just TF else Nothing
+
+inferType (NOT p1)    = if inferType p1 == Just TBool
+                        then Just TBool else Nothing
+inferType (AND p1 p2) = if inferType p1 == Just TBool
+                        && inferType p2 == Just TBool
+                        then Just TBool else Nothing
+inferType (OR  p1 p2) = if inferType p1 == Just TBool
+                        && inferType p2 == Just TBool
+                        then Just TBool else Nothing
+inferType (XOR p1 p2) = if inferType p1 == Just TBool
+                        && inferType p2 == Just TBool
+                        then Just TBool else Nothing
+
+inferType (UnsafeNOT p1)    = if inferType p1 == Just TBool
+                              then Just TBool else Nothing
+inferType (UnsafeAND p1 p2) = if inferType p1 == Just TBool
+                              && inferType p2 == Just TBool
+                              then Just TBool else Nothing
+inferType (UnsafeOR  p1 p2) = if inferType p1 == Just TBool
+                              && inferType p2 == Just TBool
+                              then Just TBool else Nothing
+inferType (UnsafeXOR p1 p2) = if inferType p1 == Just TBool
+                              && inferType p2 == Just TBool
+                              then Just TBool else Nothing
+
+inferType (EQL p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
+                        then Just TBool else Nothing
+inferType (ISZERO p1) = if inferType p1 == Just TF
+                        then Just TBool else Nothing
+inferType (EQLC p1 _) = if inferType p1 == Just TF
+                        then Just TBool else Nothing
+
+inferType (NIL τ) = Just (TVec τ)
+inferType (CONS h ts)
+  | Just τ  <- inferType h
+  , Just τs <- inferType ts
+  , τs == TVec τ
+  = Just τs
+  | otherwise = Nothing
+
+
+-- (Non-expression) assertions
+data Assertion p where
+  DEF    :: String  -> DSL p -> Assertion p -- variable definition
+  NZERO  :: DSL p            -> Assertion p -- non-zero assertion
+  BOOL   :: DSL p            -> Assertion p -- booleanity assertion
+  EQA    :: DSL p   -> DSL p -> Assertion p -- equality assertion
 
 {-@
 data Assertion p where
-  DEF    :: String                 -> DSL p t                -> Assertion p
-  NZERO  :: {v:DSL p p | scalar v}                           -> Assertion p
-  BOOL   :: {v:DSL p p | scalar v}                           -> Assertion p
-  EQA    :: {v:DSL p p | scalar v} -> {u:DSL p p | scalar u} -> Assertion p
+  DEF    :: String      -> ScalarDSL p -> Assertion p
+  NZERO  :: ScalarDSL p                -> Assertion p
+  BOOL   :: ScalarDSL p                -> Assertion p
+  EQA    :: ScalarDSL p -> ScalarDSL p -> Assertion p
 @-}
-
-{-@ assume isVector :: d:DSL p [t] -> {v:DSL p [t] | vector v && v = d} @-}
-isVector :: DSL p [t] -> DSL p [t]
-isVector d = d
-
-{- measure vlength @-}
-{-@ vlength :: DSL p [t] -> Nat @-}
-vlength :: DSL p [t] -> Int
-vlength (NIL)       = 0
-vlength (CONS _ ps) = 1 + vlength ps
-vlength d           = (flip const) (isVector d) (error "undefined")  
-
-{-@ measure scalar @-}
-scalar :: DSL p t -> Bool
-scalar (NIL)     = False
-scalar (CONS {}) = False
-scalar _         = True
-
-{-@ measure vector @-}
-vector :: DSL p t -> Bool
-vector (NIL)     = True
-vector (CONS {}) = True
-vector _         = False
-
--- TODO: how to declare variables with type annotations
--- declare :: t:Ty -> String -> {p:DSL p | type p = t}
--- type TyEnv = M.Map String Ty
-
--- {-@ measure typecheck @-}
--- typecheck :: TyEnv -> DSL p -> Ty -> Bool
--- typecheck γ = check where
---   check :: DSL p -> Ty -> Bool
---   check program τ = case program of
---     VAR s   -> matches (M.lookup γ s) τ
---     CONST _ -> (τ == TF)
-
---     ADD p1 p2 -> (τ == TF) && (check p1 TF) && (check p2 TF)
---     SUB p1 p2 -> (τ == TF) && (check p1 TF) && (check p2 TF)
---     MUL p1 p2 -> (τ == TF) && (check p1 TF) && (check p2 TF)
---     DIV p1 p2 -> (τ == TF) && (check p1 TF) && (check p2 TF)
-
---     NOT p1    -> (τ == TBool) && (check p1 TBool)
---     AND p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
---     OR  p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
---     XOR p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
-
---     UnsafeNOT p1    -> (τ == TBool) && (check p1 TBool)
---     UnsafeAND p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
---     UnsafeOR  p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
---     UnsafeXOR p1 p2 -> (τ == TBool) && (check p1 TBool) && (check p2 TBool)
-
---     EQL p1 p2 -> (τ == TBool) && (check p1 TF) && (check p2 TF)
---     ISZERO p1 -> (τ == TBool) && (check p1 TF)
---     EQLC p1 _ -> (τ == TBool) && (check p1 TF)
-
---     NIL       -> case τ of
---       Vec _ -> True; otherwise -> False
---     CONS h ts -> case τ of
---       Vec τ' -> (check h τ') && (check ts (Vec τ'))
---       _      -> False
-
---   matches :: Maybe Ty -> Ty -> Bool
---   matches mτ τ = case mτ of Nothing -> False; Just τ' -> (τ == τ')
 
 
 type Valuation p = M.Map String p
 
 -- TODO: how to deal with vectors? just forbid them in the precondition?
-{-@ eval :: {v:DSL p t | scalar v} -> Valuation p -> Maybe p @-}
-eval :: (Fractional p, Eq p) => DSL p t -> Valuation p -> Maybe p
+{-@ eval :: {v:DSL p | scalar v} -> Valuation p -> Maybe p @-}
+eval :: (Fractional p, Eq p) => DSL p -> Valuation p -> Maybe p
 eval program v = case program of
-  VAR name -> M.lookup name v
+  VAR name _ -> M.lookup name v
   CONST x  -> Just x
   TRUE     -> Just 1
   FALSE    -> Just 0

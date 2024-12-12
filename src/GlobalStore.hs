@@ -43,6 +43,9 @@ combine hints1 hints2 valuation =
 assert :: Assertion p -> GlobalStore p ()
 assert x = GStore () [x] (const [])
 
+-- Introduce a hint for witness generation --
+-- CAREFUL! This bypasses the type system because the variable 'name' could have
+-- been defined with an incompatible type.
 define :: String -> (Valuation p -> Maybe p) -> GlobalStore p ()
 define name f = GStore () [] hint where
   hint valuation = case f valuation of

@@ -13,7 +13,8 @@ import GlobalStore
 
 import Data.Char (ord)
 
-type Word p = DSL p p
+{-@ type Word p = {d:DSL p | typed d TF} @-}
+type Word p = DSL p
 
 {-@ h :: ListN (Word p) 8 @-}
 h :: Num p => [Word p]
@@ -102,10 +103,12 @@ k = [ CONST 0x428a2f98
     , CONST 0xc67178f2
     ]
 
-{-@ padding :: msg:{DSL p [Bool] | vlength msg < pow 2 64}
-            -> {res:DSL p [Bool] | (vlength res) mod 512 = 0} @-}
-padding :: Num p => DSL p [Bool] -> DSL p [Bool]
-padding msg = msg +++ (fromList [TRUE]) +++ (vReplicate k FALSE) +++ len
+{-@ padding :: msg:{DSL p | typed msg (TVec TBool)
+                         && vlength msg < pow 2 64}
+            -> {res:DSL p | typed res (TVec TBool)
+                         && (vlength res) mod 512 = 0} @-}
+padding :: Num p => DSL p -> DSL p
+padding msg = msg +++ (fromList TBool [TRUE]) +++ (vReplicate TBool k FALSE) +++ len
   where
     l = vlength msg
     -- 512*c is the smallest multiple of 512 above l+1+64
@@ -115,32 +118,35 @@ padding msg = msg +++ (fromList [TRUE]) +++ (vReplicate k FALSE) +++ len
     {-@ k :: {k:Btwn 0 512 | l+1+k+64 = 512*c} @-}
     len = fromInt 64 l -- convert length to binary using 64 bits
 
-{-@ plus :: {x:DSL p p} -> {y:DSL p p}
-         -> GlobalStore p (z:DSL p p) @-}
+    (+++) = vAppend TBool
+
+{-@ plus :: Word p -> Word p
+         -> GlobalStore p (Word p) @-}
 plus :: (Integral p, Fractional p, Ord p) =>
-        DSL p p -> DSL p p -> GlobalStore p (DSL p p)
+        DSL p -> DSL p -> GlobalStore p (DSL p)
 plus = addMod 32 -- addition modulo 2^32
 
 
-{-@ processMsg :: {msg:DSL p [Bool] | (vlength msg) mod 512 = 0}
-               -> GlobalStore p (DSL p [Bool]) @-}
+{-@ processMsg :: {msg:DSL p | typed msg (TVec TBool)
+                            && (vlength msg) mod 512 = 0}
+               -> GlobalStore p ({v:DSL p | typed v (TVec TBool)}) @-}
 -- TODO: can we prove the resulting length is what it should be?
 processMsg :: (Integral p, Fractional p, Ord p) =>
-              DSL p [Bool] -> GlobalStore p (DSL p [Bool])
+              DSL p -> GlobalStore p (DSL p)
 processMsg msg = do
-  let chunks = vChunk 512 msg -- split into 512-bit chunks
+  let chunks = vChunk TBool 512 msg -- split into 512-bit chunks
   finalHashes <- foldl processChunk (pure h) chunks -- process all the chunks
   finalHashes' <- sequence' $ map (toBinary 32) finalHashes -- convert to binary
-  return $ vConcat finalHashes' -- concatenate all the hashes
+  return $ vConcat TBool finalHashes' -- concatenate all the hashes
 
 {-@ processChunk :: GlobalStore p (ListN (Word p) 8)
-                 -> {v:DSL p [Bool] | vlength v = 512}
+                 -> {v:DSL p | typed v (TVec TBool) && vlength v = 512}
                  -> GlobalStore p (ListN (Word p) 8) @-}
 processChunk :: (Integral p, Fractional p, Ord p) =>
-                GlobalStore p [Word p] -> DSL p [Bool]
+                GlobalStore p [Word p] -> DSL p
              -> GlobalStore p [Word p]
 processChunk currentHash chunk = do
-  let words = vChunk 32 chunk -- split chunk as list of 16 32-bit words
+  let words = vChunk TBool 32 chunk -- split chunk as list of 16 32-bit words
   words' <- sequence' $ map fromBinary words -- convert to list of 16 32-bit ints
   extended <- extend words' -- extend to list of 64 32-bit ints
 
@@ -150,6 +156,9 @@ processChunk currentHash chunk = do
   finalHashes <- sequence' $ zipWith' plus currentHash' workingVariables
 
   return finalHashes
+
+rotate :: DSL p -> Int -> DSL p
+rotate = rotateR TBool
 
 {-@ extend :: ListN (Word p) 16 -> GlobalStore p (ListN (Word p) 64) @-}
 extend :: (Integral p, Fractional p, Ord p) =>
@@ -169,11 +178,11 @@ extend ws = go 16 (pure ws) where
         let ws = body acc
 
         w15 <- toBinary 32 (ws!!(i-15))
-        let s0' = (rotateR w15 7) `vXor` (rotateR w15 18) `vXor` (shiftR w15 3)
+        let s0' = (rotate w15 7) `vXor` (rotate w15 18) `vXor` (shiftR w15 3)
         s0 <- fromBinary s0'
 
         w2 <- toBinary 32 $ ws!!(i-2)
-        let s1' = (rotateR w2 17) `vXor` (rotateR w2 19) `vXor` (shiftR w2 10)
+        let s1' = (rotate w2 17) `vXor` (rotate w2 19) `vXor` (shiftR w2 10)
         s1 <- fromBinary s1'
 
         tmp <- return (ws!!(i-16)) >>= plus s0 >>= plus (ws!!(i-7)) >>= plus s1
@@ -211,7 +220,7 @@ compress = aux 64 where
     g' <- toBinary 32 g
 
     -- operate on them
-    let s1' = (rotateR e' 6) `vXor` (rotateR e' 11) `vXor` (rotateR e' 25)
+    let s1' = (rotate e' 6) `vXor` (rotate e' 11) `vXor` (rotate e' 25)
     let ch' = (e' `vAnd` f') `vXor` ((vNot e') `vAnd` g')
 
     -- convert back to number
@@ -227,7 +236,7 @@ compress = aux 64 where
     c' <- toBinary 32 c
 
     -- operate on them
-    let s0' = (rotateR a' 2) `vXor` (rotateR a' 13) `vXor` (rotateR a' 22)
+    let s0' = (rotate a' 2) `vXor` (rotate a' 13) `vXor` (rotate a' 22)
     let maj' = (a' `vAnd` b') `vXor` (a' `vAnd` c') `vXor` (b' `vAnd` c')
 
     -- convert back to number
@@ -245,11 +254,14 @@ compress = aux 64 where
 {-@ assume ord :: Char -> Btwn 0 256 @-}
 
 {-@ sha256 :: {s:String | len s < pow 2 61} ->
-              GlobalStore p (res:DSL p [Bool]) @-}
+              GlobalStore p ({res:DSL p | typed res (TVec TBool)}) @-}
 sha256 :: (Integral p, Fractional p, Ord p)
-       => String -> GlobalStore p (DSL p [Bool])
+       => String -> GlobalStore p (DSL p)
 sha256 = processMsg . padding . toBits where
-  {-@ toBits :: s:String -> {v:DSL p [Bool] | vlength v = 8 * len s} @-}
-  toBits :: Num p => String -> DSL p [Bool]
-  toBits [] = NIL
+  {-@ toBits :: s:String
+             -> {v:DSL p | typed v (TVec TBool) && vlength v = 8 * len s} @-}
+  toBits :: Num p => String -> DSL p
+  toBits [] = NIL TBool
   toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
+
+  (+++) = vAppend TBool

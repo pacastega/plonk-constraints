@@ -1,5 +1,6 @@
 {-@ LIQUID "--reflection" @-}
-{-# LANGUAGE RankNTypes #-}
+{-@ LIQUID "--ple" @-}
+{-@ LIQUID "--ple-with-undecided-guards" @-}
 module Label (label) where
 
 import TypeAliases
@@ -7,15 +8,14 @@ import DSL
 
 import qualified Data.Map as M
 
-type Env p i = forall t. M.Map (DSL p t) i -- FIXME: not in scope: type variable `t`
--- But I would like an environment for DSL programs with heterogeneous types
+type Env p i = M.Map (DSL p) i
 
-{-@ label :: DSL p
+{-@ label :: TypedDSL p
           -> Store p
           -> (m:Nat, [LDSL p Int], [LDSL p Int])
                   <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
                    \_ m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
-label :: Ord p => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
+label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
 label program store = (m, labeledPrograms, labeledStore) where
   (m', labeledStore, env') = labelStore store 0 M.empty
   (m, labeledPrograms, _) = label' program m' env'
@@ -24,7 +24,7 @@ label program store = (m, labeledPrograms, labeledStore) where
                -> (m:{Int | m >= m0}, [LDSL p Int], Env p Int)
                       <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
                        \_ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
-labelStore :: Ord p =>
+labelStore :: (Num p, Ord p) =>
               Store p -> Int -> Env p Int -> (Int, [LDSL p Int], Env p Int)
 labelStore [] nextIndex env = (nextIndex, [], env)
 labelStore (def:ss) nextIndex env =
@@ -35,15 +35,12 @@ labelStore (def:ss) nextIndex env =
 
 -- combinator to label programs with 2 arguments that need recursive labelling
 {-@ lazy label2 @-}
-{-@ label2 :: m0:Nat ->
-              {arg1:DSL p | unpacked arg1} ->
-              {arg2:DSL p | unpacked arg2} ->
-              Env p (Btwn 0 m0) ->
+{-@ label2 :: m0:Nat -> ScalarDSL p -> ScalarDSL p -> Env p (Btwn 0 m0) ->
               (m:{Int | m >= m0}, LDSL p Int, LDSL p Int, Env p Int)
                          <\m     -> {v:LDSL  p (Btwn 0 m)  | true},
                           \_ m   -> {v:LDSL  p (Btwn 0 m)  | true},
                           \_ _ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
-label2 :: Ord p => Int -> DSL p -> DSL p -> Env p Int ->
+label2 :: (Num p, Ord p) => Int -> DSL p -> DSL p -> Env p Int ->
           (Int, LDSL p Int, LDSL p Int, Env p Int)
 label2 nextIndex arg1 arg2 env =
   let i = nextIndex
@@ -57,18 +54,18 @@ add (k,v) = M.alter (\_ -> Just v) k
 
 
 {-@ lazy label' @-}
-{-@ label' :: program:(DSL p) ->
+{-@ label' :: program:TypedDSL p ->
               m0:Nat -> Env p (Btwn 0 m0) ->
               (m:{Int | m >= m0}, [LDSL p Int], Env p Int)
-           <\m   -> {l:[LDSL p (Btwn 0 m)] | unpacked program => len l = 1},
+           <\m   -> {l:[LDSL p (Btwn 0 m)] | scalar program => len l = 1},
             \_ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
-label' :: Ord p => DSL p -> Int -> Env p Int
+label' :: (Num p, Ord p) => DSL p -> Int -> Env p Int
        -> (Int, [LDSL p Int], Env p Int)
 label' p nextIndex env = case M.lookup p env of
   Just i  -> (nextIndex, [LWIRE i], env)
   Nothing -> let i = nextIndex in case p of
 
-    VAR s -> (i+1, [LVAR s i], add (p,i) env)
+    VAR s _ -> (i+1, [LVAR s i], add (p,i) env)
     CONST x -> (i+1, [LCONST x i], add (p,i) env)
     TRUE  -> label' (CONST 1) nextIndex env
     FALSE -> label' (CONST 0) nextIndex env
@@ -106,7 +103,7 @@ label' p nextIndex env = case M.lookup p env of
     EQLC p1 k -> (w'+1, [LEQLC p1' k w' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env; w' = i'+1
 
-    NIL -> (i, [], env)
+    NIL _ -> (i, [], env)
     CONS h ts -> (i'', h' ++ ts', env'')
       where (i',  h',  env')  = label' h  i  env
             (i'', ts', env'') = label' ts i' env'
@@ -117,11 +114,12 @@ label' p nextIndex env = case M.lookup p env of
                    (m:{Int | m >= m0}, [LDSL p Int], Env p Int)
              <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
               \_ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
-labelStore' :: Ord p => Assertion p -> Int -> Env p Int
+labelStore' :: (Num p, Ord p) => Assertion p -> Int -> Env p Int
             -> (Int, [LDSL p Int], Env p Int)
 labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
-    DEF s d -> (i', [d'], add (VAR s, outputWire d') env')
+    DEF s d -> (i', [d'], add (VAR s τ, outputWire d') env')
       where (i', [d'], env') = label' d i env
+            Just τ = inferType d
     NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
       where (w', [p1'], env') = label' p1 i env
     BOOL p1  -> (i', [LBOOL p1'], env')
