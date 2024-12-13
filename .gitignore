@@ -1,6 +1,4 @@
-.stack-work/
 *~
 /app/.liquid/
-/stack.yaml.lock
 /src/.liquid/
 dist-newstyle/
