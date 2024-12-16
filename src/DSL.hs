@@ -159,14 +159,14 @@ inferType (CONS h ts)
 
 -- (Non-expression) assertions
 data Assertion p =
-    DEF   String  (DSL p) -- variable definition
-  | NZERO (DSL p)         -- non-zero assertion
-  | BOOL  (DSL p)         -- booleanity assertion
-  | EQA   (DSL p) (DSL p) -- equality assertion
+    DEF   String  (DSL p) Ty -- variable definition
+  | NZERO (DSL p)            -- non-zero assertion
+  | BOOL  (DSL p)            -- booleanity assertion
+  | EQA   (DSL p) (DSL p)    -- equality assertion
 
 {-@
 data Assertion p =
-    DEF   String        (ScalarDSL p)
+    DEF   String        (ScalarDSL p) ScalarTy
   | NZERO (ScalarDSL p)
   | BOOL  (ScalarDSL p)
   | EQA   (ScalarDSL p) (ScalarDSL p)

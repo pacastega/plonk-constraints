@@ -195,7 +195,7 @@ binaryValue v = go v (CONST 0) where
     let bit = VAR bit' TF
 
     define bit' (eval x) -- hint for witness generation
-    assert $ DEF bit' x  -- constrain it to have the correct value
+    assert $ DEF bit' x TF  -- constrain it to have the correct value
     assert $ BOOL bit    -- bit ∈ {0,1}, even if we treat it as a number
     go xs (bit `ADD` (acc `MUL` CONST 2))
 

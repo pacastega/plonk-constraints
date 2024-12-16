@@ -117,9 +117,8 @@ label' p nextIndex env = case M.lookup p env of
 labelStore' :: (Num p, Ord p) => Assertion p -> Int -> Env p Int
             -> (Int, [LDSL p Int], Env p Int)
 labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
-    DEF s d -> (i', [d'], add (VAR s τ, outputWire d') env')
+    DEF s d τ -> (i', [d'], add (VAR s τ, outputWire d') env')
       where (i', [d'], env') = label' d i env
-            Just τ = inferType d
     NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
       where (w', [p1'], env') = label' p1 i env
     BOOL p1  -> (i', [LBOOL p1'], env')
