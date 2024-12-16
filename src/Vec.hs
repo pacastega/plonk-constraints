@@ -27,26 +27,3 @@ vvlen (Cons _ xs) = 1 + vvlen xs
 (!) (Cons _ xs) n = (!) xs (n-1)
 
 infixl 9 !
-
-{-@ reflect fromList @-}
-{-@ fromList :: xs:[a] -> {v:Vec a | vvlen v == len xs} @-}
-fromList :: [a] -> Vec a
-fromList []     = Nil
-fromList (x:xs) = x `Cons` fromList xs
-
-{-@ reflect singleton @-}
-{-@ singleton :: a -> {v:Vec a | vvlen v == 1} @-}
-singleton :: a -> Vec a
-singleton x = x `Cons` Nil
-
-{-@ reflect append @-}
-{-@ append :: xs:Vec a -> ys:Vec a ->
-              {v:Vec a | vvlen v == vvlen xs + vvlen ys} @-}
-append :: Vec a -> Vec a -> Vec a
-append Nil         ys = ys
-append (Cons x xs) ys = Cons x (append xs ys)
-
-{-@ reflect velem @-}
-velem :: Eq a => a -> Vec a -> Bool
-velem _ Nil         = False
-velem x (Cons y ys) = x == y || velem x ys
