@@ -33,6 +33,7 @@ library
       GlobalStore
       Label
       LogicGates
+      Optimizations
       PlinkLib
       SHA256
       TypeAliases

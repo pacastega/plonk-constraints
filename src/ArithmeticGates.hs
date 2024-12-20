@@ -15,6 +15,35 @@ addGate _ indices = [(v, q)] where
   q = [1, 1, -1, 0, 0]
   -- a+b == c <=> a + b - c + 0*m + 0 == 0
 
+{-@ reflect addGateConst @-}
+{-@ addGateConst :: m:Nat ->
+                    k:p ->
+                    ListN (Btwn 0 m) 2 ->
+                    Circuit p 1 m @-} -- 1 gate, m wires
+addGateConst :: Num p => Int -> p -> [Int] -> Circuit p
+addGateConst _ k [a, c] = [(v, q)] where
+  v = [a, 0, c]
+  q = [1, 0, -1, 0, k]
+  -- a+k == c <=> a + 0 - c + 0*m + k == 0
+
+
+{-@ linCombGate :: m:Nat ->
+                   ListN p 2 ->
+                   ListN (Btwn 0 m) 3 ->
+                   Circuit p 1 m @-} -- 1 gate, m wires
+linCombGate :: Num p => Int -> [p] -> [Int] -> Circuit p
+linCombGate m [k1, k2] indices = affCombGate m [k1, k2, 0] indices
+-- k1*a + k2*b == c
+
+{-@ affCombGate :: m:Nat ->
+                   ListN p 3 ->
+                   ListN (Btwn 0 m) 3 ->
+                   Circuit p 1 m @-} -- 1 gate, m wires
+affCombGate :: Num p => Int -> [p] -> [Int] -> Circuit p
+affCombGate _ [k1, k2, k] indices = [(v, q)] where
+  v = indices
+  q = [k1, k2, -1, 0, k]
+  -- k1*a + k2*b + k == c <=> k1*a + k2*b - c + 0*m + k == 0
 
 {-@ reflect mulGate @-}
 {-@ mulGate :: m:Nat ->
@@ -25,6 +54,17 @@ mulGate _ indices = [(v, q)] where
   v = indices
   q = [0, 0, -1, 1, 0]
   -- a*b == c <=> 0 + 0 - c + a*b + 0 == 0
+
+{-@ reflect mulGateConst @-}
+{-@ mulGateConst :: m:Nat ->
+                    k:p ->
+                    ListN (Btwn 0 m) 2 ->
+                    Circuit p 1 m @-} -- 1 gate, m wires
+mulGateConst :: Num p => Int -> p -> [Int] -> Circuit p
+mulGateConst _ k [a, c] = [(v, q)] where
+  v = [a, 0, c]
+  q = [k, 0, -1, 0, 0]
+  -- a*k == c <=> k*a + 0 - c + 0*m + 0 == 0
 
 {-@ reflect divGate @-}
 {-@ divGate :: m:Nat ->

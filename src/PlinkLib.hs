@@ -156,13 +156,13 @@ rotateR τ xs n = let (ys, zs) = vTakeDrop τ (vlength xs - n) xs
            -> {v:DSL p | typed v (TVec TBool) && vlength v = vlength u} @-}
 shiftL :: Num p => DSL p -> Int -> DSL p
 shiftL xs n = let (_, zs) = vTakeDrop TBool n xs in
-  vAppend TBool zs (vReplicate TBool n FALSE)
+  vAppend TBool zs (vReplicate TBool n (BOOLEAN False))
 
 {-@ shiftR :: u:{DSL p | typed u (TVec TBool)} -> Btwn 0 (vlength u) ->
               {v:DSL p | typed v (TVec TBool) && vlength v = vlength u} @-}
 shiftR :: Num p => DSL p -> Int -> DSL p
 shiftR xs n = let (ys, _) = vTakeDrop TBool (vlength xs - n) xs in
-  vAppend TBool (vReplicate TBool n FALSE) ys
+  vAppend TBool (vReplicate TBool n (BOOLEAN False)) ys
 
 -- Integers mod 2^n -----------------------------------------------------------
 {-@ fromInt :: n:Nat -> x:Btwn 0 (pow 2 n) ->

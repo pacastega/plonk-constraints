@@ -67,8 +67,8 @@ label' p nextIndex env = case M.lookup p env of
 
     VAR s _ -> (i+1, [LVAR s i], add (p,i) env)
     CONST x -> (i+1, [LCONST x i], add (p,i) env)
-    TRUE  -> label' (CONST 1) nextIndex env
-    FALSE -> label' (CONST 0) nextIndex env
+    BOOLEAN True  -> label' (CONST 1) nextIndex env
+    BOOLEAN False -> label' (CONST 0) nextIndex env
 
     ADD p1 p2 -> (i'+1, [LADD p1' p2' i'], add (p,i') env')
       where (i', p1', p2', env') = label2 i p1 p2 env
@@ -78,6 +78,8 @@ label' p nextIndex env = case M.lookup p env of
       where (i', p1', p2', env') = label2 i p1 p2 env
     DIV p1 p2 -> (w'+1, [LDIV p1' p2' w' i'], add (p,i') env')
       where (i', p1', p2', env') = label2 i p1 p2 env; w' = i'+1
+    LINCOMB k1 p1 k2 p2 -> (i'+1, [LLINCOMB k1 p1' k2 p2' i'], add (p,i') env')
+      where (i', p1', p2', env') = label2 i p1 p2 env
 
     NOT p1    -> (i'+1, [LNOT p1' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env

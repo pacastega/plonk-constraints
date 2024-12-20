@@ -33,14 +33,15 @@ data DSL p =
     VAR String Ty -- variable
   | CONST p       -- constant (of type p, i.e. prime field)
     -- TODO: add constants of other types (integers, booleans...)
-  | TRUE
-  | FALSE
+  | BOOLEAN Bool
 
     -- Arithmetic operations
   | ADD (DSL p) (DSL p) -- addition
-  | SUB (DSL p) (DSL p) -- substraction
+  | SUB (DSL p) (DSL p) -- subtraction
   | MUL (DSL p) (DSL p) -- multiplication
   | DIV (DSL p) (DSL p) -- division
+
+  | LINCOMB p (DSL p) p (DSL p) -- LINCOMB k1 p1 k2 p2 = k1*p1 + k2*p2
 
     -- Boolean operations
   | NOT (DSL p)         -- logical not
@@ -61,7 +62,7 @@ data DSL p =
     -- Vectors
   | NIL Ty
   | CONS (DSL p) (DSL p)
-  deriving (Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 infixr 5 `CONS`
 
@@ -75,7 +76,7 @@ vlength _           = 1
 
 {-@ toDSLBool :: a -> {v:DSL p | typed v TBool} @-}
 toDSLBool :: Integral a => a -> DSL p
-toDSLBool x = if (fromIntegral x == 0) then FALSE else TRUE
+toDSLBool x = if (fromIntegral x == 0) then BOOLEAN False else BOOLEAN True
 
 
 {-@ reflect typed @-}
@@ -105,8 +106,7 @@ inferType :: DSL p -> Maybe Ty
 -- TODO: allow vector variables
 inferType (VAR _ τ) = if scalarType τ then Just τ else Nothing
 inferType (CONST _) = Just TF
-inferType (TRUE)    = Just TBool
-inferType (FALSE)   = Just TBool
+inferType (BOOLEAN _) = Just TBool
 
 inferType (ADD p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
                         then Just TF else Nothing
@@ -116,6 +116,10 @@ inferType (MUL p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
                         then Just TF else Nothing
 inferType (DIV p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
                         then Just TF else Nothing
+
+inferType (LINCOMB _ p1 _ p2) = if inferType p1 == Just TF
+                                && inferType p2 == Just TF
+                                then Just TF else Nothing
 
 inferType (NOT p1)    = if inferType p1 == Just TBool
                         then Just TBool else Nothing
@@ -163,6 +167,7 @@ data Assertion p =
   | NZERO (DSL p)            -- non-zero assertion
   | BOOL  (DSL p)            -- booleanity assertion
   | EQA   (DSL p) (DSL p)    -- equality assertion
+  deriving Show
 
 {-@
 data Assertion p =
@@ -181,8 +186,8 @@ eval :: (Fractional p, Eq p) => DSL p -> Valuation p -> Maybe p
 eval program v = case program of
   VAR name _ -> M.lookup name v
   CONST x  -> Just x
-  TRUE     -> Just 1
-  FALSE    -> Just 0
+  (BOOLEAN True) -> Just 1
+  (BOOLEAN False) -> Just 0
 
   -- Arithmetic operations
   ADD p1 p2 -> (+) <$> eval p1 v <*> eval p2 v
@@ -190,6 +195,8 @@ eval program v = case program of
   MUL p1 p2 -> (*) <$> eval p1 v <*> eval p2 v
   DIV p1 p2 -> (/) <$> eval p1 v <*> (eval p2 v >>= \x ->
                                      if x /= 0 then Just x else Nothing)
+
+  LINCOMB k1 p1 k2 p2 -> (\x y -> k1*x + k2*y) <$> eval p1 v <*> eval p2 v
 
   -- Boolean operations (assume inputs are binary)
   NOT p1    -> (\x -> if x == 1 then 0 else 1) <$> eval p1 v
@@ -217,13 +224,15 @@ eval program v = case program of
 -- Labeled DSL
 data LDSL p i =
   LWIRE                          i |
-
   LVAR   String                  i |
   LCONST p                       i |
+
   LADD   (LDSL p i) (LDSL p i)   i |
   LSUB   (LDSL p i) (LDSL p i)   i |
   LMUL   (LDSL p i) (LDSL p i)   i |
   LDIV   (LDSL p i) (LDSL p i) i i |
+
+  LLINCOMB p (LDSL p i) p (LDSL p i) i |
 
   LNOT   (LDSL p i)            i |
   LAND   (LDSL p i) (LDSL p i) i |
@@ -257,6 +266,7 @@ outputWire (LADD _ _ i)   = i
 outputWire (LSUB _ _ i)   = i
 outputWire (LMUL _ _ i)   = i
 outputWire (LDIV _ _ _ i) = i
+outputWire (LLINCOMB _ _ _ _ i) = i
 
 outputWire (LNOT _   i) = i
 outputWire (LAND _ _ i) = i
@@ -290,6 +300,8 @@ nGates (LSUB p1 p2 _)   = 1 + nGates p1 + nGates p2
 nGates (LMUL p1 p2 _)   = 1 + nGates p1 + nGates p2
 nGates (LDIV p1 p2 _ _) = 2 + nGates p1 + nGates p2
 
+nGates (LLINCOMB _ p1 _ p2 _) = 1 + nGates p1 + nGates p2
+
 nGates (LNOT p1    _) = 2 + nGates p1
 nGates (LAND p1 p2 _) = 3 + nGates p1 + nGates p2
 nGates (LOR  p1 p2 _) = 3 + nGates p1 + nGates p2
@@ -312,7 +324,7 @@ nGates (LEQA p1 p2)     = 1 + nGates p1 + nGates p2
 {-@ compile :: m:Nat ->
                c:LDSL p (Btwn 0 m) ->
                Circuit p (nGates c) m @-}
-compile :: Fractional p => Int -> LDSL p Int -> Circuit p
+compile :: (Fractional p, Eq p) => Int -> LDSL p Int -> Circuit p
 compile m (LWIRE _)      = emptyCircuit m
 compile m (LVAR _ _)     = emptyCircuit m
 compile m (LCONST x i)   = constGate m x i
@@ -322,12 +334,39 @@ compile m (LADD p1 p2 i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (addGate m [i1, i2, i]) c'
+-- -- TODO: is it worth it to add a new DSL constructor (+ LDSL constructor) to
+-- -- have this optimization on DSL's instead of LDSL's? (and in MUL as well)
+-- compile m (LADD p1 (LCONST k _) i) = c
+--   where
+--     c1 = compile m p1
+--     i1 = outputWire p1
+--     c = append' (addGateConst m k [i1, i]) c1
+-- compile m (LADD (LCONST k _) p1 i) = c
+--   where
+--     c1 = compile m p1
+--     i1 = outputWire p1
+--     c = append' (addGateConst m k [i1, i]) c1
+-- compile m (LSUB p1 (LCONST k _) i) = c -- subtract a constant
+--   where
+--     c1 = compile m p1
+--     i1 = outputWire p1
+--     c = append' (addGateConst m k [i, i1]) c1
 compile m (LSUB p1 p2 i) = c
   where
     c1 = compile m p1; c2 = compile m p2
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (addGate m [i, i2, i1]) c'
+-- compile m (LMUL p1 (LCONST k _) i) = c -- multiply by a constant
+--   where
+--     c1 = compile m p1
+--     i1 = outputWire p1
+--     c = append' (mulGateConst m k [i1, i]) c1
+-- compile m (LMUL (LCONST k _) p1 i) = c -- multiply by a constant
+--   where
+--     c1 = compile m p1
+--     i1 = outputWire p1
+--     c = append' (mulGateConst m k [i1, i]) c1
 compile m (LMUL p1 p2 i) = c
   where
     c1 = compile m p1; c2 = compile m p2
@@ -340,6 +379,12 @@ compile m (LDIV p1 p2 w i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (divGate m [i1, i2, i, w]) c'
+compile m (LLINCOMB k1 p1 k2 p2 i) = c
+  where
+    c1 = compile m p1; c2 = compile m p2
+    i1 = outputWire p1; i2 = outputWire p2
+    c' = append' c1 c2
+    c = append' (linCombGate m [k1, k2] [i1, i2, i]) c'
 compile m (LNOT p1 i) = c
   where
     c1 = compile m p1
@@ -444,6 +489,11 @@ semanticsAreCorrect m (LDIV p1 p2 w i) input = correct where
   i1 = outputWire p1; i2 = outputWire p2
   correct = correct1 && correct2 && input!w * input!i2 == 1 &&
     if input!i2 /= 0 then input!i == input!i1 / input!i2 else True
+semanticsAreCorrect m (LLINCOMB k1 p1 k2 p2 i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  correct2 = semanticsAreCorrect m p2 input
+  i1 = outputWire p1; i2 = outputWire p2
+  correct = correct1 && correct2 && input!i == k1*input!i1 + k2*input!i2
 semanticsAreCorrect m (LNOT p1 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
