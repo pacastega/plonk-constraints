@@ -367,8 +367,24 @@ sha256_2 = sha256 ""
 sha256_3 :: GlobalStore BigPF (DSL BigPF)
 sha256_3 = sha256 "The quick brown fox jumps over the lazy dog"
 
+sha256_4 :: GlobalStore BigPF (DSL BigPF)
+sha256_4 = sha256 (replicate 64 'a')
+
+sha256_5 :: GlobalStore BigPF (DSL BigPF)
+sha256_5 = sha256 (replicate (2*64) 'a')
+
+sha256_6 :: GlobalStore BigPF (DSL BigPF)
+sha256_6 = sha256 (replicate (3*64) 'a')
+
+sha256_7 :: GlobalStore BigPF (DSL BigPF)
+sha256_7 = sha256 (replicate (4*64) 'a')
+
 testSha :: IO ()
 testSha = do
   test sha256_1 M.empty
   test sha256_2 M.empty
   test sha256_3 M.empty
+  -- test sha256_4 M.empty
+  -- test sha256_5 M.empty
+  -- test sha256_6 M.empty
+  -- test sha256_7 M.empty
