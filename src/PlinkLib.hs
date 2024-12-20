@@ -120,22 +120,22 @@ vChunk τ n xs      = let (ys, zs) = vTakeDrop τ n xs in ys : (vChunk τ n zs)
 -- Bitwise operations ----------------------------------------------------------
 {-@ vNot :: u:{DSL p | typed u (TVec TBool)}
          -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
-vNot = vMap TBool TBool NOT
+vNot = vMap TBool TBool UnsafeNOT
 
 {-@ vAnd :: u:{DSL p | typed u (TVec TBool)}
          -> v:{DSL p | typed v (TVec TBool) && vlength v = vlength u}
          -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
-vAnd = vZipWith TBool TBool TBool AND
+vAnd = vZipWith TBool TBool TBool UnsafeAND
 
 {-@ vOr :: u:{DSL p | typed u (TVec TBool)}
         -> v:{DSL p | typed v (TVec TBool) && vlength v = vlength u}
         -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
-vOr = vZipWith TBool TBool TBool OR
+vOr = vZipWith TBool TBool TBool UnsafeOR
 
 {-@ vXor :: u:{DSL p | typed u (TVec TBool)} ->
             v:{DSL p | typed v (TVec TBool) && vlength v = vlength u} ->
             w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
-vXor = vZipWith TBool TBool TBool XOR
+vXor = vZipWith TBool TBool TBool UnsafeXOR
 
 -- Shift & rotate --------------------------------------------------------------
 {-@ rotateL :: τ:Ty
@@ -190,14 +190,8 @@ binaryValue v = go v (CONST 0) where
   go :: (Integral p, Fractional p, Eq p) =>
         DSL p -> DSL p -> GlobalStore p (DSL p)
   go (NIL _)     acc = pure acc
-  go (CONS x xs) acc = do
-    let bit' = var "bit" -- auxiliary variable to not grow programs exponentially
-    let bit = VAR bit' TF
-
-    define bit' (eval x) -- hint for witness generation
-    assert $ DEF bit' x TF  -- constrain it to have the correct value
-    assert $ BOOL bit    -- bit ∈ {0,1}, even if we treat it as a number
-    go xs (bit `ADD` (acc `MUL` CONST 2))
+  go (CONS x xs) acc = go xs (LINCOMB 1 x 2 acc) -- x + 2*acc
+  -- (x `ADD` (CONST 2 `MUL` acc))
 
 {-@ binaryRepr :: n:Nat -> p -> ListN p n @-}
 binaryRepr :: (Integral p, Eq p) => Int -> p -> [p]
