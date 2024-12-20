@@ -15,6 +15,8 @@ where
 
 import GHC.TypeNats (KnownNat)
 
+import Data.Maybe (mapMaybe)
+import qualified Data.Set as S
 import qualified Data.Map as M
 import Data.FiniteField.PrimeField
 import qualified Data.FiniteField.PrimeField as PF (toInteger)
@@ -31,6 +33,7 @@ import Constraints
 import DSL
 import Label
 import WitnessGeneration
+import Optimizations
 
 import Treekz
 import SHA256
@@ -71,21 +74,34 @@ wrapper op x y = do
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 
+nub :: Ord a => [a] -> [a]
+nub = S.toList . S.fromList
+
 {-@ test :: GlobalStore p (TypedDSL p) -> Valuation p -> IO () @-}
 test :: (Ord p, Fractional p, Show p) =>
         GlobalStore p (DSL p) -> Valuation p -> IO ()
-test (GStore program store hints) valuation = do
+test programStore valuation = do
+  let (GStore program store hints) = optimize programStore
+
   let valuation' = extend valuation hints
 
-  let (m, labeledBodies, labeledStore) = label program store
+  -- let program' = constantFolding program
+  let program' = program
+  -- let store' = mapMaybe constantFolding' store
+  let store' = store
+
+  let (m, labeledBodies, labeledStore) = label program' store'
   let labeledPrograms = labeledStore ++ labeledBodies
 
   let circuit = concatMap (compile m) labeledPrograms
+
   let input = witnessGen m labeledPrograms valuation'
   let output = map (\p -> input ! outputWire p) labeledBodies
   let output' = map (\p -> input ! outputWire p) labeledStore
 
+  -- putStrLn $ "Program (after CF):   " ++ show program' ++ ", " ++ show store'
   -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
+  -- putStrLn $ "Compiled circuit: " ++ show circuit
   putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
   -- putStrLn $ "Input:                " ++ show input
   -- putStrLn $ "Auxiliary values:     " ++ cyan (show output')
@@ -322,7 +338,7 @@ rotate :: GlobalStore PF (DSL PF)
 rotate = do
   let x = VAR "x" TF
   vec <- toBinary 5 x
-  res <- fromBinary (rotateR TBool vec 2)
+  res <- binaryValue (rotateR TBool vec 2)
   return res
 
 
