@@ -190,8 +190,7 @@ binaryValue v = go v (CONST 0) where
   go :: (Integral p, Fractional p, Eq p) =>
         DSL p -> DSL p -> GlobalStore p (DSL p)
   go (NIL _)     acc = pure acc
-  go (CONS x xs) acc = go xs (LINCOMB 1 x 2 acc) -- x + 2*acc
-  -- (x `ADD` (CONST 2 `MUL` acc))
+  go (CONS x xs) acc = go xs (x `ADD` (CONST 2 `MUL` acc))
 
 {-@ binaryRepr :: n:Nat -> p -> ListN p n @-}
 binaryRepr :: (Integral p, Eq p) => Int -> p -> [p]
