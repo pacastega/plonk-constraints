@@ -92,7 +92,22 @@ constantFolding _ = Nothing -- any other pattern is not a redex
 
 
 removeConstants :: (Fractional p, Eq p) => DSL p -> Maybe (DSL p)
--- TODO: all kinds of linear combinations
+removeConstants (ADD (MUL (CONST k1) p1) (MUL (CONST k2) p2))
+  = Just $ LINCOMB k1 p1 k2 p2
+removeConstants (ADD (MUL p1 (CONST k1)) (MUL (CONST k2) p2))
+  = Just $ LINCOMB k1 p1 k2 p2
+removeConstants (ADD (MUL (CONST k1) p1) (MUL p2 (CONST k2)))
+  = Just $ LINCOMB k1 p1 k2 p2
+removeConstants (ADD (MUL p1 (CONST k1)) (MUL p2 (CONST k2)))
+  = Just $ LINCOMB k1 p1 k2 p2
+removeConstants (ADD (MUL (CONST k1) p1) p2)
+  = Just $ LINCOMB k1 p1 1 p2
+removeConstants (ADD (MUL p1 (CONST k1)) p2)
+  = Just $ LINCOMB k1 p1 1 p2
+removeConstants (ADD p1 (MUL (CONST k2) p2))
+  = Just $ LINCOMB 1 p1 k2 p2
+removeConstants (ADD p1 (MUL p2 (CONST k2)))
+  = Just $ LINCOMB 1 p1 k2 p2
 -- adding 0 is a no-op
 removeConstants (ADD (CONST 0) p) = Just p
 removeConstants (ADD p (CONST 0)) = Just p
