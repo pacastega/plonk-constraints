@@ -9,6 +9,7 @@ main = do
   -- testArithmetic
   -- testBoolean
   -- testLoops
-  -- testVectors
+  testVectors
   testMod
   testSha
+  testOpt

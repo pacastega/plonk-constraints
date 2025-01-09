@@ -10,6 +10,7 @@ module Examples ( testArithmetic
                 , testVectors
                 , testMod
                 , testSha
+                , testOpt
                 )
 where
 
@@ -99,15 +100,15 @@ test programStore valuation = do
   let output = map (\p -> input ! outputWire p) labeledBodies
   let output' = map (\p -> input ! outputWire p) labeledStore
 
-  -- putStrLn $ "Program (after CF):   " ++ show program' ++ ", " ++ show store'
+  -- putStrLn $ "Program (after optimizations):   " ++ show program' ++ ", " ++ show store'
   -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   -- putStrLn $ "Compiled circuit: " ++ show circuit
   putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
   -- putStrLn $ "Input:                " ++ show input
   -- putStrLn $ "Auxiliary values:     " ++ cyan (show output')
-  putStrLn $ "Final result: " ++ cyan (show output)
+  -- putStrLn $ "Final result: " ++ cyan (show output)
 
-  putStrLn $ replicate 80 '='
+  -- putStrLn $ replicate 80 '='
 
 
 {-@ test' :: GlobalStore p (TypedDSL p) -> Valuation p -> String -> IO () @-}
@@ -388,3 +389,23 @@ testSha = do
   -- test sha256_5 M.empty
   -- test sha256_6 M.empty
   -- test sha256_7 M.empty
+
+-- Optimizations ---------------------------------------------------------------
+
+-- (3 - (2 + 1)) + x ≡ x
+opt1 :: GlobalStore BigPF (DSL BigPF)
+opt1 = pure $ (CONST 3 `SUB` (CONST 2 `ADD` CONST 1)) `ADD` (VAR "x" TF)
+
+-- (3 - 2) * x + y ≡ x + y
+opt2 :: GlobalStore BigPF (DSL BigPF)
+opt2 = pure $ ((CONST 3 `SUB` CONST 2) `MUL` (VAR "x" TF)) `ADD` (VAR "y" TF)
+
+-- (3 - 1) * x + y ≡ lincomb(2,x, 1,y)
+opt3 :: GlobalStore BigPF (DSL BigPF)
+opt3 = pure $ ((CONST 3 `SUB` CONST 1) `MUL` (VAR "x" TF)) `ADD` (VAR "y" TF)
+
+testOpt :: IO ()
+testOpt = do
+  test opt1 (M.fromList [("x",7), ("y",2)])
+  test opt2 (M.fromList [("x",7), ("y",2)])
+  test opt3 (M.fromList [("x",7), ("y",2)])
