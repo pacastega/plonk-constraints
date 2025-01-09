@@ -184,12 +184,11 @@ fromInt n = go 0 (NIL TBool) where
                 -> GlobalStore p ({d:DSL p | typed d TF}) @-}
 binaryValue :: (Integral p, Fractional p, Eq p) =>
                DSL p -> GlobalStore p (DSL p)
-binaryValue v = go v (CONST 0) where
+binaryValue v = pure $ go v (CONST 0) where
   {-@ go :: {v:DSL p | typed v (TVec TBool)} -> {acc:DSL p | typed acc TF}
-         -> GlobalStore p ({d:DSL p | typed d TF}) @-}
-  go :: (Integral p, Fractional p, Eq p) =>
-        DSL p -> DSL p -> GlobalStore p (DSL p)
-  go (NIL _)     acc = pure acc
+         -> ({d:DSL p | typed d TF}) @-}
+  go :: (Integral p, Fractional p, Eq p) => DSL p -> DSL p -> DSL p
+  go (NIL _)     acc = acc
   go (CONS x xs) acc = go xs (x `ADD` (CONST 2 `MUL` acc))
 
 {-@ binaryRepr :: n:Nat -> p -> ListN p n @-}
