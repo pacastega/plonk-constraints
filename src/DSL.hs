@@ -19,13 +19,33 @@ import qualified Data.Map as M
 import Data.IORef
 import System.IO.Unsafe
 
-data Ty = TF | TInt32 | TByte | TBool | TVec Ty deriving (Eq, Ord, Show)
+import Language.Haskell.Liquid.ProofCombinators
+
+data Ty = TF | TBit | TBool | TVec Ty deriving (Eq, Ord, Show)
 {-@ type ScalarTy = {τ:Ty | scalarType τ} @-}
 
 {-@ measure scalarType @-}
 scalarType :: Ty -> Bool
+scalarType TF       = True
+scalarType TBit     = True
+scalarType TBool    = True
 scalarType (TVec _) = False
-scalarType _        = True
+
+
+{-@ measure numericType @-}
+numericType :: Ty -> Bool
+numericType TF       = True
+numericType TBit     = True
+numericType TBool    = False
+numericType (TVec _) = False
+
+
+{-@ measure logicType @-}
+logicType :: Ty -> Bool
+logicType TBit     = True
+logicType TBool    = True
+logicType TF       = False
+logicType (TVec _) = False
 
 
 data DSL p =
@@ -95,70 +115,56 @@ wellTyped p = case inferType p of
 {-@ reflect scalar @-}
 scalar :: DSL p -> Bool
 scalar p = case inferType p of
+  Nothing       -> False
   Just (TVec _) -> False
   Just _        -> True
-  otherwise     -> False
 
 
 {-@ measure inferType @-}
-{-@ inferType :: d:DSL p -> Maybe Ty @-}
 inferType :: DSL p -> Maybe Ty
 -- TODO: allow vector variables
-inferType (VAR _ τ) = if scalarType τ then Just τ else Nothing
+inferType (VAR _ τ) | scalarType τ = Just τ
 inferType (CONST _) = Just TF
 inferType (BOOLEAN _) = Just TBool
 
-inferType (ADD p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
-                        then Just TF else Nothing
-inferType (SUB p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
-                        then Just TF else Nothing
-inferType (MUL p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
-                        then Just TF else Nothing
-inferType (DIV p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
-                        then Just TF else Nothing
+inferType (ADD p1 p2) | any' numericType (inferType p1)
+                      , any' numericType (inferType p2) = Just TF
+inferType (SUB p1 p2) | any' numericType (inferType p1)
+                      , any' numericType (inferType p2) = Just TF
+inferType (MUL p1 p2) | any' numericType (inferType p1)
+                      , any' numericType (inferType p2) = Just TF
+inferType (DIV p1 p2) | any' numericType (inferType p1)
+                      , any' numericType (inferType p2) = Just TF
 
-inferType (LINCOMB _ p1 _ p2) = if inferType p1 == Just TF
-                                && inferType p2 == Just TF
-                                then Just TF else Nothing
+inferType (LINCOMB _ p1 _ p2) | any' numericType (inferType p1)
+                              , any' numericType (inferType p2) = Just TF
 
-inferType (NOT p1)    = if inferType p1 == Just TBool
-                        then Just TBool else Nothing
-inferType (AND p1 p2) = if inferType p1 == Just TBool
-                        && inferType p2 == Just TBool
-                        then Just TBool else Nothing
-inferType (OR  p1 p2) = if inferType p1 == Just TBool
-                        && inferType p2 == Just TBool
-                        then Just TBool else Nothing
-inferType (XOR p1 p2) = if inferType p1 == Just TBool
-                        && inferType p2 == Just TBool
-                        then Just TBool else Nothing
+inferType (NOT p1)    | Just τ1 <- inferType p1, logicType τ1 = Just τ1
+inferType (AND p1 p2) | Just τ1 <- inferType p1, Just τ2 <- inferType p2
+                      , τ1 == τ2, logicType τ1 = Just τ1
+inferType (OR  p1 p2) | Just τ1 <- inferType p1, Just τ2 <- inferType p2
+                      , τ1 == τ2, logicType τ1 = Just τ1
+inferType (XOR p1 p2) | Just τ1 <- inferType p1, Just τ2 <- inferType p2
+                      , τ1 == τ2, logicType τ1 = Just τ1
 
-inferType (UnsafeNOT p1)    = if inferType p1 == Just TBool
-                              then Just TBool else Nothing
-inferType (UnsafeAND p1 p2) = if inferType p1 == Just TBool
-                              && inferType p2 == Just TBool
-                              then Just TBool else Nothing
-inferType (UnsafeOR  p1 p2) = if inferType p1 == Just TBool
-                              && inferType p2 == Just TBool
-                              then Just TBool else Nothing
-inferType (UnsafeXOR p1 p2) = if inferType p1 == Just TBool
-                              && inferType p2 == Just TBool
-                              then Just TBool else Nothing
+inferType (UnsafeNOT p1)    | Just τ1 <- inferType p1, logicType τ1 = Just τ1
+inferType (UnsafeAND p1 p2) | Just τ1 <- inferType p1, Just τ2 <- inferType p2
+                            , τ1 == τ2, logicType τ1 = Just τ1
+inferType (UnsafeOR  p1 p2) | Just τ1 <- inferType p1, Just τ2 <- inferType p2
+                            , τ1 == τ2, logicType τ1 = Just τ1
+inferType (UnsafeXOR p1 p2) | Just τ1 <- inferType p1, Just τ2 <- inferType p2
+                            , τ1 == τ2, logicType τ1 = Just τ1
 
-inferType (EQL p1 p2) = if inferType p1 == Just TF && inferType p2 == Just TF
-                        then Just TBool else Nothing
-inferType (ISZERO p1) = if inferType p1 == Just TF
-                        then Just TBool else Nothing
-inferType (EQLC p1 _) = if inferType p1 == Just TF
-                        then Just TBool else Nothing
+inferType (EQL p1 p2) | any' scalarType (inferType p1)
+                      , any' scalarType (inferType p2) = Just TBool
+inferType (ISZERO p1) | any' scalarType (inferType p1) = Just TBool
+inferType (EQLC p1 _) | any' scalarType (inferType p1) = Just TBool
 
 inferType (NIL τ) = Just (TVec τ)
-inferType (CONS h ts)
-  | Just τ  <- inferType h
-  , Just τs <- inferType ts
-  , τs == TVec τ
-  = Just τs
-  | otherwise = Nothing
+inferType (CONS h ts) | Just τ  <- inferType h
+                      , Just τs <- inferType ts
+                      , τs == TVec τ = Just τs
+inferType _ = Nothing
 
 
 -- (Non-expression) assertions
@@ -180,6 +186,22 @@ data Assertion p =
 
 type Valuation p = M.Map String p
 
+
+{-@ lemmaNum :: d:{DSL p | any' numericType (inferType d)} -> {scalar d} @-}
+lemmaNum :: DSL p -> Proof
+lemmaNum p = case inferType p of
+  Nothing       -> error "unreachable"
+  Just (TVec _) -> error "unreachable"
+  Just _        -> trivial
+
+{-@ lemmaLogic :: d:{DSL p | any' logicType (inferType d)} -> {scalar d} @-}
+lemmaLogic :: DSL p -> Proof
+lemmaLogic p = case inferType p of
+  Nothing       -> error "unreachable"
+  Just (TVec _) -> error "unreachable"
+  Just _        -> trivial
+
+
 -- TODO: how to deal with vectors? just forbid them in the precondition?
 {-@ eval :: {v:DSL p | scalar v} -> Valuation p -> Maybe p @-}
 eval :: (Fractional p, Eq p) => DSL p -> Valuation p -> Maybe p
@@ -190,14 +212,14 @@ eval program v = case program of
   (BOOLEAN False) -> Just 0
 
   -- Arithmetic operations
-  ADD p1 p2 -> (+) <$> eval p1 v <*> eval p2 v
-  SUB p1 p2 -> (-) <$> eval p1 v <*> eval p2 v
-  MUL p1 p2 -> (*) <$> eval p1 v <*> eval p2 v
+  ADD p1 p2 -> (+) <$> (eval p1 v ? lemmaNum p1) <*> (eval p2 v ? lemmaNum p2)
+  SUB p1 p2 -> ((-) <$> eval p1 v <*> eval p2 v) ? lemmaNum p1 ? lemmaNum p2
+  MUL p1 p2 -> (*) <$> eval p1 v <*> eval p2 v ? lemmaNum p1 ? lemmaNum p2
   DIV p1 p2 -> (/) <$> eval p1 v <*> (eval p2 v >>= \x ->
                                      if x /= 0 then Just x else Nothing)
-
+    ? lemmaNum p1 ? lemmaNum p2
   LINCOMB k1 p1 k2 p2 -> (\x y -> k1*x + k2*y) <$> eval p1 v <*> eval p2 v
-
+    ? lemmaNum p1 ? lemmaNum p2
   -- Boolean operations (assume inputs are binary)
   NOT p1    -> (\x -> if x == 1 then 0 else 1) <$> eval p1 v
   AND p1 p2 -> (\x y -> if x == 0 || y == 0 then 0 else 1)

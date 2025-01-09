@@ -57,3 +57,8 @@ zipWith' f (x:xs) (y:ys) = f x y : zipWith' f xs ys
 {-@ assume sequence' :: ms:[m a] -> m {l:[a] | len l = len ms} @-}
 sequence' :: Monad m => [m a] -> m [a]
 sequence' = sequence
+
+{-@ reflect any' @-}
+any' :: (a -> Bool) -> Maybe a -> Bool
+any' _ Nothing  = False
+any' p (Just x) = p x

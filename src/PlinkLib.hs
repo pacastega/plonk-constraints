@@ -180,12 +180,12 @@ fromInt n = go 0 (NIL TBool) where
                   in go (m+1) (r' `CONS` acc) q
 
 
-{-@ binaryValue :: {v:DSL p | typed v (TVec TBool) && vlength v > 0}
+{-@ binaryValue :: {v:DSL p | typed v (TVec TBit) && vlength v > 0}
                 -> GlobalStore p ({d:DSL p | typed d TF}) @-}
 binaryValue :: (Integral p, Fractional p, Eq p) =>
                DSL p -> GlobalStore p (DSL p)
 binaryValue v = pure $ go v (CONST 0) where
-  {-@ go :: {v:DSL p | typed v (TVec TBool)} -> {acc:DSL p | typed acc TF}
+  {-@ go :: {v:DSL p | typed v (TVec TBit)} -> {acc:DSL p | typed acc TF}
          -> ({d:DSL p | typed d TF}) @-}
   go :: (Integral p, Fractional p, Eq p) => DSL p -> DSL p -> DSL p
   go (NIL _)     acc = acc
