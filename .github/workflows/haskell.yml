@@ -16,7 +16,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: freckle/stack-cache-action@main
     - uses: haskell/actions/setup@v2
       with:
         ghc-version: '9.10.1'
