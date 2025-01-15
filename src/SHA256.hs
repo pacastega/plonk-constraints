@@ -103,13 +103,13 @@ k = [ CONST 0x428a2f98
     , CONST 0xc67178f2
     ]
 
-{-@ padding :: msg:{DSL p | typed msg (TVec TBool)
+{-@ padding :: msg:{DSL p | typed msg (TVec TBit)
                          && vlength msg < pow 2 64}
-            -> {res:DSL p | typed res (TVec TBool)
+            -> {res:DSL p | typed res (TVec TBit)
                          && (vlength res) mod 512 = 0} @-}
 padding :: Num p => DSL p -> DSL p
-padding msg = msg +++ (fromList TBool [BOOLEAN True])
-                  +++ (vReplicate TBool k (BOOLEAN False)) +++ len
+padding msg = msg +++ (fromList TBit [BIT True])
+                  +++ (vReplicate TBit k (BIT False)) +++ len
   where
     l = vlength msg
     -- 512*c is the smallest multiple of 512 above l+1+64
@@ -119,7 +119,7 @@ padding msg = msg +++ (fromList TBool [BOOLEAN True])
     {-@ k :: {k:Btwn 0 512 | l+1+k+64 = 512*c} @-}
     len = fromInt 64 l -- convert length to binary using 64 bits
 
-    (+++) = vAppend TBool
+    (+++) = vAppend TBit
 
 {-@ plus :: Word p -> Word p
          -> GlobalStore p (Word p) @-}
@@ -128,26 +128,26 @@ plus :: (Integral p, Fractional p, Ord p) =>
 plus = addMod 32 -- addition modulo 2^32
 
 
-{-@ processMsg :: {msg:DSL p | typed msg (TVec TBool)
+{-@ processMsg :: {msg:DSL p | typed msg (TVec TBit)
                             && (vlength msg) mod 512 = 0}
-               -> GlobalStore p ({v:DSL p | typed v (TVec TBool)}) @-}
+               -> GlobalStore p ({v:DSL p | typed v (TVec TBit)}) @-}
 -- TODO: can we prove the resulting length is what it should be?
 processMsg :: (Integral p, Fractional p, Ord p) =>
               DSL p -> GlobalStore p (DSL p)
 processMsg msg = do
-  let chunks = vChunk TBool 512 msg -- split into 512-bit chunks
+  let chunks = vChunk TBit 512 msg -- split into 512-bit chunks
   finalHashes <- foldl processChunk (pure h) chunks -- process all the chunks
   finalHashes' <- sequence' $ map (toBinary 32) finalHashes -- convert to binary
-  return $ vConcat TBool finalHashes' -- concatenate all the hashes
+  return $ vConcat TBit finalHashes' -- concatenate all the hashes
 
 {-@ processChunk :: GlobalStore p (ListN (Word p) 8)
-                 -> {v:DSL p | typed v (TVec TBool) && vlength v = 512}
+                 -> {v:DSL p | typed v (TVec TBit) && vlength v = 512}
                  -> GlobalStore p (ListN (Word p) 8) @-}
 processChunk :: (Integral p, Fractional p, Ord p) =>
                 GlobalStore p [Word p] -> DSL p
              -> GlobalStore p [Word p]
 processChunk currentHash chunk = do
-  let words = vChunk TBool 32 chunk -- split chunk as list of 16 32-bit words
+  let words = vChunk TBit 32 chunk -- split chunk as list of 16 32-bit words
   words' <- sequence' $ map fromBinary words -- convert to list of 16 32-bit ints
   extended <- extend words' -- extend to list of 64 32-bit ints
 
@@ -159,7 +159,7 @@ processChunk currentHash chunk = do
   return finalHashes
 
 rotate :: DSL p -> Int -> DSL p
-rotate = rotateR TBool
+rotate = rotateR TBit
 
 {-@ extend :: ListN (Word p) 16 -> GlobalStore p (ListN (Word p) 64) @-}
 extend :: (Integral p, Fractional p, Ord p) =>
@@ -255,14 +255,14 @@ compress = aux 64 where
 {-@ assume ord :: Char -> Btwn 0 256 @-}
 
 {-@ sha256 :: {s:String | len s < pow 2 61} ->
-              GlobalStore p ({res:DSL p | typed res (TVec TBool)}) @-}
+              GlobalStore p ({res:DSL p | typed res (TVec TBit)}) @-}
 sha256 :: (Integral p, Fractional p, Ord p)
        => String -> GlobalStore p (DSL p)
 sha256 = processMsg . padding . toBits where
   {-@ toBits :: s:String
-             -> {v:DSL p | typed v (TVec TBool) && vlength v = 8 * len s} @-}
+             -> {v:DSL p | typed v (TVec TBit) && vlength v = 8 * len s} @-}
   toBits :: Num p => String -> DSL p
-  toBits [] = NIL TBool
+  toBits [] = NIL TBit
   toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
 
-  (+++) = vAppend TBool
+  (+++) = vAppend TBit

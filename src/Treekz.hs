@@ -48,6 +48,8 @@ parse p = case p of
   LMUL p1 p2 i   -> N ("$\\times$" ++ wire [i]) [parse p1, parse p2]
   LDIV p1 p2 _ i -> N ("$/$" ++ wire [i])       [parse p1, parse p2]
 
+  LLINCOMB k1 p1 k2 p2 i -> N ("$" ++ show k1 ++ "\\cdot + " ++ show k2 ++ "\\cdot$" ++ wire [i]) [parse p1, parse p2]
+
   LNOT p1    i   -> N ("$\\neg$" ++ wire [i])    [parse p1]
   LAND p1 p2 i   -> N ("$\\wedge$" ++ wire [i]) [parse p1, parse p2]
   LOR  p1 p2 i   -> N ("$\\vee$" ++ wire [i])   [parse p1, parse p2]

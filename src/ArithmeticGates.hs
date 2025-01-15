@@ -27,6 +27,7 @@ addGateConst _ k [a, c] = [(v, q)] where
   -- a+k == c <=> a + 0 - c + 0*m + k == 0
 
 
+{-@ reflect linCombGate @-}
 {-@ linCombGate :: m:Nat ->
                    ListN p 2 ->
                    ListN (Btwn 0 m) 3 ->
@@ -35,6 +36,7 @@ linCombGate :: Num p => Int -> [p] -> [Int] -> Circuit p
 linCombGate m [k1, k2] indices = affCombGate m [k1, k2, 0] indices
 -- k1*a + k2*b == c
 
+{-@ reflect affCombGate @-}
 {-@ affCombGate :: m:Nat ->
                    ListN p 3 ->
                    ListN (Btwn 0 m) 3 ->

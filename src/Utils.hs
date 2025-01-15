@@ -62,3 +62,16 @@ sequence' = sequence
 any' :: (a -> Bool) -> Maybe a -> Bool
 any' _ Nothing  = False
 any' p (Just x) = p x
+
+{-@ liquidAssert :: {b:Bool | b} -> x:a -> {v:a | v == x && b} @-}
+liquidAssert :: Bool -> a -> a
+liquidAssert _ x = x
+
+{-@ (??) :: x:b -> y:a -> {v:a | v == y} @-}
+(??) :: b -> a -> a
+_ ?? y = y
+
+{-@ reflect foldr' @-}
+foldr' :: (a -> b -> b) -> b -> [a] -> b
+foldr' _ acc [] = acc
+foldr' f acc (x:xs) = f x (foldr' f acc xs)

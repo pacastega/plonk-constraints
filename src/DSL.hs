@@ -54,6 +54,7 @@ data DSL p =
   | CONST p       -- constant (of type p, i.e. prime field)
     -- TODO: add constants of other types (integers, booleans...)
   | BOOLEAN Bool
+  | BIT Bool
 
     -- Arithmetic operations
   | ADD (DSL p) (DSL p) -- addition
@@ -94,9 +95,9 @@ vlength (NIL _)     = 0
 vlength (CONS _ ps) = 1 + vlength ps
 vlength _           = 1
 
-{-@ toDSLBool :: a -> {v:DSL p | typed v TBool} @-}
-toDSLBool :: Integral a => a -> DSL p
-toDSLBool x = if (fromIntegral x == 0) then BOOLEAN False else BOOLEAN True
+{-@ toDSLBit :: a -> {v:DSL p | typed v TBit} @-}
+toDSLBit :: Integral a => a -> DSL p
+toDSLBit x = if (fromIntegral x == 0) then BIT False else BIT True
 
 
 {-@ reflect typed @-}
@@ -126,6 +127,7 @@ inferType :: DSL p -> Maybe Ty
 inferType (VAR _ τ) | scalarType τ = Just τ
 inferType (CONST _) = Just TF
 inferType (BOOLEAN _) = Just TBool
+inferType (BIT _) = Just TBit
 
 inferType (ADD p1 p2) | any' numericType (inferType p1)
                       , any' numericType (inferType p2) = Just TF
@@ -155,10 +157,10 @@ inferType (UnsafeOR  p1 p2) | Just τ1 <- inferType p1, Just τ2 <- inferType p2
 inferType (UnsafeXOR p1 p2) | Just τ1 <- inferType p1, Just τ2 <- inferType p2
                             , τ1 == τ2, logicType τ1 = Just τ1
 
-inferType (EQL p1 p2) | any' scalarType (inferType p1)
-                      , any' scalarType (inferType p2) = Just TBool
-inferType (ISZERO p1) | any' scalarType (inferType p1) = Just TBool
-inferType (EQLC p1 _) | any' scalarType (inferType p1) = Just TBool
+inferType (EQL p1 p2) | any' numericType (inferType p1)
+                      , any' numericType (inferType p2) = Just TBool
+inferType (ISZERO p1) | any' numericType (inferType p1) = Just TBool
+inferType (EQLC p1 _) | any' numericType (inferType p1) = Just TBool
 
 inferType (NIL τ) = Just (TVec τ)
 inferType (CONS h ts) | Just τ  <- inferType h
@@ -201,46 +203,57 @@ lemmaLogic p = case inferType p of
   Just (TVec _) -> error "unreachable"
   Just _        -> trivial
 
+{-@ lemmaScalar :: d:{DSL p | any' scalarType (inferType d)} -> {scalar d} @-}
+lemmaScalar :: DSL p -> Proof
+lemmaScalar p = case inferType p of
+  Nothing       -> error "unreachable"
+  Just (TVec _) -> error "unreachable"
+  Just _        -> trivial
+
 
 -- TODO: how to deal with vectors? just forbid them in the precondition?
 {-@ eval :: {v:DSL p | scalar v} -> Valuation p -> Maybe p @-}
 eval :: (Fractional p, Eq p) => DSL p -> Valuation p -> Maybe p
 eval program v = case program of
   VAR name _ -> M.lookup name v
-  CONST x  -> Just x
-  (BOOLEAN True) -> Just 1
-  (BOOLEAN False) -> Just 0
+  CONST x -> Just x
+  BOOLEAN b -> Just (fromIntegral $ fromEnum b)
+  BIT b -> Just (fromIntegral $ fromEnum b)
 
   -- Arithmetic operations
-  ADD p1 p2 -> (+) <$> (eval p1 v ? lemmaNum p1) <*> (eval p2 v ? lemmaNum p2)
-  SUB p1 p2 -> ((-) <$> eval p1 v <*> eval p2 v) ? lemmaNum p1 ? lemmaNum p2
-  MUL p1 p2 -> (*) <$> eval p1 v <*> eval p2 v ? lemmaNum p1 ? lemmaNum p2
-  DIV p1 p2 -> (/) <$> eval p1 v <*> (eval p2 v >>= \x ->
+  -- assert (any' numericType (inferType p1))
+  ADD p1 p2 -> (+) <$> (lemmaNum p1 ?? eval p1 v) <*> (lemmaNum p2 ?? eval p2 v)
+  SUB p1 p2 -> (-) <$> (lemmaNum p1 ?? eval p1 v) <*> (lemmaNum p2 ?? eval p2 v)
+  MUL p1 p2 -> (*) <$> (lemmaNum p1 ?? eval p1 v) <*> (lemmaNum p2 ?? eval p2 v)
+  DIV p1 p2 -> (/) <$> (lemmaNum p1 ?? eval p1 v) <*>
+                       (lemmaNum p2 ?? eval p2 v >>= \x ->
                                      if x /= 0 then Just x else Nothing)
-    ? lemmaNum p1 ? lemmaNum p2
-  LINCOMB k1 p1 k2 p2 -> (\x y -> k1*x + k2*y) <$> eval p1 v <*> eval p2 v
-    ? lemmaNum p1 ? lemmaNum p2
+
+  LINCOMB k1 p1 k2 p2 -> (\x y -> k1*x + k2*y) <$> (lemmaNum p1 ?? eval p1 v)
+                                               <*> (lemmaNum p2 ?? eval p2 v)
+
   -- Boolean operations (assume inputs are binary)
-  NOT p1    -> (\x -> if x == 1 then 0 else 1) <$> eval p1 v
+  NOT p1    -> (\x -> if x == 1 then 0 else 1) <$> (lemmaLogic ?? eval p1 v)
   AND p1 p2 -> (\x y -> if x == 0 || y == 0 then 0 else 1)
-               <$> eval p1 v <*> eval p2 v
+               <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
   OR  p1 p2 -> (\x y -> if x == 1 || y == 1 then 1 else 0)
-               <$> eval p1 v <*> eval p2 v
+               <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
   XOR p1 p2 -> (\x y -> if x /= y then 1 else 0)
-               <$> eval p1 v <*> eval p2 v
+               <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
 
-  UnsafeNOT p1    -> (\x -> if x == 1 then 0 else 1) <$> eval p1 v
+  UnsafeNOT p1    -> (\x -> if x == 1 then 0 else 1)
+                     <$> (lemmaLogic ?? eval p1 v)
   UnsafeAND p1 p2 -> (\x y -> if x == 0 || y == 0 then 0 else 1)
-                     <$> eval p1 v <*> eval p2 v
+                     <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
   UnsafeOR  p1 p2 -> (\x y -> if x == 1 || y == 1 then 1 else 0)
-                     <$> eval p1 v <*> eval p2 v
+                     <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
   UnsafeXOR p1 p2 -> (\x y -> if x /= y then 1 else 0)
-                     <$> eval p1 v <*> eval p2 v
+                     <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
 
-  ISZERO p1 -> (\x -> if x == 0 then 1 else 0) <$> eval p1 v
+  ISZERO p1 -> (\x -> if x == 0 then 1 else 0) <$> (lemmaNum p1 ?? eval p1 v)
   EQL p1 p2 -> (\x y -> if x == y then 1 else 0)
-                <$> eval p1 v <*> eval p2 v
-  EQLC p1 y -> (\x -> if x == y then 1 else 0) <$> eval p1 v
+                <$> (lemmaNum p1 ?? eval p1 v) <*> (lemmaNum p2 ?? eval p2 v)
+  EQLC p1 y -> (\x -> if x == y then 1 else 0) <$> (lemmaNum p1 ?? eval p1 v)
 
 
 -- Labeled DSL

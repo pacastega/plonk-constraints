@@ -303,7 +303,7 @@ vec6 = rotateR TF (range 1 10) 2
 
 {-@ vec7 :: GlobalStore PF ({v:DSL PF | typed v TF}) @-}
 vec7 :: GlobalStore PF (DSL PF)
-vec7 = fromBinary $ PlinkLib.fromList TBool $ map toDSLBool [1,1,0,1]
+vec7 = fromBinary $ PlinkLib.fromList TBool $ map toDSLBit [1,1,0,1]
 
 testVectors :: IO ()
 testVectors = do
