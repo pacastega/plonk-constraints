@@ -25,7 +25,7 @@ optimizations = [removeConstants ||| constantFolding]
              -> GlobalStore p ({d:DSL p | wellTyped d}) @-}
 optimize :: (Fractional p, Eq p) =>
             GlobalStore p (DSL p) -> GlobalStore p (DSL p)
-optimize program = optimize' (foldr' (>=>) pure []) program where
+optimize program = optimize' (foldr' (>=>) pure optimizations) program where
   {-@ optimize' :: Opt p -> GlobalStore p ({d:DSL p | wellTyped d})
                 -> GlobalStore p ({d:DSL p | wellTyped d}) @-}
   optimize' :: Opt p -> GlobalStore p (DSL p) -> GlobalStore p (DSL p)
