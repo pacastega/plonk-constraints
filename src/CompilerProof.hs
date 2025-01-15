@@ -51,6 +51,8 @@ compileProof m (LDIV p1 p2 w i) input =
   in compileProof m p1 input ?
      compileProof m p2 input ?
      satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
+compileProof m (LADDC p1 k i) input = compileProof m p1 input
+compileProof m (LMULC p1 k i) input = compileProof m p1 input
 compileProof m (LLINCOMB k1 p1 k2 p2 i) input =
   let n1 = nGates p1
       n2 = nGates p2

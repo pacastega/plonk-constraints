@@ -18,7 +18,7 @@ type Opt p = DSL p -> Maybe (DSL p)
 -- List of optimizations to apply
 {-@ optimizations :: [Opt p] @-}
 optimizations :: (Fractional p, Eq p) => [Opt p]
-optimizations = [removeConstants ||| constantFolding]
+optimizations = [constantFolding ||| removeConstants]
 
 -- Apply all optimizations
 {-@ optimize :: GlobalStore p ({d:DSL p | wellTyped d})
@@ -110,35 +110,33 @@ constantFolding _ = Nothing -- any other pattern is not a redex
 
 {-@ removeConstants :: Opt p @-}
 removeConstants :: (Fractional p, Eq p) => DSL p -> Maybe (DSL p)
-removeConstants (ADD (MUL (CONST k1) p1) (MUL (CONST k2) p2))
+removeConstants (ADD (MULC p1 k1) (MULC p2 k2))
   = Just $ LINCOMB k1 p1 k2 p2
-removeConstants (ADD (MUL p1 (CONST k1)) (MUL (CONST k2) p2))
-  = Just $ LINCOMB k1 p1 k2 p2
-removeConstants (ADD (MUL (CONST k1) p1) (MUL p2 (CONST k2)))
-  = Just $ LINCOMB k1 p1 k2 p2
-removeConstants (ADD (MUL p1 (CONST k1)) (MUL p2 (CONST k2)))
-  = Just $ LINCOMB k1 p1 k2 p2
-removeConstants (ADD (MUL (CONST k1) p1) p2)
+removeConstants (ADD (MULC p1 k1) p2)
   = Just $ LINCOMB k1 p1 1 p2
-removeConstants (ADD (MUL p1 (CONST k1)) p2)
-  = Just $ LINCOMB k1 p1 1 p2
-removeConstants (ADD p1 (MUL (CONST k2) p2))
-  = Just $ LINCOMB 1 p1 k2 p2
-removeConstants (ADD p1 (MUL p2 (CONST k2)))
+removeConstants (ADD p1 (MULC p2 k2))
   = Just $ LINCOMB 1 p1 k2 p2
 -- adding 0 is a no-op
 removeConstants (ADD (CONST 0) p) = Just p
 removeConstants (ADD p (CONST 0)) = Just p
 -- subtracting 0 is a no-op
 removeConstants (SUB p (CONST 0)) = Just p
+-- adding a constant can be done more efficiently
+removeConstants (ADD p (CONST k)) = Just (ADDC p k)
+removeConstants (ADD (CONST k) p) = Just (ADDC p k)
+removeConstants (SUB p (CONST k)) = Just (ADDC p (-k))
 -- multiplying by 1 is a no-op
 removeConstants (MUL (CONST 1) p) = Just p
 removeConstants (MUL p (CONST 1)) = Just p
 -- multiplying by 0 always returns 0
 removeConstants (MUL (CONST 0) p) = Just (CONST 0)
 removeConstants (MUL p (CONST 0)) = Just (CONST 0)
+-- multiplying by a constant can be done more efficiently
+removeConstants (MUL p (CONST k)) = Just (MULC p k)
+removeConstants (MUL (CONST k) p) = Just (MULC p k)
 -- dividing by 1 is a no-op
 removeConstants (DIV p (CONST 1)) = Just p
+removeConstants (DIV p (CONST k)) | k /= 0 = Just (MULC p (1/k))
 
 -- checking equality against a constant can be done more efficiently
 removeConstants (EQL p (CONST k)) = Just (EQLC p k)

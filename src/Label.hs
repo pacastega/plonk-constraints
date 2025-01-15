@@ -83,6 +83,10 @@ label' p nextIndex env = case M.lookup p env of
     DIV p1 p2 -> (w'+1, [LDIV p1' p2' w' i'], add (p,i') env')
       where (i', p1', p2', env') = lemmaNum p1 ?? lemmaNum p2
                                 ?? label2 i p1 p2 env; w' = i'+1
+    ADDC p1 k -> (i'+1, [LADDC p1' k i'], add (p,i') env')
+      where (i', [p1'], env') = lemmaNum p1 ?? label' p1 i env
+    MULC p1 k -> (i'+1, [LMULC p1' k i'], add (p,i') env')
+      where (i', [p1'], env') = lemmaNum p1 ?? label' p1 i env
     LINCOMB k1 p1 k2 p2 -> (i'+1, [LLINCOMB k1 p1' k2 p2' i'], add (p,i') env')
       where (i', p1', p2', env') = lemmaNum p1 ?? lemmaNum p2
                                 ?? label2 i p1 p2 env

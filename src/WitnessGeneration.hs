@@ -61,6 +61,16 @@ witnessGen m programs strValuation = toVector m valuation' where
       wit = recip <$> x2
       valuation2 = M.alter (updateWith wit) w valuation'
       valuation3 = M.alter (updateWith div) i valuation2
+    update sv (LADDC p1 k i) valuation = M.alter (updateWith sum) i valuation'
+      where
+      valuation' = update sv p1 valuation
+      x1 = M.lookup (outputWire p1) valuation'
+      sum = (+ k) <$> x1
+    update sv (LMULC p1 k i) valuation = M.alter (updateWith mult) i valuation'
+      where
+      valuation' = update sv p1 valuation
+      x1 = M.lookup (outputWire p1) valuation'
+      mult = (* k) <$> x1
     update sv (LLINCOMB k1 p1 k2 p2 i) valuation = valuation''
       where
       valuation' = update sv p2 $ update sv p1 valuation

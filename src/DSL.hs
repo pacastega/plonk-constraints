@@ -62,6 +62,8 @@ data DSL p =
   | MUL (DSL p) (DSL p) -- multiplication
   | DIV (DSL p) (DSL p) -- division
 
+  | ADDC (DSL p) p -- addition with a constant
+  | MULC (DSL p) p -- multiplication with a constant
   | LINCOMB p (DSL p) p (DSL p) -- LINCOMB k1 p1 k2 p2 = k1*p1 + k2*p2
 
     -- Boolean operations
@@ -142,6 +144,8 @@ inferType (MUL p1 p2) | any' numericType (inferType p1)
 inferType (DIV p1 p2) | any' numericType (inferType p1)
                       , any' numericType (inferType p2) = Just TF
 
+inferType (ADDC p1 _) | any' numericType (inferType p1) = Just TF
+inferType (MULC p1 _) | any' numericType (inferType p1) = Just TF
 inferType (LINCOMB _ p1 _ p2) | any' numericType (inferType p1)
                               , any' numericType (inferType p2) = Just TF
 
@@ -233,6 +237,8 @@ eval program v = case program of
                        (lemmaNum p2 ?? eval p2 v >>= \x ->
                                      if x /= 0 then Just x else Nothing)
 
+  ADDC p1 k -> (+ k) <$> (lemmaNum p1 ?? eval p1 v)
+  MULC p1 k -> (* k) <$> (lemmaNum p1 ?? eval p1 v)
   LINCOMB k1 p1 k2 p2 -> (\x y -> k1*x + k2*y) <$> (lemmaNum p1 ?? eval p1 v)
                                                <*> (lemmaNum p2 ?? eval p2 v)
 
@@ -271,6 +277,8 @@ data LDSL p i =
   LMUL   (LDSL p i) (LDSL p i)   i |
   LDIV   (LDSL p i) (LDSL p i) i i |
 
+  LADDC  (LDSL p i) p            i |
+  LMULC  (LDSL p i) p            i |
   LLINCOMB p (LDSL p i) p (LDSL p i) i |
 
   LNOT   (LDSL p i)            i |
@@ -305,6 +313,9 @@ outputWire (LADD _ _ i)   = i
 outputWire (LSUB _ _ i)   = i
 outputWire (LMUL _ _ i)   = i
 outputWire (LDIV _ _ _ i) = i
+
+outputWire (LADDC _ _ i)   = i
+outputWire (LMULC _ _ i)   = i
 outputWire (LLINCOMB _ _ _ _ i) = i
 
 outputWire (LNOT _   i) = i
@@ -339,6 +350,8 @@ nGates (LSUB p1 p2 _)   = 1 + nGates p1 + nGates p2
 nGates (LMUL p1 p2 _)   = 1 + nGates p1 + nGates p2
 nGates (LDIV p1 p2 _ _) = 2 + nGates p1 + nGates p2
 
+nGates (LADDC p1 _ _) = 1 + nGates p1
+nGates (LMULC p1 _ _) = 1 + nGates p1
 nGates (LLINCOMB _ p1 _ p2 _) = 1 + nGates p1 + nGates p2
 
 nGates (LNOT p1    _) = 2 + nGates p1
@@ -373,39 +386,12 @@ compile m (LADD p1 p2 i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (addGate m [i1, i2, i]) c'
--- -- TODO: is it worth it to add a new DSL constructor (+ LDSL constructor) to
--- -- have this optimization on DSL's instead of LDSL's? (and in MUL as well)
--- compile m (LADD p1 (LCONST k _) i) = c
---   where
---     c1 = compile m p1
---     i1 = outputWire p1
---     c = append' (addGateConst m k [i1, i]) c1
--- compile m (LADD (LCONST k _) p1 i) = c
---   where
---     c1 = compile m p1
---     i1 = outputWire p1
---     c = append' (addGateConst m k [i1, i]) c1
--- compile m (LSUB p1 (LCONST k _) i) = c -- subtract a constant
---   where
---     c1 = compile m p1
---     i1 = outputWire p1
---     c = append' (addGateConst m k [i, i1]) c1
 compile m (LSUB p1 p2 i) = c
   where
     c1 = compile m p1; c2 = compile m p2
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (addGate m [i, i2, i1]) c'
--- compile m (LMUL p1 (LCONST k _) i) = c -- multiply by a constant
---   where
---     c1 = compile m p1
---     i1 = outputWire p1
---     c = append' (mulGateConst m k [i1, i]) c1
--- compile m (LMUL (LCONST k _) p1 i) = c -- multiply by a constant
---   where
---     c1 = compile m p1
---     i1 = outputWire p1
---     c = append' (mulGateConst m k [i1, i]) c1
 compile m (LMUL p1 p2 i) = c
   where
     c1 = compile m p1; c2 = compile m p2
@@ -418,6 +404,16 @@ compile m (LDIV p1 p2 w i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (divGate m [i1, i2, i, w]) c'
+compile m (LADDC p1 k i) = c
+  where
+    c1 = compile m p1
+    i1 = outputWire p1
+    c = append' (addGateConst m k [i1, i]) c1
+compile m (LMULC p1 k i) = c
+  where
+    c1 = compile m p1
+    i1 = outputWire p1
+    c = append' (mulGateConst m k [i1, i]) c1
 compile m (LLINCOMB k1 p1 k2 p2 i) = c
   where
     c1 = compile m p1; c2 = compile m p2
@@ -528,6 +524,14 @@ semanticsAreCorrect m (LDIV p1 p2 w i) input = correct where
   i1 = outputWire p1; i2 = outputWire p2
   correct = correct1 && correct2 && input!w * input!i2 == 1 &&
     if input!i2 /= 0 then input!i == input!i1 / input!i2 else True
+semanticsAreCorrect m (LADDC p1 k i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  i1 = outputWire p1
+  correct = correct1 && input!i == input!i1 + k
+semanticsAreCorrect m (LMULC p1 k i) input = correct where
+  correct1 = semanticsAreCorrect m p1 input
+  i1 = outputWire p1
+  correct = correct1 && input!i == input!i1 * k
 semanticsAreCorrect m (LLINCOMB k1 p1 k2 p2 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   correct2 = semanticsAreCorrect m p2 input
