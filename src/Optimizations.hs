@@ -122,4 +122,8 @@ removeConstants (MUL p (CONST 0)) = Just (CONST 0)
 -- dividing by 1 is a no-op
 removeConstants (DIV p (CONST 1)) = Just p
 
+-- checking equality against a constant can be done more efficiently
+removeConstants (EQL p (CONST k)) = Just (EQLC p k)
+removeConstants (EQL (CONST k) p) = Just (EQLC p k)
+
 removeConstants _ = Nothing -- any other pattern is not a redex
