@@ -113,6 +113,10 @@ wellTyped p = case inferType p of
   Just _ -> True
   Nothing -> False
 
+{-@ reflect sameType @-}
+sameType :: DSL p -> DSL p -> Bool
+sameType program1 program2 = inferType program1 == inferType program2
+
 {-@ reflect scalar @-}
 scalar :: DSL p -> Bool
 scalar p = case inferType p of
