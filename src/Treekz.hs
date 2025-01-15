@@ -62,8 +62,8 @@ parse p = case p of
   LUnsafeOR  p1 p2 i   -> N ("$\\hat\\vee$" ++ wire [i])   [parse p1, parse p2]
   LUnsafeXOR p1 p2 i   -> N ("$\\hat\\oplus$" ++ wire [i]) [parse p1, parse p2]
 
-  LISZERO p1 i w -> N ("$ =0?$" ++ wire [i, w]) [parse p1]
-  LEQLC p1 k i w -> N ("$ =" ++ show k ++ "?$" ++ wire [i, w]) [parse p1]
+  LISZERO p1 i w -> N ("$=0?$" ++ wire [i, w]) [parse p1]
+  LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parse p1]
 
   LNZERO p1 w -> N ("$\\neq 0$" ++ wire [w]) [parse p1]
   LBOOL  p1   -> N ("$\\in \\{0,1\\}$") [parse p1]
