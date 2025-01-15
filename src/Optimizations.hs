@@ -119,18 +119,26 @@ removeConstants (ADD p1 (MULC p2 k2))
 -- adding 0 is a no-op
 removeConstants (ADD (CONST 0) p) = Just p
 removeConstants (ADD p (CONST 0)) = Just p
+removeConstants (ADD (BIT False) p) = Just p
+removeConstants (ADD p (BIT False)) = Just p
 -- subtracting 0 is a no-op
 removeConstants (SUB p (CONST 0)) = Just p
 -- adding a constant can be done more efficiently
 removeConstants (ADD p (CONST k)) = Just (ADDC p k)
 removeConstants (ADD (CONST k) p) = Just (ADDC p k)
+removeConstants (ADD p (BIT True)) = Just (ADDC p 1)
+removeConstants (ADD (BIT True) p) = Just (ADDC p 1)
 removeConstants (SUB p (CONST k)) = Just (ADDC p (-k))
 -- multiplying by 1 is a no-op
 removeConstants (MUL (CONST 1) p) = Just p
 removeConstants (MUL p (CONST 1)) = Just p
+removeConstants (MUL (BIT True) p) = Just p
+removeConstants (MUL p (BIT True)) = Just p
 -- multiplying by 0 always returns 0
 removeConstants (MUL (CONST 0) p) = Just (CONST 0)
 removeConstants (MUL p (CONST 0)) = Just (CONST 0)
+removeConstants (MUL (BIT False) p) = Just (CONST 0)
+removeConstants (MUL p (BIT False)) = Just (CONST 0)
 -- multiplying by a constant can be done more efficiently
 removeConstants (MUL p (CONST k)) = Just (MULC p k)
 removeConstants (MUL (CONST k) p) = Just (MULC p k)
