@@ -250,10 +250,10 @@ addMod e x y = do
   assert $ BOOL b
   assert $ (x `ADD` y) `EQA` (z `ADD` (b `MUL` CONST modulus))
 
-  _evidence <- toBinary e z -- z can be encoded using ‘e’ bits
-
   define b' (\v -> (\x y -> if x + y < modulus then 0 else 1)
                    <$> eval x v <*> eval y v)
   define z' (\v -> (\x y -> (x + y) `mod` modulus)
                    <$> eval x v <*> eval y v)
+
+  _evidence <- toBinary e z -- z can be encoded using ‘e’ bits
   return z
