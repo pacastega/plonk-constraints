@@ -144,5 +144,52 @@ labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
       where (w', [p1'], env') = label' p1 i env
     BOOL p1  -> (i', [LBOOL p1'], env')
       where (i', [p1'], env') = label' p1 i env
-    EQA p1 p2 -> (i', [LEQA p1' p2'], env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+    EQA p1 p2 -> case M.lookup p1 env of
+      Just i1 -> case M.lookup p2 env of
+        Just i2 -> (i, [LEQA (LWIRE i1) (LWIRE i2)], env) -- both present
+        Nothing -> (i', [withOutputWire i' i1 p2'], env')    -- use i1 for p2
+          where (i', [p2'], env') = label' p2 i env
+      Nothing -> case M.lookup p2 env of
+        Just i2 -> (i', [withOutputWire i' i2 p1'], env')
+          where (i', [p1'], env') = label' p1 i env       -- use i2 for p1
+        Nothing -> (i', [p1', withOutputWire i' i1 p2'], env')
+          where (i', p1', p2', env') = label2 i p1 p2 env
+                i1 = outputWire p1'
+
+
+      --            (i', [LEQA p1' p2'], env')
+      -- where (i', p1', p2', env') = label2 i p1 p2 env
+
+{-@ withOutputWire :: m:Nat -> Btwn 0 m -> LDSL p (Btwn 0 m)
+                   -> LDSL p (Btwn 0 m) @-}
+withOutputWire :: Int -> Int -> LDSL p Int -> LDSL p Int
+withOutputWire _ i program = case program of
+  LWIRE _ -> LWIRE i
+  LVAR s _ -> LVAR s i
+  LCONST p _ -> LCONST p i
+
+  LADD p1 p2 _ -> LADD p1 p2 i
+  LSUB p1 p2 _ -> LSUB p1 p2 i
+  LMUL p1 p2 _ -> LMUL p1 p2 i
+  LDIV p1 p2 w _ -> LDIV p1 p2 w i
+
+  LADDC p k _ -> LADDC p k i
+  LMULC p k _ -> LMULC p k i
+  LLINCOMB k1 p1 k2 p2 _ -> LLINCOMB k1 p1 k2 p2 i
+
+  LNOT p1 _ -> LNOT p1 i
+  LAND p1 p2 _ -> LAND p1 p2 i
+  LOR  p1 p2 _ -> LOR  p1 p2 i
+  LXOR p1 p2 _ -> LXOR p1 p2 i
+
+  LUnsafeNOT p1 _ -> LUnsafeNOT p1 i
+  LUnsafeAND p1 p2 _ -> LUnsafeAND p1 p2 i
+  LUnsafeOR  p1 p2 _ -> LUnsafeOR  p1 p2 i
+  LUnsafeXOR p1 p2 _ -> LUnsafeXOR p1 p2 i
+
+  LISZERO p1 w _ -> LISZERO p1 w i
+  LEQLC   p1 k w _ -> LEQLC p1 k w i
+
+  LNZERO p1 _ -> LNZERO p1 i
+  LBOOL  p1 -> LBOOL p1
+  LEQA p1 p2 -> LEQA p1 p2
