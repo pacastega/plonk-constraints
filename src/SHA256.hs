@@ -151,9 +151,9 @@ processChunk currentHash chunk = do
   words' <- sequence' $ map fromBinary words -- convert to list of 16 32-bit ints
   extended <- extend words' -- extend to list of 64 32-bit ints
 
-  workingVariables <- compress currentHash extended
-
   currentHash' <- currentHash -- unwrap it
+
+  workingVariables <- compress (pure currentHash') extended
   finalHashes <- sequence' $ zipWith' plus currentHash' workingVariables
 
   return finalHashes
