@@ -12,8 +12,9 @@ import DSL
 import GlobalStore
 import Utils (boolean, any', (??), foldr')
 
-type Opt p = DSL p -> Maybe (DSL p)
-{-@ type Opt p = d:TypedDSL p -> Maybe ({v:TypedDSL p | sameType v d}) @-}
+import Optimizations.ConstantFolding
+import Optimizations.RemoveConstants
+import Optimizations.Base
 
 -- List of optimizations to apply
 {-@ optimizations :: [Opt p] @-}
@@ -83,71 +84,3 @@ opt' f (DEF s p τ) = DEF s (opt f p) τ
 opt' f (NZERO p) = NZERO (opt f p)
 opt' f (BOOL p) = BOOL (opt f p)
 opt' f (EQA p1 p2) = EQA (opt f p1) (opt f p2)
-
-{-@ constantFolding :: Opt p @-}
-constantFolding :: (Fractional p, Eq p) => DSL p -> Maybe (DSL p)
-constantFolding (ADD (CONST k1) (CONST k2)) = Just $ CONST (k1 + k2)
-constantFolding (SUB (CONST k1) (CONST k2)) = Just $ CONST (k1 - k2)
-constantFolding (MUL (CONST k1) (CONST k2)) = Just $ CONST (k1 * k2)
-constantFolding (DIV (CONST k1) (CONST k2)) | k2 /= 0 = Just $ CONST (k1 / k2)
-
-constantFolding (NOT (BOOLEAN b1)) = Just $ BOOLEAN (not b1)
-constantFolding (AND (BOOLEAN b1) (BOOLEAN b2)) = Just $ BOOLEAN (b1 && b2)
-constantFolding (OR  (BOOLEAN b1) (BOOLEAN b2)) = Just $ BOOLEAN (b1 || b2)
-constantFolding (XOR (BOOLEAN b1) (BOOLEAN b2)) = Just $ BOOLEAN (b1 /= b2)
-
-constantFolding (UnsafeNOT (BOOLEAN b1)) = Just $ BOOLEAN (not b1)
-constantFolding (UnsafeAND (BOOLEAN b1) (BOOLEAN b2)) = Just $ BOOLEAN (b1 && b2)
-constantFolding (UnsafeOR  (BOOLEAN b1) (BOOLEAN b2)) = Just $ BOOLEAN (b1 || b2)
-constantFolding (UnsafeXOR (BOOLEAN b1) (BOOLEAN b2)) = Just $ BOOLEAN (b1 /= b2)
-
-constantFolding (ISZERO (CONST k)) = Just $ BOOLEAN (k /= 0)
-constantFolding (EQL (CONST k1) (CONST k2)) = Just $ BOOLEAN (k1 == k2)
-constantFolding (EQLC (CONST k1) k2) = Just $ BOOLEAN (k1 == k2)
-
-constantFolding _ = Nothing -- any other pattern is not a redex
-
-
-{-@ removeConstants :: Opt p @-}
-removeConstants :: (Fractional p, Eq p) => DSL p -> Maybe (DSL p)
-removeConstants (ADD (MULC p1 k1) (MULC p2 k2))
-  = Just $ LINCOMB k1 p1 k2 p2
-removeConstants (ADD (MULC p1 k1) p2)
-  = Just $ LINCOMB k1 p1 1 p2
-removeConstants (ADD p1 (MULC p2 k2))
-  = Just $ LINCOMB 1 p1 k2 p2
--- adding 0 is a no-op
-removeConstants (ADD (CONST 0) p) = Just p
-removeConstants (ADD p (CONST 0)) = Just p
-removeConstants (ADD (BIT False) p) = Just p
-removeConstants (ADD p (BIT False)) = Just p
--- subtracting 0 is a no-op
-removeConstants (SUB p (CONST 0)) = Just p
--- adding a constant can be done more efficiently
-removeConstants (ADD p (CONST k)) = Just (ADDC p k)
-removeConstants (ADD (CONST k) p) = Just (ADDC p k)
-removeConstants (ADD p (BIT True)) = Just (ADDC p 1)
-removeConstants (ADD (BIT True) p) = Just (ADDC p 1)
-removeConstants (SUB p (CONST k)) = Just (ADDC p (-k))
--- multiplying by 1 is a no-op
-removeConstants (MUL (CONST 1) p) = Just p
-removeConstants (MUL p (CONST 1)) = Just p
-removeConstants (MUL (BIT True) p) = Just p
-removeConstants (MUL p (BIT True)) = Just p
--- multiplying by 0 always returns 0
-removeConstants (MUL (CONST 0) p) = Just (CONST 0)
-removeConstants (MUL p (CONST 0)) = Just (CONST 0)
-removeConstants (MUL (BIT False) p) = Just (CONST 0)
-removeConstants (MUL p (BIT False)) = Just (CONST 0)
--- multiplying by a constant can be done more efficiently
-removeConstants (MUL p (CONST k)) = Just (MULC p k)
-removeConstants (MUL (CONST k) p) = Just (MULC p k)
--- dividing by 1 is a no-op
-removeConstants (DIV p (CONST 1)) = Just p
-removeConstants (DIV p (CONST k)) | k /= 0 = Just (MULC p (1/k))
-
--- checking equality against a constant can be done more efficiently
-removeConstants (EQL p (CONST k)) = Just (EQLC p k)
-removeConstants (EQL (CONST k) p) = Just (EQLC p k)
-
-removeConstants _ = Nothing -- any other pattern is not a redex
