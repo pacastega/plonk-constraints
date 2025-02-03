@@ -105,8 +105,7 @@ label' p nextIndex env = case M.lookup p env of
 
     ISZERO p1 -> (w'+1, [LISZERO p1' w' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env; w' = i'+1
-    EQL p1 p2 -> let diff = ()
-                 in label' (ISZERO (p1 `SUB` p2)) nextIndex env
+    EQL p1 p2 -> label' (ISZERO (p1 `SUB` p2)) nextIndex env
     EQLC p1 k -> (w'+1, [LEQLC p1' k w' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env; w' = i'+1
 
