@@ -72,57 +72,57 @@ label' p nextIndex env = case M.lookup p env of
     BIT b      -> label' (CONST $ fromIntegral $ fromEnum b) nextIndex env
 
     ADD p1 p2 -> (i'+1, [LADD p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scNum p1 ?? scNum p2
+      where (i', p1', p2', env') = lemmaNum p1 ?? lemmaNum p2
                                 ?? label2 i p1 p2 env
     SUB p1 p2 -> (i'+1, [LSUB p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scNum p1 ?? scNum p2
+      where (i', p1', p2', env') = lemmaNum p1 ?? lemmaNum p2
                                 ?? label2 i p1 p2 env
     MUL p1 p2 -> (i'+1, [LMUL p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scNum p1 ?? scNum p2
+      where (i', p1', p2', env') = lemmaNum p1 ?? lemmaNum p2
                                 ?? label2 i p1 p2 env
     DIV p1 p2 -> (w'+1, [LDIV p1' p2' w' i'], add (p,i') env')
-      where (i', p1', p2', env') = scNum p1 ?? scNum p2
+      where (i', p1', p2', env') = lemmaNum p1 ?? lemmaNum p2
                                 ?? label2 i p1 p2 env; w' = i'+1
     ADDC p1 k -> (i'+1, [LADDC p1' k i'], add (p,i') env')
-      where (i', [p1'], env') = scNum p1 ?? label' p1 i env
+      where (i', [p1'], env') = lemmaNum p1 ?? label' p1 i env
     MULC p1 k -> (i'+1, [LMULC p1' k i'], add (p,i') env')
-      where (i', [p1'], env') = scNum p1 ?? label' p1 i env
+      where (i', [p1'], env') = lemmaNum p1 ?? label' p1 i env
     LINCOMB k1 p1 k2 p2 -> (i'+1, [LLINCOMB k1 p1' k2 p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scNum p1 ?? scNum p2
+      where (i', p1', p2', env') = lemmaNum p1 ?? lemmaNum p2
                                 ?? label2 i p1 p2 env
 
     NOT p1    -> (i'+1, [LNOT p1' i'], add (p,i') env')
-      where (i', [p1'], env') = scLogic p1
+      where (i', [p1'], env') = lemmaLogic p1
                              ?? label' p1 i env
     AND p1 p2 -> (i'+1, [LAND p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scLogic p1 ?? scLogic p2
+      where (i', p1', p2', env') = lemmaLogic p1 ?? lemmaLogic p2
                                 ?? label2 i p1 p2 env
     OR  p1 p2 -> (i'+1, [LOR  p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scLogic p1 ?? scLogic p2
+      where (i', p1', p2', env') = lemmaLogic p1 ?? lemmaLogic p2
                                 ?? label2 i p1 p2 env
     XOR p1 p2 -> (i'+1, [LXOR p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scLogic p1 ?? scLogic p2
+      where (i', p1', p2', env') = lemmaLogic p1 ?? lemmaLogic p2
                                 ?? label2 i p1 p2 env
 
     UnsafeNOT p1    -> (i'+1, [LUnsafeNOT p1' i'], add (p,i') env')
-      where (i', [p1'], env') = scLogic p1
+      where (i', [p1'], env') = lemmaLogic p1
                              ?? label' p1 i env
     UnsafeAND p1 p2 -> (i'+1, [LUnsafeAND p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scLogic p1 ?? scLogic p2
+      where (i', p1', p2', env') = lemmaLogic p1 ?? lemmaLogic p2
                                 ?? label2 i p1 p2 env
     UnsafeOR  p1 p2 -> (i'+1, [LUnsafeOR  p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scLogic p1 ?? scLogic p2
+      where (i', p1', p2', env') = lemmaLogic p1 ?? lemmaLogic p2
                                 ?? label2 i p1 p2 env
     UnsafeXOR p1 p2 -> (i'+1, [LUnsafeXOR p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = scLogic p1 ?? scLogic p2
+      where (i', p1', p2', env') = lemmaLogic p1 ?? lemmaLogic p2
                                 ?? label2 i p1 p2 env
 
     ISZERO p1 -> (w'+1, [LISZERO p1' w' i'], add (p,i') env')
-      where (i', [p1'], env') = scNum p1 ?? label' p1 i env; w' = i'+1
+      where (i', [p1'], env') = lemmaNum p1 ?? label' p1 i env; w' = i'+1
     EQL p1 p2 -> let diff = (p1 `SUB` p2)
                  in scalar (ISZERO diff) ?? label' (ISZERO diff) nextIndex env
     EQLC p1 k -> (w'+1, [LEQLC p1' k w' i'], add (p,i') env')
-      where (i', [p1'], env') = scNum p1 ?? label' p1 i env; w' = i'+1
+      where (i', [p1'], env') = lemmaNum p1 ?? label' p1 i env; w' = i'+1
 
     NIL _ -> (i, [], env)
     CONS h ts -> (i'', h' ++ ts', env'')

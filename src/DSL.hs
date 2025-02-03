@@ -217,18 +217,23 @@ data Assertion p =
 type Valuation p = M.Map String p
 
 
--- something numeric is also scalar
-{-@ scNum :: d:{DSL p | any' numericType (inferType d)} -> {scalar d} @-}
-scNum :: DSL p -> Proof
-scNum p = case inferType p of
+{-@ lemmaNum :: d:{DSL p | any' numericType (inferType d)} -> {scalar d} @-}
+lemmaNum :: DSL p -> Proof
+lemmaNum p = case inferType p of
   Nothing       -> error "unreachable"
   Just (TVec _) -> error "unreachable"
   Just _        -> trivial
 
--- something logic is also scalar
-{-@ scLogic :: d:{DSL p | any' logicType (inferType d)} -> {scalar d} @-}
-scLogic :: DSL p -> Proof
-scLogic p = case inferType p of
+{-@ lemmaLogic :: d:{DSL p | any' logicType (inferType d)} -> {scalar d} @-}
+lemmaLogic :: DSL p -> Proof
+lemmaLogic p = case inferType p of
+  Nothing       -> error "unreachable"
+  Just (TVec _) -> error "unreachable"
+  Just _        -> trivial
+
+{-@ lemmaScalar :: d:{DSL p | any' scalarType (inferType d)} -> {scalar d} @-}
+lemmaScalar :: DSL p -> Proof
+lemmaScalar p = case inferType p of
   Nothing       -> error "unreachable"
   Just (TVec _) -> error "unreachable"
   Just _        -> trivial
@@ -245,40 +250,40 @@ eval program v = case program of
 
   -- Arithmetic operations
   -- assert (any' numericType (inferType p1))
-  ADD p1 p2 -> (+) <$> (scNum p1 ?? eval p1 v) <*> (scNum p2 ?? eval p2 v)
-  SUB p1 p2 -> (-) <$> (scNum p1 ?? eval p1 v) <*> (scNum p2 ?? eval p2 v)
-  MUL p1 p2 -> (*) <$> (scNum p1 ?? eval p1 v) <*> (scNum p2 ?? eval p2 v)
-  DIV p1 p2 -> (/) <$> (scNum p1 ?? eval p1 v) <*>
-                       (scNum p2 ?? eval p2 v >>= \x ->
-                           if x /= 0 then Just x else Nothing)
+  ADD p1 p2 -> (+) <$> (lemmaNum p1 ?? eval p1 v) <*> (lemmaNum p2 ?? eval p2 v)
+  SUB p1 p2 -> (-) <$> (lemmaNum p1 ?? eval p1 v) <*> (lemmaNum p2 ?? eval p2 v)
+  MUL p1 p2 -> (*) <$> (lemmaNum p1 ?? eval p1 v) <*> (lemmaNum p2 ?? eval p2 v)
+  DIV p1 p2 -> (/) <$> (lemmaNum p1 ?? eval p1 v) <*>
+                       (lemmaNum p2 ?? eval p2 v >>= \x ->
+                                     if x /= 0 then Just x else Nothing)
 
-  ADDC p1 k -> (+ k) <$> (scNum p1 ?? eval p1 v)
-  MULC p1 k -> (* k) <$> (scNum p1 ?? eval p1 v)
-  LINCOMB k1 p1 k2 p2 -> (\x y -> k1*x + k2*y) <$> (scNum p1 ?? eval p1 v)
-                                               <*> (scNum p2 ?? eval p2 v)
+  ADDC p1 k -> (+ k) <$> (lemmaNum p1 ?? eval p1 v)
+  MULC p1 k -> (* k) <$> (lemmaNum p1 ?? eval p1 v)
+  LINCOMB k1 p1 k2 p2 -> (\x y -> k1*x + k2*y) <$> (lemmaNum p1 ?? eval p1 v)
+                                               <*> (lemmaNum p2 ?? eval p2 v)
 
   -- Boolean operations (assume inputs are binary)
-  NOT p1    -> (\x -> if x == 1 then 0 else 1) <$> (scLogic ?? eval p1 v)
+  NOT p1    -> (\x -> if x == 1 then 0 else 1) <$> (lemmaLogic ?? eval p1 v)
   AND p1 p2 -> (\x y -> if x == 0 || y == 0 then 0 else 1)
-               <$> (scLogic ?? eval p1 v) <*> (scLogic ?? eval p2 v)
+               <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
   OR  p1 p2 -> (\x y -> if x == 1 || y == 1 then 1 else 0)
-               <$> (scLogic ?? eval p1 v) <*> (scLogic ?? eval p2 v)
+               <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
   XOR p1 p2 -> (\x y -> if x /= y then 1 else 0)
-               <$> (scLogic ?? eval p1 v) <*> (scLogic ?? eval p2 v)
+               <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
 
   UnsafeNOT p1    -> (\x -> if x == 1 then 0 else 1)
-                     <$> (scLogic ?? eval p1 v)
+                     <$> (lemmaLogic ?? eval p1 v)
   UnsafeAND p1 p2 -> (\x y -> if x == 0 || y == 0 then 0 else 1)
-                     <$> (scLogic ?? eval p1 v) <*> (scLogic ?? eval p2 v)
+                     <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
   UnsafeOR  p1 p2 -> (\x y -> if x == 1 || y == 1 then 1 else 0)
-                     <$> (scLogic ?? eval p1 v) <*> (scLogic ?? eval p2 v)
+                     <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
   UnsafeXOR p1 p2 -> (\x y -> if x /= y then 1 else 0)
-                     <$> (scLogic ?? eval p1 v) <*> (scLogic ?? eval p2 v)
+                     <$> (lemmaLogic ?? eval p1 v) <*> (lemmaLogic ?? eval p2 v)
 
-  ISZERO p1 -> (\x -> if x == 0 then 1 else 0) <$> (scNum p1 ?? eval p1 v)
+  ISZERO p1 -> (\x -> if x == 0 then 1 else 0) <$> (lemmaNum p1 ?? eval p1 v)
   EQL p1 p2 -> (\x y -> if x == y then 1 else 0)
-                <$> (scNum p1 ?? eval p1 v) <*> (scNum p2 ?? eval p2 v)
-  EQLC p1 y -> (\x -> if x == y then 1 else 0) <$> (scNum p1 ?? eval p1 v)
+                <$> (lemmaNum p1 ?? eval p1 v) <*> (lemmaNum p2 ?? eval p2 v)
+  EQLC p1 y -> (\x -> if x == y then 1 else 0) <$> (lemmaNum p1 ?? eval p1 v)
 
 
 -- Labeled DSL
