@@ -253,7 +253,6 @@ data LDSL p i =
   LUnsafeOR    (LDSL p i) (LDSL p i) i |
   LUnsafeXOR   (LDSL p i) (LDSL p i) i |
 
-  LISZERO (LDSL p i)         i i |
   LEQLC   (LDSL p i) p       i i |
 
   LNZERO  (LDSL p i)           i |
@@ -290,7 +289,6 @@ outputWire (LUnsafeAND _ _ i) = i
 outputWire (LUnsafeOR  _ _ i) = i
 outputWire (LUnsafeXOR _ _ i) = i
 
-outputWire (LISZERO _ _ i) = i
 outputWire (LEQLC _ _ _ i) = i
 
 -- assertions
@@ -326,7 +324,6 @@ nGates (LUnsafeAND p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LUnsafeOR  p1 p2 _) = 1 + nGates p1 + nGates p2
 nGates (LUnsafeXOR p1 p2 _) = 1 + nGates p1 + nGates p2
 
-nGates (LISZERO p1 _ _) = 2 + nGates p1
 nGates (LEQLC p1 _ _ _) = 2 + nGates p1
 
 nGates (LNZERO p1 _)    = 1 + nGates p1
@@ -428,11 +425,6 @@ compile m (LUnsafeXOR p1 p2 i) = c
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
     c = append' (unsafeXorGate m [i1, i2, i]) c'
-compile m (LISZERO p1 w i) = c
-  where
-    c1 = compile m p1
-    i1 = outputWire p1
-    c = append' (isZeroGate m [i1, w, i]) c1
 compile m (LEQLC p1 k w i) = c
   where
     c1 = compile m p1
@@ -549,14 +541,6 @@ semanticsAreCorrect m (LUnsafeXOR p1 p2 i) input = correct where
   i1 = outputWire p1; i2 = outputWire p2
   correct = correct1 && correct2 &&
     (input!i == input!i1 + input!i2 - 2*input!i1*input!i2)
-semanticsAreCorrect m (LISZERO p1 w i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  i1 = outputWire p1
-  correct = correct1 && boolean (input!i) &&
-                        (input!i1 * input!i == 0) &&
-                        (if input!i1 == 0
-                         then input!i == 1
-                         else input!i == 0 && input!w * input!i1 == 1)
 semanticsAreCorrect m (LEQLC p1 k w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1

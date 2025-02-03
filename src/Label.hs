@@ -103,8 +103,7 @@ label' p nextIndex env = case M.lookup p env of
     UnsafeXOR p1 p2 -> (i'+1, [LUnsafeXOR p1' p2' i'], add (p,i') env')
       where (i', p1', p2', env') = label2 i p1 p2 env
 
-    ISZERO p1 -> (w'+1, [LISZERO p1' w' i'], add (p,i') env')
-      where (i', [p1'], env') = label' p1 i env; w' = i'+1
+    ISZERO p1 -> label' (EQLC p1 0) nextIndex env
     EQL p1 p2 -> label' (ISZERO (p1 `SUB` p2)) nextIndex env
     EQLC p1 k -> (w'+1, [LEQLC p1' k w' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env; w' = i'+1
@@ -171,7 +170,6 @@ withOutputWire _ i program = case program of
   LUnsafeOR  p1 p2 _ -> LUnsafeOR  p1 p2 i
   LUnsafeXOR p1 p2 _ -> LUnsafeXOR p1 p2 i
 
-  LISZERO p1 w _ -> LISZERO p1 w i
   LEQLC   p1 k w _ -> LEQLC p1 k w i
 
   LNZERO p1 _ -> LNZERO p1 i

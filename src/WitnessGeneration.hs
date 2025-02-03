@@ -125,15 +125,6 @@ witnessGen m programs strValuation = toVector m valuation' where
       x2 = M.lookup (outputWire p2) valuation' >>= ensure boolean
       xor = (\x y -> x + y - 2*x*y) <$> x1 <*> x2
 
-    update sv (LISZERO p1 w i) valuation = valuation3
-      where
-      valuation1 = update sv p1 valuation
-      x1 = M.lookup (outputWire p1) valuation1
-      witness  = (\x -> if x /= 0 then 1/x else 0) <$> x1
-      result = (\x -> if x == 0 then 1 else 0) <$> x1
-      valuation2 = M.alter (updateWith witness)  w valuation1
-      valuation3 = M.alter (updateWith result)   i valuation2
-
     update sv (LEQLC p1 k w i) valuation = valuation3
       where
       valuation1 = update sv p1 valuation

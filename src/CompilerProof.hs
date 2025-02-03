@@ -59,7 +59,6 @@ compileProof m (LLINCOMB k1 p1 k2 p2 i) input =
   in compileProof m p1 input ?
      compileProof m p2 input ?
      satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LISZERO p1 w i) input = compileProof m p1 input
 compileProof m (LEQLC p1 k w i) input = compileProof m p1 input
 compileProof m (LNOT p1 i) input = compileProof m p1 input ?
                                    semanticsAreCorrect m (LNOT p1 i) input
@@ -129,14 +128,6 @@ satisfiesDistr _  _  _ input []     c2 = trivial
 satisfiesDistr n1 n2 m input (c:cs) c2 = satisfiesDistr (n1-1) n2 m input cs c2
 
 -- Some partial correctness results --------------------------------------------
-
--- The output of ‘isZeroGate’ is always a boolean
-{-@ isZeroBoolean :: m:Nat -> a:Btwn 0 m -> w:Btwn 0 m -> c:Btwn 0 m ->
-                     input:VecN p m ->
-                     {satisfies 2 m input (isZeroGate m (mkList3 a w c)) =>
-                      boolean (input!c)} @-}
-isZeroBoolean :: Num p => Int -> Int -> Int -> Int -> Vec p -> Proof
-isZeroBoolean m a w c input = trivial
 
 -- The output of ‘isEqlCGate’ is always a boolean
 {-@ isEqlCBoolean :: m:Nat -> a:Btwn 0 m -> w:Btwn 0 m -> c:Btwn 0 m -> k:p ->

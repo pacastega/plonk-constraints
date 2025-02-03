@@ -80,18 +80,6 @@ divGate _ [a, b, c, w] =
   -- Gate 1. a/b == c <=> 0 + 0 - a + b*c + 0 == 0
   -- Gate 2. b*w == 1 (b is non-zero)
 
-{-@ reflect isZeroGate @-}
-{-@ isZeroGate :: m:Nat ->
-                  ListN (Btwn 0 m) 3 ->
-                  Circuit p 2 m @-} -- 2 gate, m wires
-isZeroGate :: Num p => Int -> [Int] -> Circuit p
-isZeroGate _ [a, w, c] =
-  [([a, w, c], [ 0,  0, -1, -1,  1]), -- 1.
-   ([a, c, 0], [ 0,  0,  0, -1,  0])] -- 2.
-
-  -- Gate 1. 1 - a*w == c <=> 0 + 0 - c - a*w + 1 == 0
-  -- Gate 2. a*c == 0 (a is 0, or c is false)
-
 
 {-@ reflect isEqlCGate @-}
 {-@ isEqlCGate :: m:Nat -> k:p ->
