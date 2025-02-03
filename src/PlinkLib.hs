@@ -118,24 +118,24 @@ vChunk _ _ (NIL _) = []
 vChunk τ n xs      = let (ys, zs) = vTakeDrop τ n xs in ys : (vChunk τ n zs)
 
 -- Bitwise operations ----------------------------------------------------------
-{-@ vNot :: u:{DSL p | typed u (TVec TBit)}
-         -> w:{DSL p | typed w (TVec TBit) && vlength w = vlength u} @-}
-vNot = vMap TBit TBit UnsafeNOT
+{-@ vNot :: u:{DSL p | typed u (TVec TBool)}
+         -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
+vNot = vMap TBool TBool UnsafeNOT
 
-{-@ vAnd :: u:{DSL p | typed u (TVec TBit)}
-         -> v:{DSL p | typed v (TVec TBit) && vlength v = vlength u}
-         -> w:{DSL p | typed w (TVec TBit) && vlength w = vlength u} @-}
-vAnd = vZipWith TBit TBit TBit UnsafeAND
+{-@ vAnd :: u:{DSL p | typed u (TVec TBool)}
+         -> v:{DSL p | typed v (TVec TBool) && vlength v = vlength u}
+         -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
+vAnd = vZipWith TBool TBool TBool UnsafeAND
 
-{-@ vOr :: u:{DSL p | typed u (TVec TBit)}
-        -> v:{DSL p | typed v (TVec TBit) && vlength v = vlength u}
-        -> w:{DSL p | typed w (TVec TBit) && vlength w = vlength u} @-}
-vOr = vZipWith TBit TBit TBit UnsafeOR
+{-@ vOr :: u:{DSL p | typed u (TVec TBool)}
+        -> v:{DSL p | typed v (TVec TBool) && vlength v = vlength u}
+        -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
+vOr = vZipWith TBool TBool TBool UnsafeOR
 
-{-@ vXor :: u:{DSL p | typed u (TVec TBit)}
-         -> v:{DSL p | typed v (TVec TBit) && vlength v = vlength u}
-         -> w:{DSL p | typed w (TVec TBit) && vlength w = vlength u} @-}
-vXor = vZipWith TBit TBit TBit UnsafeXOR
+{-@ vXor :: u:{DSL p | typed u (TVec TBool)}
+         -> v:{DSL p | typed v (TVec TBool) && vlength v = vlength u}
+         -> w:{DSL p | typed w (TVec TBool) && vlength w = vlength u} @-}
+vXor = vZipWith TBool TBool TBool UnsafeXOR
 
 -- Shift & rotate --------------------------------------------------------------
 {-@ rotateL :: τ:Ty
@@ -152,44 +152,45 @@ rotateR :: Ty -> DSL p -> Int -> DSL p
 rotateR τ xs n = let (ys, zs) = vTakeDrop τ (vlength xs - n) xs
                  in vAppend τ zs ys
 
-{-@ shiftL :: u:{DSL p | typed u (TVec TBit)} -> Btwn 0 (vlength u)
-           -> {v:DSL p | typed v (TVec TBit) && vlength v = vlength u} @-}
+{-@ shiftL :: u:{DSL p | typed u (TVec TBool)} -> Btwn 0 (vlength u)
+           -> {v:DSL p | typed v (TVec TBool) && vlength v = vlength u} @-}
 shiftL :: Num p => DSL p -> Int -> DSL p
-shiftL xs n = let (_, zs) = vTakeDrop TBit n xs in
-  vAppend TBit zs (vReplicate TBit n (BIT False))
+shiftL xs n = let (_, zs) = vTakeDrop TBool n xs in
+  vAppend TBool zs (vReplicate TBool n (BOOLEAN False))
 
-{-@ shiftR :: u:{DSL p | typed u (TVec TBit)} -> Btwn 0 (vlength u) ->
-              {v:DSL p | typed v (TVec TBit) && vlength v = vlength u} @-}
+{-@ shiftR :: u:{DSL p | typed u (TVec TBool)} -> Btwn 0 (vlength u) ->
+              {v:DSL p | typed v (TVec TBool) && vlength v = vlength u} @-}
 shiftR :: Num p => DSL p -> Int -> DSL p
-shiftR xs n = let (ys, _) = vTakeDrop TBit (vlength xs - n) xs in
-  vAppend TBit (vReplicate TBit n (BIT False)) ys
+shiftR xs n = let (ys, _) = vTakeDrop TBool (vlength xs - n) xs in
+  vAppend TBool (vReplicate TBool n (BOOLEAN False)) ys
 
 -- Integers mod 2^n -----------------------------------------------------------
 {-@ fromInt :: n:Nat -> x:Btwn 0 (pow 2 n) ->
-              {v:DSL p | typed v (TVec TBit) && vlength v = n} @-}
+              {v:DSL p | typed v (TVec TBool) && vlength v = n} @-}
 fromInt :: Num p => Int -> Int -> DSL p
-fromInt n = go 0 (NIL TBit) where
+fromInt n = go 0 (NIL TBool) where
   {-@ go :: m:{Nat | m <= n} ->
-            {acc:DSL p | typed acc (TVec TBit) && vlength acc = m} ->
+            {acc:DSL p | typed acc (TVec TBool) && vlength acc = m} ->
             x:Btwn 0 (pow 2 n) ->
-            {v:DSL p | typed v (TVec TBit) && vlength v = n} / [n-m] @-}
+            {v:DSL p | typed v (TVec TBool) && vlength v = n} / [n-m] @-}
   go :: Num p => Int -> DSL p -> Int -> DSL p
   go m acc x
     | m == n    = acc
-    | otherwise = let (q, r) = divMod x 2; r' = toDSLBit r
+    | otherwise = let (q, r) = divMod x 2; r' = boolFromIntegral r
                   in go (m+1) (r' `CONS` acc) q
 
 
-{-@ binaryValue :: {v:DSL p | typed v (TVec TBit) && vlength v > 0}
+{-@ binaryValue :: {v:DSL p | typed v (TVec TBool) && vlength v > 0}
                 -> GlobalStore p ({d:DSL p | typed d TF}) @-}
 binaryValue :: (Integral p, Fractional p, Eq p) =>
                DSL p -> GlobalStore p (DSL p)
 binaryValue v = pure $ go v (CONST 0) where
-  {-@ go :: {v:DSL p | typed v (TVec TBit)} -> {acc:DSL p | typed acc TF}
+  {-@ go :: {v:DSL p | typed v (TVec TBool)} -> {acc:DSL p | typed acc TF}
          -> ({d:DSL p | typed d TF}) @-}
   go :: (Integral p, Fractional p, Eq p) => DSL p -> DSL p -> DSL p
   go (NIL _)     acc = acc
-  go (CONS x xs) acc = go xs (x `ADD` (CONST 2 `MUL` acc))
+  go (CONS x xs) acc = go xs (x' `ADD` (CONST 2 `MUL` acc))
+    where x' = BoolToF x
 
 {-@ binaryRepr :: n:Nat -> p -> ListN p n @-}
 binaryRepr :: (Integral p, Eq p) => Int -> p -> [p]
@@ -204,7 +205,7 @@ binaryRepr n = go 0 [] . toInteger where
     | otherwise = let (q, r) = divMod x 2
                   in go (m+1) (fromIntegral r : acc) q
 
-{-@ fromBinary :: {v:DSL p | typed v (TVec TBit) && vlength v > 0}
+{-@ fromBinary :: {v:DSL p | typed v (TVec TBool) && vlength v > 0}
                -> GlobalStore p ({d:DSL p | typed d TF}) @-}
 fromBinary :: (Integral p, Fractional p, Eq p) =>
               DSL p -> GlobalStore p (DSL p)
@@ -218,13 +219,13 @@ fromBinary vec = do
   return x
 
 {-@ toBinary :: n:Nat1 -> {d:DSL p | typed d TF}
-             -> GlobalStore p ({v:DSL p | typed v (TVec TBit)
+             -> GlobalStore p ({v:DSL p | typed v (TVec TBool)
                                        && vlength v = n}) @-}
 toBinary :: (Integral p, Fractional p, Eq p) =>
             Int -> DSL p -> GlobalStore p (DSL p)
 toBinary n x = do
   let vec' = vars n "bits"
-  let vec = vecVar vec' TBit
+  let vec = vecVar vec' TBool
 
   val <- binaryValue vec
   assert $ val `EQA` x

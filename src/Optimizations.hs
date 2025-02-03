@@ -6,11 +6,10 @@ module Optimizations (optimize) where
 
 import Data.Maybe (fromMaybe)
 import Control.Applicative ((<|>))
-import Control.Monad ((>=>))
 
 import DSL
 import GlobalStore
-import Utils (boolean, any', (??), foldr')
+import Utils (boolean, any', (??))
 
 import Optimizations.ConstantFolding
 import Optimizations.RemoveConstants
@@ -26,12 +25,22 @@ optimizations = [constantFolding ||| removeConstants]
              -> GlobalStore p ({d:DSL p | wellTyped d}) @-}
 optimize :: (Fractional p, Eq p) =>
             GlobalStore p (DSL p) -> GlobalStore p (DSL p)
-optimize program = optimize' (foldr' (>=>) pure optimizations) program where
+optimize program = optimize' (foldr' compose Just optimizations) program where
   {-@ optimize' :: Opt p -> GlobalStore p ({d:DSL p | wellTyped d})
                 -> GlobalStore p ({d:DSL p | wellTyped d}) @-}
   optimize' :: Opt p -> GlobalStore p (DSL p) -> GlobalStore p (DSL p)
   optimize' f (GStore body store hints) =
     GStore (opt f body) (map (opt' f) store) hints
+
+  {-@ foldr' :: (Opt p -> Opt p -> Opt p) -> Opt p -> [Opt p] -> Opt p @-}
+  foldr' :: (Opt p -> Opt p -> Opt p) -> Opt p -> [Opt p] -> Opt p
+  foldr' = foldr
+
+{-@ compose :: Opt p -> Opt p -> Opt p @-}
+compose :: Opt p -> Opt p -> Opt p
+compose f g x = case f x of
+  Nothing -> Nothing
+  Just y  -> g y
 
 -- Try to apply optimization `f` at node `p`; if it fails, leave `p` unchanged
 {-@ atNode :: Opt p -> d:TypedDSL p -> {v:TypedDSL p | sameType v d} @-}
@@ -47,35 +56,38 @@ atNode f p = fromMaybe p (f p)
 -- How to apply a general optimization on a program
 {-@ opt :: Opt p -> d:TypedDSL p -> {v:TypedDSL p | sameType v d} @-}
 opt :: Opt p -> DSL p -> DSL p
-opt f p@VAR {}       = f `atNode` p
-opt f p@(CONST {})   = f `atNode` p
-opt f p@(BOOLEAN {}) = f `atNode` p
-opt f p@(BIT {})     = f `atNode` p
+opt f p@VAR {}     = f `atNode` p
+opt f p@CONST {}   = f `atNode` p
+opt f p@BOOLEAN {} = f `atNode` p
 
-opt f p@(ADD p1 p2) = f `atNode` (lemmaNum p1 ?? lemmaNum p2 ?? ADD (opt f p1) (opt f p2))
-opt f p@(SUB p1 p2) = f `atNode` (lemmaNum p1 ?? lemmaNum p2 ?? SUB (opt f p1) (opt f p2))
-opt f p@(MUL p1 p2) = f `atNode` (lemmaNum p1 ?? lemmaNum p2 ?? MUL (opt f p1) (opt f p2))
-opt f p@(DIV p1 p2) = f `atNode` (lemmaNum p1 ?? lemmaNum p2 ?? DIV (opt f p1) (opt f p2))
+opt f (ADD p1 p2) = f `atNode` (ADD (opt f p1) (opt f p2))
+opt f (SUB p1 p2) = f `atNode` (SUB (opt f p1) (opt f p2))
+opt f (MUL p1 p2) = f `atNode` (MUL (opt f p1) (opt f p2))
+opt f (DIV p1 p2) = f `atNode` (DIV (opt f p1) (opt f p2))
 
-opt f p@(LINCOMB k1 p1 k2 p2) =
-  f `atNode` (lemmaNum p1 ?? lemmaNum p2 ?? LINCOMB k1 (opt f p1) k2 (opt f p2))
+opt f (ADDC p k) = f `atNode` (ADDC (opt f p) k)
+opt f (MULC p k) = f `atNode` (MULC (opt f p) k)
+opt f (LINCOMB k1 p1 k2 p2) =
+  f `atNode` (LINCOMB k1 (opt f p1) k2 (opt f p2))
 
-opt f p@(NOT p1   ) = f `atNode` (lemmaLogic p1 ?? NOT (opt f p1))
-opt f p@(AND p1 p2) = f `atNode` (lemmaLogic p1 ?? lemmaLogic p2 ?? AND (opt f p1) (opt f p2))
-opt f p@(OR  p1 p2) = f `atNode` (lemmaLogic p1 ?? lemmaLogic p2 ?? OR  (opt f p1) (opt f p2))
-opt f p@(XOR p1 p2) = f `atNode` (lemmaLogic p1 ?? lemmaLogic p2 ?? XOR (opt f p1) (opt f p2))
+opt f (NOT p1   ) = f `atNode` (NOT (opt f p1))
+opt f (AND p1 p2) = f `atNode` (AND (opt f p1) (opt f p2))
+opt f (OR  p1 p2) = f `atNode` (OR  (opt f p1) (opt f p2))
+opt f (XOR p1 p2) = f `atNode` (XOR (opt f p1) (opt f p2))
 
-opt f p@(UnsafeNOT p1   ) = f `atNode` (lemmaLogic p1 ?? UnsafeNOT (opt f p1))
-opt f p@(UnsafeAND p1 p2) = f `atNode` (lemmaLogic p1 ?? lemmaLogic p2 ?? UnsafeAND (opt f p1) (opt f p2))
-opt f p@(UnsafeOR  p1 p2) = f `atNode` (lemmaLogic p1 ?? lemmaLogic p2 ?? UnsafeOR  (opt f p1) (opt f p2))
-opt f p@(UnsafeXOR p1 p2) = f `atNode` (lemmaLogic p1 ?? lemmaLogic p2 ?? UnsafeXOR (opt f p1) (opt f p2))
+opt f (UnsafeNOT p1   ) = f `atNode` (UnsafeNOT (opt f p1))
+opt f (UnsafeAND p1 p2) = f `atNode` (UnsafeAND (opt f p1) (opt f p2))
+opt f (UnsafeOR  p1 p2) = f `atNode` (UnsafeOR  (opt f p1) (opt f p2))
+opt f (UnsafeXOR p1 p2) = f `atNode` (UnsafeXOR (opt f p1) (opt f p2))
 
-opt f p@(ISZERO p1) = f `atNode` (lemmaNum p1 ?? ISZERO (opt f p1))
-opt f p@(EQL p1 p2) = f `atNode` (lemmaNum p1 ?? lemmaNum p2 ?? EQL (opt f p1) (opt f p2))
-opt f p@(EQLC p1 k) = f `atNode` (lemmaNum p1 ?? EQLC (opt f p1) k)
+opt f (ISZERO p1) = f `atNode` (ISZERO (opt f p1))
+opt f (EQL p1 p2) = f `atNode` (EQL (opt f p1) (opt f p2))
+opt f (EQLC p1 k) = f `atNode` (EQLC (opt f p1) k)
 
-opt f p@(NIL _)     = f `atNode` p
-opt f p@(CONS h ts) = f `atNode` (CONS (opt f h) (opt f ts))
+opt f p@NIL {}    = f `atNode` p
+opt f (CONS h ts) = f `atNode` (CONS (opt f h) (opt f ts))
+
+opt f (BoolToF p) = f `atNode` (BoolToF (opt f p))
 
 -- How to apply a general optimization on an assertion
 {-@ opt' :: Opt p -> Assertion p -> Assertion p @-}

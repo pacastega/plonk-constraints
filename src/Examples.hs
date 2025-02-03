@@ -303,7 +303,7 @@ vec6 = rotateR TF (range 1 10) 2
 
 {-@ vec7 :: GlobalStore PF ({v:DSL PF | typed v TF}) @-}
 vec7 :: GlobalStore PF (DSL PF)
-vec7 = fromBinary $ PlinkLib.fromList TBool $ map toDSLBit [1,1,0,1]
+vec7 = fromBinary $ PlinkLib.fromList TBool $ map boolFromIntegral [1,1,0,1]
 
 testVectors :: IO ()
 testVectors = do
@@ -393,14 +393,17 @@ testSha = do
 -- Optimizations ---------------------------------------------------------------
 
 -- (3 - (2 + 1)) + x ≡ x
+{-@ opt1 :: GlobalStore BigPF ({v:DSL BigPF | typed v TF}) @-}
 opt1 :: GlobalStore BigPF (DSL BigPF)
 opt1 = pure $ (CONST 3 `SUB` (CONST 2 `ADD` CONST 1)) `ADD` (VAR "x" TF)
 
 -- (3 - 2) * x + y ≡ x + y
+{-@ opt2 :: GlobalStore BigPF ({v:DSL BigPF | typed v TF}) @-}
 opt2 :: GlobalStore BigPF (DSL BigPF)
 opt2 = pure $ ((CONST 3 `SUB` CONST 2) `MUL` (VAR "x" TF)) `ADD` (VAR "y" TF)
 
 -- (3 - 1) * x + y ≡ lincomb(2,x, 1,y)
+{-@ opt3 :: GlobalStore BigPF ({v:DSL BigPF | typed v TF}) @-}
 opt3 :: GlobalStore BigPF (DSL BigPF)
 opt3 = pure $ ((CONST 3 `SUB` CONST 1) `MUL` (VAR "x" TF)) `ADD` (VAR "y" TF)
 
