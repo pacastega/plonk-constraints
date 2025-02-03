@@ -60,53 +60,45 @@ compileProof m (LLINCOMB k1 p1 k2 p2 i) input =
      compileProof m p2 input ?
      satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 compileProof m (LEQLC p1 k w i) input = compileProof m p1 input
-compileProof m (LNOT p1 i) input = compileProof m p1 input ?
-                                   semanticsAreCorrect m (LNOT p1 i) input
+compileProof m (LNOT p1 i) input = compileProof m p1 input
 compileProof m (LAND p1 p2 i) input =
   let n1 = nGates p1
       n2 = nGates p2
   in compileProof m p1 input ?
      compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2) ?
-     semanticsAreCorrect m (LAND p1 p2 i) input
+     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 compileProof m (LOR p1 p2 i) input =
   let n1 = nGates p1
       n2 = nGates p2
   in compileProof m p1 input ?
      compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2) ?
-     semanticsAreCorrect m (LOR p1 p2 i) input
+     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 compileProof m (LXOR p1 p2 i) input =
   let n1 = nGates p1
       n2 = nGates p2
   in compileProof m p1 input ?
      compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2) ?
-     semanticsAreCorrect m (LXOR p1 p2 i) input
+     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 compileProof m (LUnsafeNOT p1 i) input =
-  compileProof m p1 input ?
-  semanticsAreCorrect m (LUnsafeNOT p1 i) input
+  compileProof m p1 input
 compileProof m (LUnsafeAND p1 p2 i) input =
   let n1 = nGates p1
       n2 = nGates p2
   in compileProof m p1 input ?
      compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2) ?
-     semanticsAreCorrect m (LUnsafeAND p1 p2 i) input
+     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 compileProof m (LUnsafeOR p1 p2 i) input =
   let n1 = nGates p1
       n2 = nGates p2
   in compileProof m p1 input ?
      compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2) ?
-     semanticsAreCorrect m (LUnsafeOR p1 p2 i) input
+     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 compileProof m (LUnsafeXOR p1 p2 i) input =
   let n1 = nGates p1
       n2 = nGates p2
   in compileProof m p1 input ?
      compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2) ?
-     semanticsAreCorrect m (LUnsafeXOR p1 p2 i) input
+     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 compileProof m (LNZERO p1 w)    input = compileProof m p1 input
 compileProof m (LBOOL p1)       input = compileProof m p1 input
 compileProof m (LEQA p1 p2) input =
