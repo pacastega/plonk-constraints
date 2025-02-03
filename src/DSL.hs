@@ -24,14 +24,6 @@ import Language.Haskell.Liquid.ProofCombinators
 data Ty = TF | TBit | TBool | TVec Ty deriving (Eq, Ord, Show)
 {-@ type ScalarTy = {τ:Ty | scalarType τ} @-}
 
-{-@ reflect subtype @-}
-subtype :: Ty -> Ty -> Bool
-subtype τ1 τ2 | τ1 == τ2 = True -- everything is a subtype of itself
-subtype TBit TF = True          -- Bit <: Field
--- subtype TBit TBool = True       -- Bit <: Bool
-subtype (TVec τ1) (TVec τ2) = subtype τ1 τ2
-subtype _ _ = False -- anything else is not in the subtype relation
-
 {-@ measure scalarType @-}
 scalarType :: Ty -> Bool
 scalarType TF       = True
@@ -123,21 +115,9 @@ wellTyped p = case inferType p of
   Just _ -> True
   Nothing -> False
 
-{-@ reflect numeric @-}
-numeric :: DSL p -> Bool
-numeric p = any' numericType (inferType p)
-
-{-@ reflect logic @-}
-logic :: DSL p -> Bool
-logic p = any' logicType (inferType p)
-
-{-@ reflect compatible @-}
-compatible :: DSL p -> DSL p -> Bool
-compatible program1 program2
-  | Just τ1 <- inferType program1
-  , Just τ2 <- inferType program2
-  = subtype τ1 τ2
-  | otherwise = False
+{-@ reflect sameType @-}
+sameType :: DSL p -> DSL p -> Bool
+sameType program1 program2 = inferType program1 == inferType program2
 
 {-@ reflect scalar @-}
 scalar :: DSL p -> Bool
