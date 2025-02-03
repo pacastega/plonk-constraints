@@ -1,4 +1,3 @@
 *~
-/app/.liquid/
-/src/.liquid/
+**/.liquid/
 dist-newstyle/
