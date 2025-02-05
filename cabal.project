@@ -3,13 +3,13 @@ packages: ./
 source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquidhaskell.git
-    tag: 462235e0a964b541f269357db2375929d1aefb54
+    tag: be7fb6d32b383667269c31b03eb597322a65b4d2
     subdir: . liquidhaskell-boot liquid-prelude
 
 source-repository-package
     type: git
     location: https://github.com/ucsd-progsys/liquid-fixpoint.git
-    tag: 89bae5cc6f6ebea9ef3056f2a52f64b4f98ab22d
+    tag: a0d2d49eff45bde537ad7218e879aea15de9007a
     subdir: .
 
 allow-newer: true

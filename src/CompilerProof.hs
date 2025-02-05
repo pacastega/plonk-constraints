@@ -4,12 +4,16 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 
+-- crashes without etabeta; fails with it (even if it didn't before)
+{-@ LIQUID "--etabeta" @-}
+
 module CompilerProof where
 
 import Vec
 import Constraints
 import Circuits
 import Utils
+import TypeAliases
 
 import ArithmeticGates
 import LogicGates

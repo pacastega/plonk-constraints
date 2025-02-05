@@ -2,6 +2,7 @@
 module Circuits where
 
 import Constraints
+import TypeAliases
 
 {-@ reflect emptyCircuit @-}
 {-@ emptyCircuit :: m:Nat -> Circuit p 0 m @-}
