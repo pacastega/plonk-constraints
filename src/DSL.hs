@@ -200,7 +200,9 @@ eval program v = case program of
   ADD p1 p2 -> (+) <$> eval p1 v <*> eval p2 v
   SUB p1 p2 -> (-) <$> eval p1 v <*> eval p2 v
   MUL p1 p2 -> (*) <$> eval p1 v <*> eval p2 v
-  DIV p1 p2 -> (/) <$> eval p1 v <*> (eval p2 v >>= ensure ((/=) 0))
+  DIV p1 p2 -> case (eval p1 v, eval p2 v) of
+    (Just x, Just y) -> if y /= 0 then Just (x/y) else Nothing
+    _ -> Nothing
 
   ADDC p1 k -> ((+) k) <$> eval p1 v
   MULC p1 k -> ((*) k) <$> eval p1 v
