@@ -180,9 +180,11 @@ data Assertion p =
 @-}
 
 
+{-@ type Valuation p = M.Map String p @-}
 type Valuation p = M.Map String p
 
 -- TODO: how to deal with vectors? just forbid them in the precondition?
+{-@ reflect eval @-}
 {-@ eval :: {v:DSL p | scalar v} -> Valuation p -> Maybe p @-}
 eval :: (Fractional p, Eq p) => DSL p -> Valuation p -> Maybe p
 eval program v = case program of
@@ -195,37 +197,56 @@ eval program v = case program of
   ADD p1 p2 -> (+) <$> eval p1 v <*> eval p2 v
   SUB p1 p2 -> (-) <$> eval p1 v <*> eval p2 v
   MUL p1 p2 -> (*) <$> eval p1 v <*> eval p2 v
-  DIV p1 p2 -> (/) <$> eval p1 v <*> (eval p2 v >>= \x ->
-                                     if x /= 0 then Just x else Nothing)
+  DIV p1 p2 -> (/) <$> eval p1 v <*> (eval p2 v >>= ensure ((/=) 0))
 
-  ADDC p1 k -> (+ k) <$> eval p1 v
-  MULC p1 k -> (* k) <$> eval p1 v
-  LINCOMB k1 p1 k2 p2 -> (\x y -> k1*x + k2*y) <$> eval p1 v <*> eval p2 v
+  ADDC p1 k -> ((+) k) <$> eval p1 v
+  MULC p1 k -> ((*) k) <$> eval p1 v
+  LINCOMB k1 p1 k2 p2 -> linCombFn k1 k2 <$> eval p1 v <*> eval p2 v
 
   -- Boolean operations (assume inputs are binary)
-  NOT p1    -> (\x -> if x == 1 then 0 else 1) <$> eval p1 v
-  AND p1 p2 -> (\x y -> if x == 0 || y == 0 then 0 else 1)
-               <$> eval p1 v <*> eval p2 v
-  OR  p1 p2 -> (\x y -> if x == 1 || y == 1 then 1 else 0)
-               <$> eval p1 v <*> eval p2 v
-  XOR p1 p2 -> (\x y -> if x /= y then 1 else 0)
-               <$> eval p1 v <*> eval p2 v
+  NOT p1    -> notFn <$> eval p1 v
+  AND p1 p2 -> andFn <$> eval p1 v <*> eval p2 v
+  OR  p1 p2 -> orFn  <$> eval p1 v <*> eval p2 v
+  XOR p1 p2 -> xorFn <$> eval p1 v <*> eval p2 v
 
-  UnsafeNOT p1    -> (\x -> if x == 1 then 0 else 1)
-                     <$> eval p1 v
-  UnsafeAND p1 p2 -> (\x y -> if x == 0 || y == 0 then 0 else 1)
-                     <$> eval p1 v <*> eval p2 v
-  UnsafeOR  p1 p2 -> (\x y -> if x == 1 || y == 1 then 1 else 0)
-                     <$> eval p1 v <*> eval p2 v
-  UnsafeXOR p1 p2 -> (\x y -> if x /= y then 1 else 0)
-                     <$> eval p1 v <*> eval p2 v
+  UnsafeNOT p1    -> notFn <$> eval p1 v
+  UnsafeAND p1 p2 -> andFn <$> eval p1 v <*> eval p2 v
+  UnsafeOR  p1 p2 -> orFn  <$> eval p1 v <*> eval p2 v
+  UnsafeXOR p1 p2 -> xorFn <$> eval p1 v <*> eval p2 v
 
-  ISZERO p1 -> (\x -> if x == 0 then 1 else 0) <$> eval p1 v
-  EQL p1 p2 -> (\x y -> if x == y then 1 else 0)
-                <$> eval p1 v <*> eval p2 v
-  EQLC p1 y -> (\x -> if x == y then 1 else 0) <$> eval p1 v
+  ISZERO p1 -> eqlFn 0 <$> eval p1 v
+  EQL p1 p2 -> eqlFn   <$> eval p1 v <*> eval p2 v
+  EQLC p1 k -> eqlFn k <$> eval p1 v
 
   BoolToF p -> eval p v
+
+{-@ reflect linCombFn @-}
+linCombFn :: (Num p) => p -> p -> p -> p -> p
+linCombFn k1 k2 x y = k1*x + k2*y
+
+{-@ reflect notFn @-}
+notFn :: (Num p, Eq p) => p -> p
+notFn x   = if x == 1 then 0 else 1
+
+{-@ reflect andFn @-}
+andFn :: (Num p, Eq p) => p -> p -> p
+andFn x y = if x == 0 || y == 0 then 0 else 1
+
+{-@ reflect orFn @-}
+orFn :: (Num p, Eq p) => p -> p -> p
+orFn  x y = if x == 1 || y == 1 then 1 else 0
+
+{-@ reflect xorFn @-}
+xorFn :: (Num p, Eq p) => p -> p -> p
+xorFn x y = if x /= y then 1 else 0
+
+{-@ reflect eqlFn @-}
+eqlFn :: (Num p, Eq p) => p -> p -> p
+eqlFn x y = if x == y then 1 else 0
+
+{-@ reflect ensure @-}
+ensure :: (p -> Bool) -> p -> Maybe p
+ensure p x = if p x then Just x else Nothing
 
 
 -- Labeled DSL
