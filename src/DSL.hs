@@ -183,12 +183,15 @@ data Assertion p =
 {-@ type Valuation p = M.Map String p @-}
 type Valuation p = M.Map String p
 
+-- reflectable valuation
+type ValuationRefl p = [(String, p)]
+
 -- TODO: how to deal with vectors? just forbid them in the precondition?
 {-@ reflect eval @-}
-{-@ eval :: {v:DSL p | scalar v} -> Valuation p -> Maybe p @-}
-eval :: (Fractional p, Eq p) => DSL p -> Valuation p -> Maybe p
+{-@ eval :: {v:DSL p | scalar v} -> ValuationRefl p -> Maybe p @-}
+eval :: (Fractional p, Eq p) => DSL p -> ValuationRefl p -> Maybe p
 eval program v = case program of
-  VAR name _ -> M.lookup name v
+  VAR name _ -> lookup name v
   CONST x -> Just x
   BOOLEAN b -> Just (fromIntegral $ fromEnum b)
 
