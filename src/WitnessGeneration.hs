@@ -4,7 +4,7 @@ module WitnessGeneration (extend, witnessGen, Valuation) where
 
 import Utils (boolean)
 import Vec
-import DSL
+import DSL hiding (ensure)
 import qualified Data.Map as M
 
 
