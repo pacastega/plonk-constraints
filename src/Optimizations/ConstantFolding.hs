@@ -5,8 +5,9 @@ module Optimizations.ConstantFolding (constantFolding) where
 
 import Optimizations.Base
 import DSL
+import Semantics
 
-import Utils (any')
+import Utils (any', liftA2', fmap')
 
 import Language.Haskell.Liquid.ProofCombinators
 

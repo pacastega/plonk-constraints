@@ -38,6 +38,7 @@ library
       Optimizations.ConstantFolding
       Optimizations.RemoveConstants
       PlinkLib
+      Semantics
       SHA256
       TypeAliases
       Utils

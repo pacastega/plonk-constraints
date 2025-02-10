@@ -75,3 +75,13 @@ _ ?? y = y
 foldr' :: (a -> b -> b) -> b -> [a] -> b
 foldr' _ acc [] = acc
 foldr' f acc (x:xs) = f x (foldr' f acc xs)
+
+{-@ reflect liftA2' @-}
+liftA2' :: (a -> b -> c) -> Maybe a -> Maybe b -> Maybe c
+liftA2' f (Just x) (Just y) = Just (f x y)
+liftA2' _ _ _ = Nothing
+
+{-@ reflect fmap' @-}
+fmap' :: (a -> b) -> Maybe a -> Maybe b
+fmap' f (Just x) = Just (f x)
+fmap' _ _ = Nothing
