@@ -28,7 +28,7 @@ constantFolding (UnsafeAND (BOOLEAN b1) (BOOLEAN b2)) = Just (BOOLEAN (b1 && b2)
 constantFolding (UnsafeOR  (BOOLEAN b1) (BOOLEAN b2)) = Just (BOOLEAN (b1 || b2))
 constantFolding (UnsafeXOR (BOOLEAN b1) (BOOLEAN b2)) = Just (BOOLEAN (b1 /= b2))
 
-constantFolding (ISZERO (CONST k)) = Just (BOOLEAN (k /= 0))
+constantFolding (ISZERO (CONST k)) = Just (BOOLEAN (k == 0))
 constantFolding (EQL (CONST k1) (CONST k2)) = Just (BOOLEAN (k1 == k2))
 constantFolding (EQLC (CONST k1) k2) = Just (BOOLEAN (k1 == k2))
 
@@ -39,7 +39,8 @@ constantFolding _ = Nothing -- any other pattern is not a redex
          -> d1:{TypedDSL p | scalar d1}
          -> d2:{TypedDSL p | scalar d2 && constantFolding d1 = Just d2}
          -> { eval d1 v = eval d2 v } @-}
-constantFoldingProof :: Fractional p => ValuationRefl p -> DSL p -> DSL p -> Proof
+constantFoldingProof :: (Fractional p, Eq p)
+                     => ValuationRefl p -> DSL p -> DSL p -> Proof
 constantFoldingProof _ d1 _ = case d1 of
   ADD _ _ -> trivial
   SUB _ _ -> trivial
@@ -60,4 +61,4 @@ constantFoldingProof _ d1 _ = case d1 of
   EQL  _ _ -> trivial
   EQLC _ _ -> trivial
 
---   _ -> undefined
+  _ -> trivial
