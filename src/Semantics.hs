@@ -34,8 +34,8 @@ eval program v = case program of
     (Just x, Just y) -> if y /= 0 then Just (x / y) else Nothing
     _ -> Nothing
 
-  ADDC p1 k -> fmap' ((+) k) (eval p1 v)
-  MULC p1 k -> fmap' ((*) k) (eval p1 v)
+  ADDC p1 k -> fmap' (add k) (eval p1 v)
+  MULC p1 k -> fmap' (mul k) (eval p1 v)
   LINCOMB k1 p1 k2 p2 -> liftA2' (linCombFn k1 k2) (eval p1 v) (eval p2 v)
 
   -- Boolean operations (assume inputs are binary)
