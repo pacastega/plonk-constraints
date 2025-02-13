@@ -8,6 +8,8 @@ import DSL
 import Semantics
 import Utils (any', liftA2', fmap')
 
+import Data.Maybe (isJust)
+
 import Language.Haskell.Liquid.ProofCombinators
 
 {-@ reflect removeConstants @-}
@@ -68,11 +70,13 @@ removeConstants (EQL arg1 arg2) = case (arg1,arg2) of
 
 removeConstants _ = Nothing -- any other pattern is not a redex
 
+{-@ reflect isJust @-}
 
 {-@ removeConstantsProof :: v:ValuationRefl p
          -> d1:{TypedDSL p | scalar d1}
          -> d2:{TypedDSL p | scalar d2 && removeConstants d1 = Just d2}
-         -> { eval d1 v = eval d2 v } @-}
+         -> { isJust (eval d1 v) =>
+              eval d1 v = eval d2 v } @-}
 removeConstantsProof :: (Fractional p, Eq p)
                      => ValuationRefl p -> DSL p -> DSL p -> Proof
 removeConstantsProof v (ADD arg1 arg2) _ = case arg1 of
