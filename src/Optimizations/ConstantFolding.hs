@@ -61,5 +61,3 @@ constantFoldingProof _ d1 _ = case d1 of
   ISZERO _ -> trivial
   EQL  _ _ -> trivial
   EQLC _ _ -> trivial
-
-  _ -> trivial
