@@ -4,9 +4,6 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 
--- crashes without etabeta; fails with it (even if it didn't before)
-{-@ LIQUID "--etabeta" @-}
-
 module CompilerProof where
 
 import Vec
