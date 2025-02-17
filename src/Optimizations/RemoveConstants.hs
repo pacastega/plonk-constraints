@@ -56,8 +56,8 @@ removeConstants (MUL arg1 arg2) = case arg1 of
 removeConstants (DIV arg1 arg2) = case (arg1,arg2) of
   -- dividing by 1 is a no-op
   (p1, CONST 1) -> let p' = p1 in Just p'
-  -- dividing by a constant can be done more efficiently
-  (p1, CONST k) | k /= 0 -> let p' = MULC p1 (1/k) in Just p'
+  -- TODO: dividing by a constant can be done more efficiently
+  -- (p1, CONST k) | k /= 0 -> let p' = MULC p1 (1/k) in Just p'
 
   _ -> Nothing
 
@@ -114,8 +114,8 @@ removeConstantsProof v (MUL arg1 arg2) _ = case arg1 of
 removeConstantsProof v (DIV arg1 arg2) _ = case (arg1,arg2) of
   -- dividing by 1 is a no-op
   (p1, CONST 1) -> case (eval p1 v) of (Just x) -> (); _ -> ()
-  -- dividing by a constant can be done more efficiently
-  (p1, CONST k) -> case (eval p1 v) of (Just x) -> (); _ -> ()
+  -- TODO: dividing by a constant can be done more efficiently
+  -- (p1, CONST k) -> case (eval p1 v) of (Just x) -> (); _ -> ()
 
 removeConstantsProof v (EQL arg1 arg2) _ = case (arg1,arg2) of
   -- checking equality against a constant can be done more efficiently
