@@ -7,6 +7,8 @@
 module PlinkLib where
 
 import DSL
+import Utils (fmap', liftA2')
+import Semantics
 import Utils (pow, map', any')
 
 import GlobalStore

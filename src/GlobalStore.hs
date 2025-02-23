@@ -11,7 +11,7 @@ import qualified Data.Map as M
 data GlobalStore p b =
   GStore { body  :: b
          , store :: [Assertion p]
-         , hints :: Valuation p -> [(String, p)] -- TODO: change to Map?
+         , hints :: ValuationRefl p -> [(String, p)] -- TODO: change to Map?
          }
 
 instance Show b => Show (GlobalStore p b) where
@@ -30,11 +30,11 @@ instance Monad (GlobalStore p) where
     GStore body' store' hints' ->
       GStore body' (store ++ store') (combine hints hints')
 
-combine :: (Valuation p -> [(String, p)]) -> (Valuation p -> [(String, p)])
-        -> (Valuation p -> [(String, p)])
+combine :: (ValuationRefl p -> [(String, p)]) -> (ValuationRefl p -> [(String, p)])
+        -> (ValuationRefl p -> [(String, p)])
 combine hints1 hints2 valuation =
   let hints1' = hints1 (valuation)
-      hints2' = hints2 (valuation `M.union` M.fromList hints1')
+      hints2' = hints2 (valuation ++ hints1')
       -- the valuation is extended with the hints that came first before
       -- attemping to evaluate the new hints
   in hints1' ++ hints2'
@@ -46,16 +46,16 @@ assert x = GStore () [x] (const [])
 -- Introduce a hint for witness generation --
 -- CAREFUL! This bypasses the type system because the variable 'name' could have
 -- been defined with an incompatible type.
-define :: String -> (Valuation p -> Maybe p) -> GlobalStore p ()
+define :: String -> (ValuationRefl p -> Maybe p) -> GlobalStore p ()
 define name f = GStore () [] hint where
   hint valuation = case f valuation of
     Nothing    -> []
     Just value -> [(name, value)]
 
 {-@ defineVec :: strs:[String]
-              -> (Valuation p -> Maybe (ListN p (len strs)))
+              -> (ValuationRefl p -> Maybe (ListN p (len strs)))
               -> GlobalStore p () @-}
-defineVec :: [String] -> (Valuation p -> Maybe [p]) -> GlobalStore p ()
+defineVec :: [String] -> (ValuationRefl p -> Maybe [p]) -> GlobalStore p ()
 defineVec names f = GStore () [] hints where
   hints valuation = case f valuation of
     Nothing   -> []

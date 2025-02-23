@@ -1,10 +1,12 @@
 {-# OPTIONS -Wno-name-shadowing #-}
 {-@ LIQUID "--reflection" @-}
-module WitnessGeneration (extend, witnessGen, Valuation) where
+module WitnessGeneration (extend, witnessGen, ValuationRefl) where
+-- TODO: it shouldn't export ValuationRefl
 
 import Utils (boolean)
 import Vec
-import DSL hiding (ensure)
+import DSL
+import Semantics
 import qualified Data.Map as M
 
 
@@ -13,25 +15,25 @@ updateWith Nothing  _        = Nothing
 updateWith (Just x) Nothing  = Just x
 updateWith (Just x) (Just y) = if x == y then Just x else Nothing
 
-extend :: Valuation p -> (Valuation p -> [(String, p)]) -> Valuation p
-extend valuation hints = valuation `M.union` (M.fromList $ hints valuation)
+extend :: ValuationRefl p -> (ValuationRefl p -> [(String, p)]) -> ValuationRefl p
+extend valuation hints = valuation ++ hints valuation
 
 {-@ witnessGen :: m:Nat ->
                   [LDSL p (Btwn 0 m)] ->
-                  Valuation p ->
+                  ValuationRefl p ->
                   VecN p m @-}
 witnessGen :: (Eq p, Fractional p) =>
-              Int -> [LDSL p Int] -> Valuation p -> Vec p
-witnessGen m programs strValuation = toVector m valuation' where
-    valuation' = foldl (flip $ update strValuation) M.empty programs
+              Int -> [LDSL p Int] -> ValuationRefl p -> Vec p
+witnessGen m programs strValuationRefl = toVector m valuation' where
+    valuation' = foldl (flip $ update strValuationRefl) M.empty programs
 
-    {-@ update :: Valuation p -> LDSL p (Btwn 0 m) -> M.Map (Btwn 0 m) p
+    {-@ update :: ValuationRefl p -> LDSL p (Btwn 0 m) -> M.Map (Btwn 0 m) p
                -> M.Map (Btwn 0 m) p @-}
     update :: (Eq p, Fractional p) =>
-              Valuation p -> LDSL p Int -> M.Map Int p -> M.Map Int p
+              ValuationRefl p -> LDSL p Int -> M.Map Int p -> M.Map Int p
     update _  (LWIRE _) valuation = valuation
     update sv (LVAR s i) valuation = M.alter (updateWith value) i valuation
-      where value = M.lookup s sv -- value of ‘s’ in user-supplied valuation
+      where value = lookup s sv -- value of ‘s’ in user-supplied valuation
     update _  (LCONST x i) valuation = M.alter (updateWith (Just x)) i valuation
     update sv (LADD p1 p2 i) valuation = M.alter (updateWith sum) i valuation'
       where
