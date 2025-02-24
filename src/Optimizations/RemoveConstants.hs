@@ -32,6 +32,8 @@ removeConstants (ADD arg1 arg2) = case arg1 of
 
     _ -> Nothing
 
+removeConstants (ADDC p1 0) = Just p1
+
 removeConstants (SUB arg1 arg2) = case (arg1,arg2) of
   -- subtracting 0 is a no-op
   (p1, CONST 0) -> let p' = p1 in Just p'
@@ -52,6 +54,9 @@ removeConstants (MUL arg1 arg2) = case arg1 of
     CONST k -> let p' = MULC arg1 k in Just p'
 
     _ -> Nothing
+
+removeConstants (MULC p1 0) = Just (CONST 0)
+removeConstants (MULC p1 1) = Just p1
 
 removeConstants (DIV arg1 arg2) = case (arg1,arg2) of
   -- dividing by 1 is a no-op
@@ -94,6 +99,9 @@ removeConstantsProof v (ADD arg1 arg2) _ = case arg1 of
     CONST 0 -> case (eval p1 v) of (Just x) -> (); _ -> ()
     CONST k -> case (eval p1 v) of (Just x) -> (); _ -> ()
 
+removeConstantsProof v (ADDC p1 c) _ =
+  case (eval p1 v) of (Just x) -> (); _ -> ()
+
 removeConstantsProof v (SUB arg1 arg2) _ = case (arg1,arg2) of
   -- subtracting 0 is a no-op
   (p1, CONST 0) -> case (eval p1 v) of (Just x) -> (); _ -> ()
@@ -110,6 +118,9 @@ removeConstantsProof v (MUL arg1 arg2) _ = case arg1 of
     CONST 1 -> case (eval p1 v) of (Just x) -> (); _ -> ()
     CONST 0 -> case (eval p1 v) of (Just x) -> (); _ -> ()
     CONST k -> case (eval p1 v) of (Just x) -> (); _ -> ()
+
+removeConstantsProof v (MULC p1 c) _ =
+  case (eval p1 v) of (Just x) -> (); _ -> ()
 
 removeConstantsProof v (DIV arg1 arg2) _ = case (arg1,arg2) of
   -- dividing by 1 is a no-op
