@@ -133,14 +133,17 @@ labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
     EQA p1 p2 -> case M.lookup p1 env of
       Just i1 -> case M.lookup p2 env of
         Just i2 -> (i, [LEQA (LWIRE i1) (LWIRE i2)], env) -- both present
-        Nothing -> (i', [withOutputWire i' i1 p2'], env') -- use i1 for p2
+        Nothing -> (i', [withOutputWire i' i1 p2'], env'') -- use i1 for p2
           where (i', [p2'], env') = label' p2 i env
+                env'' = add (p2, i1) env'
       Nothing -> case M.lookup p2 env of
-        Just i2 -> (i', [withOutputWire i' i2 p1'], env')
+        Just i2 -> (i', [withOutputWire i' i2 p1'], env'')
           where (i', [p1'], env') = label' p1 i env       -- use i2 for p1
-        Nothing -> (i', [p1', withOutputWire i' i1 p2'], env')
+                env'' = add (p1, i2) env'
+        Nothing -> (i', [p1', withOutputWire i' i1 p2'], env'')
           where (i', p1', p2', env') = label2 i p1 p2 env
                 i1 = outputWire p1'
+                env'' = add (p2, i1) env' -- arbitrarily choose i1 for both
 
 
 {-@ withOutputWire :: m:Nat -> Btwn 0 m -> LDSL p (Btwn 0 m)
