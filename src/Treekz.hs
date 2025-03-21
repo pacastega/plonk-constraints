@@ -46,8 +46,8 @@ parse p = case p of
   LADD p1 p2 i   -> N ("$+$" ++ wire [i])       [parse p1, parse p2]
   LSUB p1 p2 i   -> N ("$-$" ++ wire [i])       [parse p1, parse p2]
   LMUL p1 p2 i   -> N ("$\\times$" ++ wire [i]) [parse p1, parse p2]
-  LADDC p1 k i   -> N ("$+" ++ show k ++ wire [i]) [parse p1]
-  LMULC p1 k i   -> N ("$*" ++ show k ++ wire [i]) [parse p1]
+  LADDC p1 k i   -> N ("$+" ++ show k ++ "$" ++ wire [i]) [parse p1]
+  LMULC p1 k i   -> N ("$*" ++ show k ++ "$" ++ wire [i]) [parse p1]
   LDIV p1 p2 _ i -> N ("$/$" ++ wire [i])       [parse p1, parse p2]
 
   LLINCOMB k1 p1 k2 p2 i -> N ("$" ++ show k1 ++ "\\cdot + " ++ show k2 ++ "\\cdot$" ++ wire [i]) [parse p1, parse p2]
