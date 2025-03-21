@@ -114,7 +114,9 @@ test programStore valuation = do
 {-@ test' :: GlobalStore p (TypedDSL p) -> ValuationRefl p -> String -> IO () @-}
 test' :: (Ord p, Fractional p, Show p) =>
          GlobalStore p (DSL p) -> ValuationRefl p -> String -> IO ()
-test' (GStore program store hints) valuation tikzFilename = do
+test' programStore valuation tikzFilename = do
+  let (GStore program store hints) = optimize programStore
+
   let valuation' = extend valuation hints
 
   let (m, labeledBodies, labeledStore) = label program store
