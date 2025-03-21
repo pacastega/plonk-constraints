@@ -37,8 +37,8 @@ constantFolding _ = Nothing -- any other pattern is not a redex
 
 
 {-@ constantFoldingProof :: v:ValuationRefl p
-         -> d1:{TypedDSL p | scalar d1}
-         -> d2:{TypedDSL p | scalar d2 && constantFolding d1 = Just d2}
+         -> d1:TypedDSL p
+         -> d2:{TypedDSL p | constantFolding d1 = Just d2}
          -> { eval d1 v = eval d2 v } @-}
 constantFoldingProof :: (Fractional p, Eq p)
                      => ValuationRefl p -> DSL p -> DSL p -> Proof
