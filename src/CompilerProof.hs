@@ -10,6 +10,7 @@ import Vec
 import Constraints
 import Circuits
 import Utils
+import TypeAliases
 
 import ArithmeticGates
 import LogicGates

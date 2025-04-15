@@ -5,6 +5,8 @@ module ArithmeticGates where
 import Constraints
 import Vec
 
+import TypeAliases
+
 {-@ reflect addGate @-}
 {-@ addGate :: m:Nat ->
                ListN (Btwn 0 m) 3 ->

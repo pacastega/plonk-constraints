@@ -5,6 +5,8 @@ module LogicGates where
 import Constraints
 import Vec
 
+import TypeAliases
+
 {-@ reflect notGate @-}
 {-@ notGate :: m:Nat ->
                ListN (Btwn 0 m) 2 ->
