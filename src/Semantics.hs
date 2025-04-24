@@ -16,7 +16,7 @@ import Language.Haskell.Liquid.ProofCombinators ((?))
 type Valuation p = M.Map String p
 
 -- reflectable valuation
-data DSLValue p = VF p | VBool p | VVecNil | VVecCons (DSLValue p) (DSLValue p)
+data DSLValue p = VF p | VBool Bool | VVecNil | VVecCons (DSLValue p) (DSLValue p)
 --TODO: VBool could take a Bool instead of a p
 type ValuationRefl p = [(String, DSLValue p)]
 
@@ -57,7 +57,7 @@ agreesWith p v = case inferType p of
 {-@ hasType :: τ:Ty -> val:DSLValue p -> Bool / [valSize val] @-}
 hasType :: (Num p, Eq p) => Ty -> DSLValue p -> Bool
 hasType TF         (VF _)    = True      -- unrestricted values
-hasType TBool      (VBool x) = boolean x -- x == 0 || x == 1
+hasType TBool      (VBool _) = True      -- unrestricted values
 
 hasType (TVec τ 0) (VVecNil)       = True
 hasType (TVec τ n) (VVecCons x xs) | n >= 1
@@ -81,10 +81,7 @@ eval program v = case program of
   VAR name τ -> lookup name v >>= (\value -> if hasType τ value
                                              then Just value else Nothing)
   CONST x -> Just (VF x)
-  BOOLEAN True -> Just (VBool 1) ? boolean 1
-  BOOLEAN False -> Just (VBool 0) ? boolean 0
-  -- TODO: These 'boolean' annotations are needed, maybe to get PLE to unfold
-  -- some definitions?
+  BOOLEAN b -> Just (VBool b)
 
   -- Arithmetic operations
   ADD p1 p2 -> liftA2' add (eval p1 v) (eval p2 v)
@@ -119,7 +116,7 @@ eval program v = case program of
   NIL _     -> Just VVecNil
   CONS h ts -> liftA2' VVecCons (eval h v) (eval ts v)
 
-  BoolToF p -> eval p v
+  BoolToF p -> fmap' boolToF (eval p v)
 
 {-@ reflect linCombFn @-}
 {-@ linCombFn :: p -> p -> FValue p -> FValue p -> FValue p @-}
@@ -144,24 +141,29 @@ mul (VF x) (VF y) = VF (x * y)
 {-@ reflect notFn @-}
 {-@ notFn :: BoolValue p -> DSLValue p @-}
 notFn :: (Num p, Eq p) => DSLValue p -> DSLValue p
-notFn (VBool x)   = VBool (if x == 1 then 0 else 1)
+notFn (VBool b)   = VBool (not b)
 
 {-@ reflect andFn @-}
 {-@ andFn :: BoolValue p -> BoolValue p -> DSLValue p @-}
 andFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
-andFn (VBool x) (VBool y) = VBool (if x == 0 || y == 0 then 0 else 1)
+andFn (VBool b) (VBool c) = VBool (b && c)
 
 {-@ reflect orFn @-}
 {-@ orFn :: BoolValue p -> BoolValue p -> DSLValue p @-}
 orFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
-orFn  (VBool x) (VBool y) = VBool (if x == 1 || y == 1 then 1 else 0)
+orFn  (VBool b) (VBool c) = VBool (b || c)
 
 {-@ reflect xorFn @-}
 {-@ xorFn :: BoolValue p -> BoolValue p -> DSLValue p @-}
 xorFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
-xorFn (VBool x) (VBool y) = VBool (if x /= y then 1 else 0)
+xorFn (VBool b) (VBool c) = VBool (b /= c)
 
 {-@ reflect eqlFn @-}
-{-@ eqlFn :: BoolValue p -> BoolValue p -> DSLValue p @-}
+{-@ eqlFn :: FValue p -> FValue p -> DSLValue p @-}
 eqlFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
-eqlFn (VBool x) (VBool y) = VBool (if x == y then 1 else 0)
+eqlFn (VF b) (VF c) = VBool (b == c)
+
+{-@ boolToF :: BoolValue p -> FValue p @-}
+boolToF :: (Num p, Eq p) => DSLValue p -> DSLValue p
+boolToF (VBool False) = VF 0
+boolToF (VBool True)  = VF 1
