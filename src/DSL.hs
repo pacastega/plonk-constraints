@@ -21,21 +21,21 @@ import System.IO.Unsafe
 
 import Language.Haskell.Liquid.ProofCombinators
 
-data Ty = TF | TBool | TVec Ty deriving (Eq, Ord, Show)
+data Ty = TF | TBool | TVec Ty Int deriving (Eq, Ord, Show)
+{-@ data Ty = TF | TBool | TVec Ty Nat @-}
 {-@ type ScalarTy = {τ:Ty | scalarType τ} @-}
 
 {-@ measure scalarType @-}
 scalarType :: Ty -> Bool
 scalarType TF       = True
 scalarType TBool    = True
-scalarType (TVec _) = False
+scalarType TVec {}  = False
 
 
 data DSL p =
     -- Basic operations
     VAR String Ty -- variable
   | CONST p       -- constant (of type p, i.e. prime field)
-    -- TODO: add constants of other types (integers, booleans...)
   | BOOLEAN Bool
 
     -- Arithmetic operations
@@ -77,9 +77,16 @@ infixr 5 `CONS`
 {-@ measure vlength @-}
 {-@ vlength :: DSL p -> Nat @-}
 vlength :: DSL p -> Int
+vlength (VAR _ (TVec _ n)) = n
 vlength (NIL _)     = 0
 vlength (CONS _ ps) = 1 + vlength ps
 vlength _           = 1
+
+{-@ measure isVar @-}
+isVar :: DSL p -> Bool
+isVar (VAR {}) = True
+isVar _        = False
+
 
 {-@ boolFromIntegral :: a -> {v:DSL p | typed v TBool} @-}
 boolFromIntegral :: Integral a => a -> DSL p
@@ -107,14 +114,21 @@ sameType program1 program2 = inferType program1 == inferType program2
 scalar :: DSL p -> Bool
 scalar p = case inferType p of
   Nothing       -> False
-  Just (TVec _) -> False
+  Just TVec {}  -> False
   Just _        -> True
 
 
-{-@ measure inferType @-}
+{-@ reflect vector @-}
+vector :: DSL p -> Bool
+vector p = case inferType p of
+  Nothing      -> False
+  Just TVec {} -> True
+  Just _       -> False
+
+
+{-@ reflect inferType @-}
 inferType :: DSL p -> Maybe Ty
--- TODO: allow vector variables
-inferType (VAR _ τ) | scalarType τ = Just τ
+inferType (VAR _ τ) = Just τ
 inferType (CONST _) = Just TF
 inferType (BOOLEAN _) = Just TBool
 
@@ -153,10 +167,10 @@ inferType (EQL p1 p2) | inferType p1 == Just TF && inferType p2 == Just TF
 inferType (ISZERO p1) | inferType p1 == Just TF = Just TBool
 inferType (EQLC p1 _) | inferType p1 == Just TF = Just TBool
 
-inferType (NIL τ) = Just (TVec τ)
+inferType (NIL τ) = Just (TVec τ 0)
 inferType (CONS h ts) | Just τ  <- inferType h
-                      , Just τs <- inferType ts
-                      , τs == TVec τ = Just τs
+                      , Just (TVec τ n) <- inferType ts
+                      = Just (TVec τ (n+1))
 
 inferType (BoolToF p) | Just TBool <- inferType p = Just TF
 
@@ -183,7 +197,7 @@ data Assertion p =
 -- Labeled DSL
 data LDSL p i =
   LWIRE                          i |
-  LVAR   String                  i |
+  LVAR   String Ty               i |
   LCONST p                       i |
 
   LADD   (LDSL p i) (LDSL p i)   i |
@@ -212,6 +226,39 @@ data LDSL p i =
   LEQA    (LDSL p i) (LDSL p i)
   deriving Show
 
+{-@
+data LDSL p i =
+  LWIRE                          i |
+  LVAR   String     ScalarTy     i |
+  LCONST p                       i |
+
+  LADD   (LDSL p i) (LDSL p i)   i |
+  LSUB   (LDSL p i) (LDSL p i)   i |
+  LMUL   (LDSL p i) (LDSL p i)   i |
+  LDIV   (LDSL p i) (LDSL p i) i i |
+
+  LADDC  (LDSL p i) p            i |
+  LMULC  (LDSL p i) p            i |
+
+  LLINCOMB p (LDSL p i) p (LDSL p i) i |
+
+  LNOT   (LDSL p i)            i |
+  LAND   (LDSL p i) (LDSL p i) i |
+  LOR    (LDSL p i) (LDSL p i) i |
+  LXOR   (LDSL p i) (LDSL p i) i |
+
+  LUnsafeNOT   (LDSL p i)            i |
+  LUnsafeAND   (LDSL p i) (LDSL p i) i |
+  LUnsafeOR    (LDSL p i) (LDSL p i) i |
+  LUnsafeXOR   (LDSL p i) (LDSL p i) i |
+
+  LEQLC   (LDSL p i) p       i i |
+
+  LNZERO  (LDSL p i)           i |
+  LBOOL   (LDSL p i)             |
+  LEQA    (LDSL p i) (LDSL p i)
+@-}
+
 
 type Store p = [Assertion p]
 
@@ -220,7 +267,7 @@ type Store p = [Assertion p]
 outputWire :: LDSL p i -> i
 outputWire (LWIRE i)      = i
 
-outputWire (LVAR _ i)     = i
+outputWire (LVAR _ _ i)   = i
 outputWire (LCONST _ i)   = i
 outputWire (LADD _ _ i)   = i
 outputWire (LSUB _ _ i)   = i
@@ -255,7 +302,7 @@ outputWire (LEQA p1 p2) = outputWire p2 --FIXME: assertions don't have output
 nGates :: LDSL p i -> Int
 nGates (LWIRE _)        = 0
 
-nGates (LVAR _ _)       = 0
+nGates (LVAR _ τ _)     = case τ of TF -> 0; TBool -> 1
 nGates (LCONST _ _)     = 1
 nGates (LADD p1 p2 _)   = 1 + nGates p1 + nGates p2
 nGates (LSUB p1 p2 _)   = 1 + nGates p1 + nGates p2
@@ -289,7 +336,10 @@ nGates (LEQA p1 p2)     = 1 + nGates p1 + nGates p2
                Circuit p (nGates c) m @-}
 compile :: (Fractional p, Eq p) => Int -> LDSL p Int -> Circuit p
 compile m (LWIRE _)      = emptyCircuit m
-compile m (LVAR _ _)     = emptyCircuit m
+compile m (LVAR _ τ i)   = case τ of
+  TF       -> emptyCircuit m
+  TBool    -> boolGate m i
+  TVec τ n -> error "Vector variables have been unfolded by now"
 compile m (LCONST x i)   = constGate m x i
 compile m (LADD p1 p2 i) = c
   where
@@ -407,7 +457,9 @@ compile m (LEQA p1 p2) = c
                            Bool @-}
 semanticsAreCorrect :: (Eq p, Fractional p) => Int -> LDSL p Int -> Vec p -> Bool
 semanticsAreCorrect _ (LWIRE _)      _     = True
-semanticsAreCorrect _ (LVAR _ _)     _     = True
+semanticsAreCorrect _ (LVAR _ τ i)   input = case τ of
+  TF    -> True              -- field-typed variables don't have restrictions
+  TBool -> boolean (input!i) -- bool-typed variables must be boolean
 semanticsAreCorrect _ (LCONST x i)   input = input!i == x
 semanticsAreCorrect m (LADD p1 p2 i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
@@ -531,5 +583,4 @@ var name = name ++ "_" ++ show (unsafePerformIO $ fresh ())
 
 {-@ vars :: n:Nat -> String -> ListN String n @-}
 vars :: Int -> String -> [String]
-vars 0 name = []
-vars n name = var name : vars (n-1) name
+vars n name = map' (\i -> name ++ "_" ++ show i) (firstNats n)

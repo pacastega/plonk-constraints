@@ -1,7 +1,9 @@
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
 module Utils where
 
 import TypeAliases
+import Language.Haskell.Liquid.ProofCombinators ((?))
 
 {-@ reflect fst' @-}
 fst' :: (a, b) -> a
@@ -41,6 +43,7 @@ mkList2 x y = [x, y]
 mkList3 :: a -> a -> a -> [a]
 mkList3 x y z = [x, y, z]
 
+{-@ reflect map' @-}
 {-@ map' :: (a -> b) -> xs:[a] -> {ys:[b] | len ys = len xs} @-}
 map' :: (a -> b) -> [a] -> [b]
 map' _ []     = []
@@ -85,3 +88,34 @@ liftA2' _ _ _ = Nothing
 fmap' :: (a -> b) -> Maybe a -> Maybe b
 fmap' f (Just x) = Just (f x)
 fmap' _ _ = Nothing
+
+{-@ reflect max' @-}
+-- {-@ max' :: a:Int -> b:Int -> {c:Int | c >= a && c >= b} @-}
+max' :: Int -> Int -> Int
+max' a b = if a > b then a else b
+
+
+{-@ reflect enumFromTo' @-}
+{-@ enumFromTo' :: a:Int -> b:Int
+                -> {l:[{v:Int | a <= v && v <= b}] | len l = max' (b-a+1) 0}
+                 / [b-a] @-}
+enumFromTo' :: Int -> Int -> [Int]
+enumFromTo' a b
+  | a > b     = []
+  | a == b    = [a]
+  | otherwise = a : enumFromTo' (a+1) b
+
+{-@ reflect firstNats @-}
+{-@ firstNats :: n:Nat -> {l:[Btwn 0 n] | len l = n} @-}
+firstNats :: Int -> [Int]
+firstNats n = enumFromTo' 0 (n-1) ? max' n 0
+
+{-@ measure length' @-}
+length' :: [a] -> Int
+length' []     = 0
+length' (_:xs) = 1 + length' xs
+
+{-@ reflect sum' @-}
+sum' :: [Int] -> Int
+sum' []     = 0
+sum' (x:xs) = x + sum' xs

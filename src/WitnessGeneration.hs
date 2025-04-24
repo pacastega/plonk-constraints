@@ -32,8 +32,10 @@ witnessGen m programs strValuationRefl = toVector m valuation' where
     update :: (Eq p, Fractional p) =>
               ValuationRefl p -> LDSL p Int -> M.Map Int p -> M.Map Int p
     update _  (LWIRE _) valuation = valuation
-    update sv (LVAR s i) valuation = M.alter (updateWith value) i valuation
-      where value = lookup s sv -- value of ‘s’ in user-supplied valuation
+    update sv (LVAR s τ i) valuation = M.alter (updateWith value) i valuation
+      where value = case τ of -- value of ‘s’ in user-supplied valuation
+              TF -> lookup s sv
+              TBool -> lookup s sv >>= (\x -> if boolean x then Just x else Nothing)
     update _  (LCONST x i) valuation = M.alter (updateWith (Just x)) i valuation
     update sv (LADD p1 p2 i) valuation = M.alter (updateWith sum) i valuation'
       where

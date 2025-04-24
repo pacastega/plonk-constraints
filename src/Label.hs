@@ -6,6 +6,7 @@ module Label (label) where
 import TypeAliases
 import DSL
 import Utils
+import PlinkLib
 
 import qualified Data.Map as M
 
@@ -66,7 +67,9 @@ label' p nextIndex env = case M.lookup p env of
   Just i  -> (nextIndex, [LWIRE i], env)
   Nothing -> let i = nextIndex in case p of
 
-    VAR s _ -> (i+1, [LVAR s i], add (p,i) env)
+    v@(VAR s τ) -> case τ of
+      TF | TBool -> (i+1, [LVAR s τ i], add (p,i) env)
+      TVec {}    -> label' (expandVecVar v) nextIndex env
     CONST x -> (i+1, [LCONST x i], add (p,i) env)
     BOOLEAN b  -> label' (CONST $ fromIntegral $ fromEnum b) nextIndex env
 
@@ -151,7 +154,7 @@ labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
 withOutputWire :: Int -> Int -> LDSL p Int -> LDSL p Int
 withOutputWire _ i program = case program of
   LWIRE _ -> LWIRE i
-  LVAR s _ -> LVAR s i
+  LVAR s τ _ -> LVAR s τ i
   LCONST p _ -> LCONST p i
 
   LADD p1 p2 _ -> LADD p1 p2 i

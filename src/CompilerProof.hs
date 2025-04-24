@@ -26,7 +26,9 @@ import Language.Haskell.Liquid.ProofCombinators
                      satisfies (nGates program) m input (compile m program)} @-}
 compileProof :: (Eq p, Fractional p) => Int -> LDSL p Int -> Vec p -> Proof
 compileProof m (LWIRE i)      input = trivial
-compileProof m (LVAR s i)     input = trivial
+compileProof m (LVAR s τ i)   input = case τ of
+  TF -> trivial
+  TBool -> trivial
 compileProof m (LCONST x i)   input = trivial
 compileProof m (LADD p1 p2 i) input =
   let n1 = nGates p1

@@ -41,7 +41,7 @@ parse :: (Show p, Show i) => LDSL p i -> Tree String
 parse p = case p of
   LWIRE i        -> N (wire [i])                []
 
-  LVAR s i       -> N ("$" ++ s ++ "$" ++ wire [i])         []
+  LVAR s _ i     -> N ("$" ++ s ++ "$" ++ wire [i])         []
   LCONST x i     -> N (show x ++ wire [i])      []
   LADD p1 p2 i   -> N ("$+$" ++ wire [i])       [parse p1, parse p2]
   LSUB p1 p2 i   -> N ("$-$" ++ wire [i])       [parse p1, parse p2]

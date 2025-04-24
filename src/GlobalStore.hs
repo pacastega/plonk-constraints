@@ -1,4 +1,5 @@
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
 module GlobalStore where
 
 -- TODO: swap arguments of GStore

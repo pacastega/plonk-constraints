@@ -19,6 +19,15 @@ import GlobalStore
 vecVar :: [String] -> Ty -> DSL p
 vecVar strs τ = fromList τ (map' (\s -> VAR s τ) strs)
 
+{-@ expandVecVar :: vVar:{DSL p | isVar vVar && vector vVar}
+                 -> {v:DSL p | vlength v = vlength vVar} @-}
+expandVecVar :: DSL p -> DSL p
+expandVecVar (VAR name (TVec τ n)) = fromList τ variables where
+  varNames = vars n name -- n "fresh" copies of name
+  variables = map (case τ of TVec {} -> expandVecVar . mkVar; _ -> mkVar) varNames
+  mkVar s = VAR s τ
+
+
 -- List-like functions ---------------------------------------------------------
 {-@ fromList :: τ:Ty
              -> l:[{v:DSL p | typed v τ}]
