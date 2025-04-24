@@ -84,8 +84,8 @@ vlength _           = 1
 
 {-@ measure isVar @-}
 isVar :: DSL p -> Bool
-isVar (VAR {}) = True
-isVar _        = False
+isVar VAR {} = True
+isVar _      = False
 
 
 {-@ boolFromIntegral :: a -> {v:DSL p | typed v TBool} @-}
@@ -113,9 +113,9 @@ sameType program1 program2 = inferType program1 == inferType program2
 {-@ reflect scalar @-}
 scalar :: DSL p -> Bool
 scalar p = case inferType p of
-  Nothing       -> False
-  Just TVec {}  -> False
-  Just _        -> True
+  Nothing      -> False
+  Just TVec {} -> False
+  Just _       -> True
 
 
 {-@ reflect vector @-}
