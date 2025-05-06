@@ -97,16 +97,6 @@ boolFromIntegral x = BOOLEAN (x /= 0)
 typed :: DSL p -> Ty -> Bool
 typed p τ = inferType p == Just τ
 
-{-@ fromJust :: {v:Maybe a | isJust v} -> a @-}
-{-@ measure fromJust @-}
-fromJust :: Maybe a -> a
-fromJust (Just x) = x
-
-{-@ measure isJust @-}
-isJust :: Maybe a -> Bool
-isJust (Just _) = True
-isJust Nothing  = False 
-
 {-@ type ScalarDSL p = {d:DSL p | scalar d} @-}
 {-@ type TypedDSL p = {d:DSL p | wellTyped d} @-}
 
