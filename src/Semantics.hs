@@ -66,12 +66,6 @@ hasType (TVec τ n) v =
     else case v of
       VVecCons x xs -> hasType τ x && hasType (TVec τ (n-1)) xs
       _             -> False
--- hasType (TVec τ 0) (VVecNil)       = True
--- hasType (TVec τ n) (VVecCons x xs) = 
---                                        hasType τ x
-                                   -- && 
-                                   -- hasType (TVec τ (n-1)) xs
-
 hasType _          _               = False
 
 
@@ -82,9 +76,10 @@ assertFValue :: Maybe (DSLValue p) -> Maybe (DSLValue p)
 assertFValue = id
 
 
+-- {-@ reflect eval @-}
 {-@ eval :: program:TypedDSL p -> ValuationRefl p
          -> Maybe ({v:DSLValue p | agreesWith program v }) @-}
-eval :: (Fractional p, Eq p) => DSL p  -> ValuationRefl p -> Maybe (DSLValue p)
+eval :: (Fractional p, Eq p) => DSL p -> ValuationRefl p -> Maybe (DSLValue p)
 eval program v = case program of
   VAR name τ -> lookup name v >>= (\value -> if hasType τ value
                                              then Just value else Nothing)
@@ -126,7 +121,11 @@ eval program v = case program of
                 Just (TVec tt n) -> liftA2' VVecCons (eval h v) (eval ts v)
                 _ -> Nothing
 
-  BoolToF p -> undefined -- fmap' boolToF (eval p v)
+  BoolToF p -> case inferType p of 
+                Just TBool -> case eval p v of 
+                                Just pp -> Just (boolToF pp) -- 
+                                Nothing -> Nothing --  fmap' boolToF (eval p v)
+                _ -> Nothing
 
 {-@ reflect linCombFn @-}
 {-@ linCombFn :: p -> p -> FValue p -> FValue p -> FValue p @-}
