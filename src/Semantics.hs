@@ -57,14 +57,16 @@ agreesWith p v = case inferType p of
 hasType :: (Num p, Eq p) => Ty -> DSLValue p -> Bool
 hasType TF         (VF _)    = True      -- unrestricted values
 hasType TBool      (VBool _) = True      -- unrestricted values
-
-hasType (TVec τ 0) (VVecNil)       = True
-hasType (TVec τ n) (VVecCons x xs) | n >= 1
-                                   , hasType τ x
-                                   , hasType (TVec τ (n-1)) xs
-                                   = True
-
+hasType (TVec τ n) v = 
+    if n == 0
+    then case v of
+      VVecNil -> True
+      _       -> False
+    else case v of
+      VVecCons x xs -> hasType τ x && hasType (TVec τ (n-1)) xs
+      _             -> False
 hasType _          _               = False
+
 
 
 {-@ reflect assertFValue @-}
@@ -72,9 +74,10 @@ hasType _          _               = False
 assertFValue :: Maybe (DSLValue p) -> Maybe (DSLValue p)
 assertFValue = id
 
+
 -- {-@ reflect eval @-}
 {-@ eval :: program:TypedDSL p -> ValuationRefl p
-         -> Maybe ({v:DSLValue p | agreesWith program v}) @-}
+         -> Maybe ({v:DSLValue p | agreesWith program v }) @-}
 eval :: (Fractional p, Eq p) => DSL p -> ValuationRefl p -> Maybe (DSLValue p)
 eval program v = case program of
   VAR name τ -> lookup name v >>= (\value -> if hasType τ value
@@ -110,9 +113,15 @@ eval program v = case program of
   EQLC p1 k -> fmap' (eqlFn (VF k)) (eval p1 v)
 
   NIL _     -> Just VVecNil
-  CONS h ts -> liftA2' VVecCons (eval h v) (eval ts v)
+  CONS h ts -> case inferType program of 
+                Just (TVec tt n) -> liftA2' VVecCons (eval h v) (eval ts v)
+                _ -> Nothing
 
-  BoolToF p -> fmap' boolToF (eval p v)
+  BoolToF p -> case inferType p of 
+                Just TBool -> case eval p v of 
+                                Just pp -> Just (boolToF pp) -- 
+                                Nothing -> Nothing --  fmap' boolToF (eval p v)
+                _ -> Nothing
 
 {-@ reflect linCombFn @-}
 {-@ linCombFn :: p -> p -> FValue p -> FValue p -> FValue p @-}
