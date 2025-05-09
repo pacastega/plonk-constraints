@@ -17,7 +17,6 @@ type Valuation p = M.Map String p
 
 -- reflectable valuation
 data DSLValue p = VF p | VBool Bool | VVecNil | VVecCons (DSLValue p) (DSLValue p)
---TODO: VBool could take a Bool instead of a p
 type ValuationRefl p = [(String, DSLValue p)]
 
 {-@ measure valSize @-}
@@ -94,9 +93,6 @@ eval program v = case program of
   ADDC p1 k -> fmap' (add (VF k)) (eval p1 v)
   MULC p1 k -> fmap' (mul (VF k)) (eval p1 v)
   LINCOMB k1 p1 k2 p2 -> liftA2' (linCombFn k1 k2) (eval p1 v) (eval p2 v)
-
-  -- TODO: the rest of the cases don't pass, maybe for the same reason as the
-  -- 'boolean' issue in lines 84-85 above
 
   -- Boolean operations
   NOT p1    -> fmap'   notFn (eval p1 v)
