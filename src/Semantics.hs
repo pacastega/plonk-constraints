@@ -2,7 +2,6 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
-{-@ LIQUID "--save" @-}
 module Semantics where
 
 import DSL
@@ -57,7 +56,7 @@ agreesWith p v = case inferType p of
 hasType :: (Num p, Eq p) => Ty -> DSLValue p -> Bool
 hasType TF         (VF _)    = True      -- unrestricted values
 hasType TBool      (VBool _) = True      -- unrestricted values
-hasType (TVec τ n) v = 
+hasType (TVec τ n) v =
     if n == 0
     then case v of
       VVecNil -> True
@@ -113,14 +112,13 @@ eval program v = case program of
   EQLC p1 k -> fmap' (eqlFn (VF k)) (eval p1 v)
 
   NIL _     -> Just VVecNil
-  CONS h ts -> case inferType program of 
-                Just (TVec tt n) -> liftA2' VVecCons (eval h v) (eval ts v)
+  CONS h ts -> case inferType program of
+                Just (TVec τ n) -> liftA2' VVecCons (eval h v) (eval ts v)
                 _ -> Nothing
 
-  BoolToF p -> case inferType p of 
-                Just TBool -> case eval p v of 
-                                Just pp -> Just (boolToF pp) -- 
-                                Nothing -> Nothing --  fmap' boolToF (eval p v)
+  BoolToF p -> case inferType program of
+                -- TODO: this should be Just TF, but that doesn't work
+                Just TBool -> fmap' boolToF (eval p v)
                 _ -> Nothing
 
 {-@ reflect linCombFn @-}

@@ -168,9 +168,9 @@ inferType (ISZERO p1) | inferType p1 == Just TF = Just TBool
 inferType (EQLC p1 _) | inferType p1 == Just TF = Just TBool
 
 inferType (NIL τ) = Just (TVec τ 0)
-inferType (CONS h ts) | Just τ1  <- inferType h
+inferType (CONS h ts) | Just τ' <- inferType h
                       , Just (TVec τ n) <- inferType ts
-                      , τ1 == τ
+                      , τ' == τ
                       , n >= 0
                       = Just (TVec τ (n+1))
 
