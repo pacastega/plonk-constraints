@@ -1,6 +1,7 @@
 {-# OPTIONS -Wno-type-defaults #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
+{-@ LIQUID "--ple-with-undecided-guards" @-}
 {-@ infix +++ @-}
 module SHA256 (sha256) where
 
@@ -103,10 +104,8 @@ k = [ CONST 0x428a2f98
     , CONST 0xc67178f2
     ]
 
-{-@ padding :: msg:{DSL p | typed msg (TVec TBool)
-                         && vlength msg < pow 2 64}
-            -> {res:DSL p | typed res (TVec TBool)
-                         && (vlength res) mod 512 = 0} @-}
+{-@ padding :: msg:{PlinkVec p TBool | vlength msg < pow 2 64}
+            -> {res:PlinkVec p TBool | (vlength res) mod 512 = 0} @-}
 padding :: Num p => DSL p -> DSL p
 padding msg = msg +++ (fromList TBool [BOOLEAN True])
                   +++ (vReplicate TBool k (BOOLEAN False)) +++ len
@@ -128,9 +127,8 @@ plus :: (Integral p, Fractional p, Ord p) =>
 plus = addMod 32 -- addition modulo 2^32
 
 
-{-@ processMsg :: {msg:DSL p | typed msg (TVec TBool)
-                            && (vlength msg) mod 512 = 0}
-               -> GlobalStore p ({v:DSL p | typed v (TVec TBool)}) @-}
+{-@ processMsg :: {msg:PlinkVec p TBool | (vlength msg) mod 512 = 0}
+               -> GlobalStore p (PlinkVec p TBool) @-}
 -- TODO: can we prove the resulting length is what it should be?
 processMsg :: (Integral p, Fractional p, Ord p) =>
               DSL p -> GlobalStore p (DSL p)
@@ -141,7 +139,7 @@ processMsg msg = do
   return $ vConcat TBool finalHashes' -- concatenate all the hashes
 
 {-@ processChunk :: GlobalStore p (ListN (Word p) 8)
-                 -> {v:DSL p | typed v (TVec TBool) && vlength v = 512}
+                 -> {v:DSL p | typed v (TVec TBool 512) && vlength v = 512}
                  -> GlobalStore p (ListN (Word p) 8) @-}
 processChunk :: (Integral p, Fractional p, Ord p) =>
                 GlobalStore p [Word p] -> DSL p
@@ -255,12 +253,13 @@ compress = aux 64 where
 {-@ assume ord :: Char -> Btwn 0 256 @-}
 
 {-@ sha256 :: {s:String | len s < pow 2 61} ->
-              GlobalStore p ({res:DSL p | typed res (TVec TBool)}) @-}
+              GlobalStore p (PlinkVec p TBool) @-}
 sha256 :: (Integral p, Fractional p, Ord p)
        => String -> GlobalStore p (DSL p)
 sha256 = processMsg . padding . toBits where
   {-@ toBits :: s:String
-             -> {v:DSL p | typed v (TVec TBool) && vlength v = 8 * len s} @-}
+             -> {v:DSL p | typed v (TVec TBool (8 * len s))
+                        && vlength v = 8 * len s} @-}
   toBits :: Num p => String -> DSL p
   toBits [] = NIL TBool
   toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs

@@ -15,7 +15,8 @@ updateWith Nothing  _        = Nothing
 updateWith (Just x) Nothing  = Just x
 updateWith (Just x) (Just y) = if x == y then Just x else Nothing
 
-extend :: ValuationRefl p -> (ValuationRefl p -> [(String, p)]) -> ValuationRefl p
+extend :: ValuationRefl p -> (ValuationRefl p -> ValuationRefl p)
+       -> ValuationRefl p
 extend valuation hints = valuation ++ hints valuation
 
 {-@ witnessGen :: m:Nat ->

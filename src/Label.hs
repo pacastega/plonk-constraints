@@ -68,7 +68,8 @@ label' p nextIndex env = case M.lookup p env of
   Nothing -> let i = nextIndex in case p of
 
     v@(VAR s τ) -> case τ of
-      TF | TBool -> (i+1, [LVAR s τ i], add (p,i) env)
+      TF         -> (i+1, [LVAR s τ i], add (p,i) env)
+      TBool      -> (i+1, [LVAR s τ i], add (p,i) env)
       TVec {}    -> label' (expandVecVar v) nextIndex env
     CONST x -> (i+1, [LCONST x i], add (p,i) env)
     BOOLEAN b  -> label' (CONST $ fromIntegral $ fromEnum b) nextIndex env

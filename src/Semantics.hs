@@ -16,7 +16,7 @@ type Valuation p = M.Map String p
 
 -- reflectable valuation
 data DSLValue p = VF p | VBool Bool | VVecNil | VVecCons (DSLValue p) (DSLValue p)
-type ValuationRefl p = [(String, DSLValue p)]
+type ValuationRefl p = [(String, p)]
 
 {-@ measure valSize @-}
 valSize :: DSLValue p -> Int
@@ -74,13 +74,18 @@ assertFValue :: Maybe (DSLValue p) -> Maybe (DSLValue p)
 assertFValue = id
 
 
--- {-@ reflect eval @-}
+{-@ reflect eval @-}
 {-@ eval :: program:TypedDSL p -> ValuationRefl p
          -> Maybe ({v:DSLValue p | agreesWith program v }) @-}
 eval :: (Fractional p, Eq p) => DSL p -> ValuationRefl p -> Maybe (DSLValue p)
 eval program v = case program of
-  VAR name τ -> lookup name v >>= (\value -> if hasType τ value
-                                             then Just value else Nothing)
+  VAR name τ -> lookup name v >>=
+    (\value -> case τ of
+        TBool -> case value of
+          0 -> Just (VBool False)
+          1 -> Just (VBool True)
+          _ -> Nothing
+        TF -> Just (VF value))
   CONST x -> Just (VF x)
   BOOLEAN b -> Just (VBool b)
 
@@ -166,6 +171,7 @@ xorFn (VBool b) (VBool c) = VBool (b /= c)
 eqlFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
 eqlFn (VF b) (VF c) = VBool (b == c)
 
+{-@ reflect boolToF @-}
 {-@ boolToF :: BoolValue p -> FValue p @-}
 boolToF :: (Num p, Eq p) => DSLValue p -> DSLValue p
 boolToF (VBool False) = VF 0

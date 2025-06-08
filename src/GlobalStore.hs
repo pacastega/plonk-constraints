@@ -12,7 +12,7 @@ import qualified Data.Map as M
 data GlobalStore p b =
   GStore { body  :: b
          , store :: [Assertion p]
-         , hints :: ValuationRefl p -> [(String, p)] -- TODO: change to Map?
+         , hints :: ValuationRefl p -> ValuationRefl p -- TODO: change to Map?
          }
 
 instance Show b => Show (GlobalStore p b) where

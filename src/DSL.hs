@@ -73,6 +73,38 @@ data DSL p =
 
 infixr 5 `CONS`
 
+{-@ data DSL p where
+      VAR :: name:String -> t:ScalarTy -> DSL p
+      CONST :: p -> DSL p
+      BOOLEAN :: Bool -> DSL p
+
+      ADD :: (DSL p) -> (DSL p) -> DSL p
+      SUB :: (DSL p) -> (DSL p) -> DSL p
+      MUL :: (DSL p) -> (DSL p) -> DSL p
+      DIV :: (DSL p) -> (DSL p) -> DSL p
+
+      ADDC :: (DSL p) -> p -> DSL p
+      MULC :: (DSL p) -> p -> DSL p
+      LINCOMB :: p -> (DSL p) -> p -> (DSL p) -> DSL p
+
+      NOT :: (DSL p) ->            DSL p
+      AND :: (DSL p) -> (DSL p) -> DSL p
+      OR  :: (DSL p) -> (DSL p) -> DSL p
+      XOR :: (DSL p) -> (DSL p) -> DSL p
+
+      UnsafeNOT :: (DSL p) ->            DSL p
+      UnsafeAND :: (DSL p) -> (DSL p) -> DSL p
+      UnsafeOR  :: (DSL p) -> (DSL p) -> DSL p
+      UnsafeXOR :: (DSL p) -> (DSL p) -> DSL p
+
+      ISZERO :: (DSL p) ->            DSL p
+      EQL    :: (DSL p) -> (DSL p) -> DSL p
+      EQLC   :: (DSL p) -> p       -> DSL p
+
+      NIL :: Ty -> DSL p
+      CONS :: (DSL p) -> (DSL p) -> DSL p
+
+      BoolToF :: (DSL p) -> DSL p @-}
 
 {-@ measure vlength @-}
 {-@ vlength :: DSL p -> Nat @-}
