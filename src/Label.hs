@@ -1,7 +1,7 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
-module Label (label) where
+module Label (label, Env) where
 
 import TypeAliases
 import DSL
