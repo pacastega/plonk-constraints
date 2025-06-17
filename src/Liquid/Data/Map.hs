@@ -3,14 +3,11 @@ module Liquid.Data.Map where
 
 import Prelude hiding (lookup)
 
-
-data Map k v = MTip  | MBin k v (Map k v)
-{-@ data Map k v = MTip  | MBin k v (Map k v) @-}
-
+data Map k v = MTip | MBin k v (Map k v)
 
 {-@ reflect empty @-}
 empty :: Map k v
-empty = MTip 
+empty = MTip
 
 {-@ reflect lookup @-}
 lookup :: Eq k => k -> Map k v -> Maybe v
@@ -25,11 +22,10 @@ alter f k MTip = case f Nothing of
     Nothing -> MTip
     Just v  -> MBin k v MTip
 alter f k (MBin k' v' m)
-    | k == k'  = case f (Just v') of
-        Nothing -> m
+    | k == k' = case f (Just v') of
+        Nothing  -> m
         Just v'' -> MBin k' v'' m
     | otherwise = MBin k' v' (alter f k m)
-
 
 {-@ reflect findWithDefault @-}
 findWithDefault :: Eq k => v -> k -> Map k v -> v

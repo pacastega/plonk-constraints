@@ -23,7 +23,6 @@ extend :: ValuationRefl p -> (ValuationRefl p -> ValuationRefl p)
 extend valuation hints = valuation ++ hints valuation
 
 {-@ reflect foldl @-}
-{-@ foldl :: (b -> a -> a) -> a -> [b] -> a @-}
 foldl :: (b -> a -> a) -> a -> [b] -> a
 foldl _ acc []     = acc
 foldl f acc (x:xs) = foldl f (f x acc) xs
@@ -35,9 +34,8 @@ foldl f acc (x:xs) = foldl f (f x acc) xs
                   M.Map (Btwn 0 m) p @-}
 witnessGen :: (Eq p, Fractional p) =>
               Int -> [LDSL p Int] -> ValuationRefl p -> M.Map Int p
-witnessGen m programs strValuationRefl 
+witnessGen m programs strValuationRefl
   = foldl ((update m strValuationRefl)) M.empty programs
-
 
 {-@ reflect update @-}
 {-@ update :: m:Nat
@@ -176,4 +174,3 @@ toVector m valuation = aux m Nil where
 --                                                    else Nothing)} @-}
 ensure :: (a -> Bool) -> a -> Maybe a
 ensure p x = if p x then Just x else Nothing
-
