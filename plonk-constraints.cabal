@@ -24,6 +24,7 @@ source-repository head
 
 library
   exposed-modules:
+      Liquid.Data.Map
       ArithmeticGates
       Circuits
       CompilerProof

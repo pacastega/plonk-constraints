@@ -7,7 +7,7 @@ import Utils (boolean)
 import Vec
 import DSL
 import Semantics
-import qualified Data.Map as M
+import qualified Liquid.Data.Map as M
 
 
 {-@ reflect updateWith @-}
