@@ -3,6 +3,8 @@
 module WitnessGeneration (extend, witnessGen, ValuationRefl) where
 -- TODO: it shouldn't export ValuationRefl
 
+import Prelude hiding (flip, foldl)
+
 import Utils (boolean)
 import Vec
 import DSL
@@ -21,17 +23,21 @@ extend :: ValuationRefl p -> (ValuationRefl p -> ValuationRefl p)
 extend valuation hints = valuation ++ hints valuation
 
 {-@ reflect foldl @-}
+{-@ foldl :: (b -> a -> a) -> a -> [b] -> a @-}
+foldl :: (b -> a -> a) -> a -> [b] -> a
+foldl _ acc []     = acc
+foldl f acc (x:xs) = foldl f (f x acc) xs
 
 {-@ reflect witnessGen @-}
 {-@ witnessGen :: m:Nat ->
-                  [LDSL p (Btwn 0 m)] ->
-                  ValuationRefl p ->
+                  xs:[LDSL p (Btwn 0 m)] ->
+                  ys:ValuationRefl p ->
                   M.Map (Btwn 0 m) p @-}
 witnessGen :: (Eq p, Fractional p) =>
               Int -> [LDSL p Int] -> ValuationRefl p -> M.Map Int p
-witnessGen m programs strValuationRefl = valuation' where
-    valuation' = foldl (\acc x -> update m strValuationRefl x acc)
-                       M.empty programs
+witnessGen m programs strValuationRefl 
+  = foldl ((update m strValuationRefl)) M.empty programs
+
 
 {-@ reflect update @-}
 {-@ update :: m:Nat
@@ -163,9 +169,11 @@ toVector m valuation = aux m Nil where
   aux l acc = aux (l-1) (Cons (M.findWithDefault 0 (l-1) valuation) acc)
 
 
+
 -- -- TODO: ‘ensure (/= 0)’ should work for ‘x2’ in the case of ‘LDIV’ above
 -- {-@ ensure :: p:(a -> Bool) -> x:a ->
 --               {v:Maybe {w:a | p w} | v = (if (p x) then (Just x)
 --                                                    else Nothing)} @-}
 ensure :: (a -> Bool) -> a -> Maybe a
 ensure p x = if p x then Just x else Nothing
+
