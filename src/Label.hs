@@ -1,27 +1,68 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
-module Label (label, Env) where
+module Label where
 
 import TypeAliases
 import DSL
 import Utils
 import PlinkLib
 
-import qualified Data.Map as M
+import qualified Liquid.Data.Map as M
 
 type Env p i = M.Map (DSL p) i
 
-{-@ label :: TypedDSL p
-          -> Store p
-          -> (m:Nat, [LDSL p Int], [LDSL p Int])
-                  <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
-                   \_ m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
-label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
-label program store = (m, labeledPrograms, labeledStore) where
-  (m', labeledStore, env') = labelStore store 0 M.empty
-  (m, labeledPrograms, _) = label' program m' env'
 
+{-@ measure size @-}
+{-@ size :: DSL p -> Nat @-}
+size :: DSL p -> Int
+size (VAR _ _) = 1
+size (CONST _) = 1
+size (BOOLEAN _) = 2 -- BOOLEAN -> CONST
+
+size (ADD p1 p2) = 1 + size p1 + size p2
+size (SUB p1 p2) = 1 + size p1 + size p2
+size (MUL p1 p2) = 1 + size p1 + size p2
+size (DIV p1 p2) = 1 + size p1 + size p2
+
+size (ADDC p1 _) = 1 + size p1
+size (MULC p1 _) = 1 + size p1
+size (LINCOMB _ p1 _ p2) = 1 + size p1 + size p2
+
+size (NOT p1) = 1 + size p1
+size (AND p1 p2) = 1 + size p1 + size p2
+size (OR  p1 p2) = 1 + size p1 + size p2
+size (XOR p1 p2) = 1 + size p1 + size p2
+
+size (UnsafeNOT p1) = 1 + size p1
+size (UnsafeAND p1 p2) = 1 + size p1 + size p2
+size (UnsafeOR  p1 p2) = 1 + size p1 + size p2
+size (UnsafeXOR p1 p2) = 1 + size p1 + size p2
+
+-- syntactic sugar needs extra steps to desugar
+size (ISZERO p1) = 1 + size p1           + 1 --        ISZERO -> EQLC
+size (EQL p1 p2) = 1 + size p1 + size p2 + 3 -- EQL -> ISZERO -> EQLC
+size (EQLC p1 _) = 1 + size p1
+
+size (NIL _) = 0
+size (CONS h ts) = 1 + size h + size ts
+
+size (BoolToF p) = 1 + size p
+
+
+
+-- {-@ reflect label @-}
+-- {-@ label :: TypedDSL p
+--           -> Store p
+--           -> (m:Nat, [LDSL p Int], [LDSL p Int])
+--                   <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
+--                    \_ m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
+-- label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
+-- label program store = (m, labeledPrograms, labeledStore) where
+--   (m', labeledStore, env') = labelStore store 0 M.empty
+--   (m, labeledPrograms, _) = label' program m' env'
+
+{-@ reflect labelStore @-}
 {-@ labelStore :: Store p -> m0:Nat -> Env p (Btwn 0 m0)
                -> (m:{Int | m >= m0}, [LDSL p Int], Env p Int)
                       <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
@@ -35,32 +76,19 @@ labelStore (def:ss) nextIndex env =
       (i'', ss', env'') = labelStore ss i' env'
   in (i'', def' ++ ss', env'')
 
--- combinator to label programs with 2 arguments that need recursive labelling
-{-@ lazy label2 @-}
-{-@ label2 :: m0:Nat -> ScalarDSL p -> ScalarDSL p -> Env p (Btwn 0 m0) ->
-              (m:{Int | m >= m0}, LDSL p Int, LDSL p Int, Env p Int)
-                         <\m     -> {v:LDSL  p (Btwn 0 m)  | true},
-                          \_ m   -> {v:LDSL  p (Btwn 0 m)  | true},
-                          \_ _ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
-label2 :: (Num p, Ord p) => Int -> DSL p -> DSL p -> Env p Int ->
-          (Int, LDSL p Int, LDSL p Int, Env p Int)
-label2 nextIndex arg1 arg2 env =
-  let i = nextIndex
-      (i1, [arg1'], env1) = label' arg1 i  env
-      (i2, [arg2'], env2) = label' arg2 i1 env1
-  in (i2, arg1', arg2', env2)
 
-
+{-@ reflect add @-}
 add :: Ord k => (k, v) -> M.Map k v -> M.Map k v
 add (k,v) = M.alter (\_ -> Just v) k
 
 
-{-@ lazy label' @-}
+{-@ reflect label' @-}
 {-@ label' :: program:TypedDSL p ->
               m0:Nat -> Env p (Btwn 0 m0) ->
               (m:{Int | m >= m0}, [LDSL p Int], Env p Int)
            <\m   -> {l:[LDSL p (Btwn 0 m)] | scalar program => len l = 1},
-            \_ m -> {v:Env   p (Btwn 0 m)  | true}> @-}
+            \_ m -> {v:Env   p (Btwn 0 m)  | true}>
+           / [size program] @-}
 label' :: (Num p, Ord p) => DSL p -> Int -> Env p Int
        -> (Int, [LDSL p Int], Env p Int)
 label' p nextIndex env = case M.lookup p env of
@@ -75,37 +103,49 @@ label' p nextIndex env = case M.lookup p env of
     BOOLEAN b  -> label' (CONST $ fromIntegral $ fromEnum b) nextIndex env
 
     ADD p1 p2 -> (i'+1, [LADD p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
     SUB p1 p2 -> (i'+1, [LSUB p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
     MUL p1 p2 -> (i'+1, [LMUL p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
     DIV p1 p2 -> (w'+1, [LDIV p1' p2' w' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env; w' = i'+1
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
+            w' = i'+1
     ADDC p1 k -> (i'+1, [LADDC p1' k i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env
     MULC p1 k -> (i'+1, [LMULC p1' k i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env
     LINCOMB k1 p1 k2 p2 -> (i'+1, [LLINCOMB k1 p1' k2 p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
 
     NOT p1    -> (i'+1, [LNOT p1' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env
     AND p1 p2 -> (i'+1, [LAND p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
     OR  p1 p2 -> (i'+1, [LOR  p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
     XOR p1 p2 -> (i'+1, [LXOR p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
 
     UnsafeNOT p1    -> (i'+1, [LUnsafeNOT p1' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env
     UnsafeAND p1 p2 -> (i'+1, [LUnsafeAND p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
     UnsafeOR  p1 p2 -> (i'+1, [LUnsafeOR  p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
     UnsafeXOR p1 p2 -> (i'+1, [LUnsafeXOR p1' p2' i'], add (p,i') env')
-      where (i', p1', p2', env') = label2 i p1 p2 env
+      where (i'', [p1'], env'') = label' p1 i   env
+            (i' , [p2'], env')  = label' p2 i'' env''
 
     ISZERO p1 -> label' (EQLC p1 0) nextIndex env
     EQL p1 p2 -> label' (ISZERO (p1 `SUB` p2)) nextIndex env
@@ -119,7 +159,7 @@ label' p nextIndex env = case M.lookup p env of
 
     BoolToF p -> label' p i env -- noop
 
-{-@ lazy labelStore' @-}
+{-@ reflect labelStore' @-}
 {-@ labelStore' :: assertion:(Assertion p) ->
                    m0:Nat -> Env p (Btwn 0 m0) ->
                    (m:{Int | m >= m0}, [LDSL p Int], Env p Int)
@@ -144,12 +184,14 @@ labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
         Just i2 -> (i', [withOutputWire i' i2 p1'], env'')
           where (i', [p1'], env') = label' p1 i env       -- use i2 for p1
                 env'' = add (p1, i2) env'
-        Nothing -> (i', [p1', withOutputWire i' i1 p2'], env'')
-          where (i', p1', p2', env') = label2 i p1 p2 env
+        Nothing -> (i'', [p1', withOutputWire i'' i1 p2'], env''')
+          where (i' , [p1'], env')  = label' p1 i  env
+                (i'', [p2'], env'') = label' p2 i' env'
                 i1 = outputWire p1'
-                env'' = add (p2, i1) env' -- arbitrarily choose i1 for both
+                env''' = add (p2, i1) env'' -- arbitrarily choose i1 for both
 
 
+{-@ reflect withOutputWire @-}
 {-@ withOutputWire :: m:Nat -> Btwn 0 m -> LDSL p (Btwn 0 m)
                    -> LDSL p (Btwn 0 m) @-}
 withOutputWire :: Int -> Int -> LDSL p Int -> LDSL p Int
