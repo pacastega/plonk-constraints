@@ -3,6 +3,8 @@
 
 module LabelingProof where
 
+import qualified Liquid.Data.Map as M
+
 import Utils
 import TypeAliases
 
@@ -53,16 +55,17 @@ semanticsHold m σ = all' (\x -> semanticsAreCorrect m x σ)
                -> e:TypedDSL p
                -> as:Store p
                -> ρ:ValuationRefl p
-               -> σ:{VecN p m | σ = witnessGen m as ρ}
                -> λ:Env p (Btwn 0 m) -> λ':Env p (Btwn 0 m)
                -> {as':[LDSL p (Btwn 0 m)] |
                        labelStore as 0 M.empty = (m', as', λ')}
                -> {es':[LDSL p (Btwn 0 m)] |
                        label' e m' λ' = (m, es', λ)}
+               -> σ:{VecN p m | σ = witnessGen m as' ρ}
                -> {assertionsHold as ρ <=> semanticsHold m σ as'} @-}
 labelProof :: (Fractional p, Eq p) => Int -> Int -> DSL p -> Store p
-           -> ValuationRefl p -> Vec p
+           -> ValuationRefl p
            -> Env p Int -> Env p Int
            -> [LDSL p Int] -> [LDSL p Int]
+           -> Vec p
            -> Proof
 labelProof = undefined
