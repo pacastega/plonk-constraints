@@ -31,11 +31,11 @@ foldl f acc (x:xs) = foldl f (f x acc) xs
 {-@ witnessGen :: m:Nat ->
                   xs:[LDSL p (Btwn 0 m)] ->
                   ys:ValuationRefl p ->
-                  M.Map (Btwn 0 m) p @-}
+                  VecN p m @-}
 witnessGen :: (Eq p, Fractional p) =>
-              Int -> [LDSL p Int] -> ValuationRefl p -> M.Map Int p
-witnessGen m programs strValuationRefl
-  = foldl ((update m strValuationRefl)) M.empty programs
+              Int -> [LDSL p Int] -> ValuationRefl p -> Vec p
+witnessGen m programs strValuationRefl = toVector m valuation' where
+  valuation' = foldl ((update m strValuationRefl)) M.empty programs
 
 {-@ reflect update @-}
 {-@ update :: m:Nat
@@ -159,12 +159,19 @@ update m sv (LBOOL p1) valuation = update m sv p1 valuation
 update m sv (LEQA p1 p2) valuation = update m sv p2 $ update m sv p1 valuation
 
 
+{-@ reflect toVector @-}
 {-@ toVector :: m:Nat -> M.Map (Btwn 0 m) p -> VecN p m @-}
 toVector :: Num p => Int -> M.Map Int p -> Vec p
-toVector m valuation = aux m Nil where
-  {-@ aux :: l:Nat -> acc:{Vec p | vvlen acc = m-l} -> VecN p m @-}
-  aux 0 acc = acc
-  aux l acc = aux (l-1) (Cons (M.findWithDefault 0 (l-1) valuation) acc)
+toVector m valuation = toVector' m m valuation Nil
+
+{-@ reflect toVector' @-}
+{-@ toVector' :: m:Nat -> l:Nat -> M.Map (Btwn 0 m) p
+              -> {v:Vec p | vvlen v = (m-l)}
+              -> VecN p m / [l] @-}
+toVector' :: Num p => Int -> Int -> M.Map Int p -> Vec p -> Vec p
+toVector' m 0 val acc = acc
+toVector' m l val acc = toVector' m (l-1) val
+                         (Cons (M.findWithDefault 0 (l-1) val) acc)
 
 
 
