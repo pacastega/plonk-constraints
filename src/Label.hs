@@ -95,10 +95,7 @@ label' p nextIndex env = case M.lookup p env of
   Just i  -> (nextIndex, [LWIRE i], env)
   Nothing -> let i = nextIndex in case p of
 
-    v@(VAR s τ) -> case τ of
-      TF         -> (i+1, [LVAR s τ i], add (p,i) env)
-      TBool      -> (i+1, [LVAR s τ i], add (p,i) env)
-      TVec {}    -> label' (expandVecVar v) nextIndex env
+    VAR s τ -> (i+1, [LVAR s τ i], add (p,i) env)
     CONST x -> (i+1, [LCONST x i], add (p,i) env)
     BOOLEAN False  -> label' (CONST zero) nextIndex env
     BOOLEAN True   -> label' (CONST one) nextIndex env
