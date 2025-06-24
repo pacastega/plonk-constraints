@@ -100,7 +100,8 @@ label' p nextIndex env = case M.lookup p env of
       TBool      -> (i+1, [LVAR s τ i], add (p,i) env)
       TVec {}    -> label' (expandVecVar v) nextIndex env
     CONST x -> (i+1, [LCONST x i], add (p,i) env)
-    BOOLEAN b  -> label' (CONST $ fromIntegral $ fromEnum b) nextIndex env
+    BOOLEAN False  -> label' (CONST zero) nextIndex env
+    BOOLEAN True   -> label' (CONST one) nextIndex env
 
     ADD p1 p2 -> (i'+1, [LADD p1' p2' i'], add (p,i') env')
       where (i'', [p1'], env'') = label' p1 i   env
@@ -147,7 +148,7 @@ label' p nextIndex env = case M.lookup p env of
       where (i'', [p1'], env'') = label' p1 i   env
             (i' , [p2'], env')  = label' p2 i'' env''
 
-    ISZERO p1 -> label' (EQLC p1 0) nextIndex env
+    ISZERO p1 -> label' (EQLC p1 zero) nextIndex env
     EQL p1 p2 -> label' (ISZERO (p1 `SUB` p2)) nextIndex env
     EQLC p1 k -> (w'+1, [LEQLC p1' k w' i'], add (p,i') env')
       where (i', [p1'], env') = label' p1 i env; w' = i'+1

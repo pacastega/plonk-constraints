@@ -82,8 +82,8 @@ eval program v = case program of
   VAR name τ -> lookup name v >>=
     (\value -> case τ of
         TBool -> case value of
-          0 -> Just (VBool False)
-          1 -> Just (VBool True)
+          zero -> Just (VBool False)
+          one  -> Just (VBool True)
           _ -> Nothing
         TF -> Just (VF value))
   CONST x -> Just (VF x)

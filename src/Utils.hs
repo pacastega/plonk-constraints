@@ -119,3 +119,13 @@ length' (_:xs) = 1 + length' xs
 sum' :: [Int] -> Int
 sum' []     = 0
 sum' (x:xs) = x + sum' xs
+
+{-@ reflect zero @-}
+{-@ zero :: {v:p | v ~~ 0} @-}
+zero :: Num p => p
+zero = fromInteger 0
+
+{-@ reflect one @-}
+{-@ one :: {v:p | v ~~ 1} @-}
+one :: Num p => p
+one = fromInteger 1

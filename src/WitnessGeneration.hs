@@ -5,7 +5,7 @@ module WitnessGeneration (extend, witnessGen, ValuationRefl) where
 
 import Prelude hiding (flip, foldl)
 
-import Utils (boolean)
+import Utils (boolean, zero)
 import Vec
 import DSL
 import Semantics
@@ -171,7 +171,7 @@ toVector m valuation = toVector' m m valuation Nil
 toVector' :: Num p => Int -> Int -> M.Map Int p -> Vec p -> Vec p
 toVector' m 0 val acc = acc
 toVector' m l val acc = toVector' m (l-1) val
-                         (Cons (M.findWithDefault 0 (l-1) val) acc)
+                         (Cons (M.findWithDefault zero (l-1) val) acc)
 
 
 
