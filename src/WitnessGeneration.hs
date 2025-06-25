@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS -Wno-name-shadowing #-}
 {-@ LIQUID "--reflection" @-}
 module WitnessGeneration (extend, witnessGen) where
@@ -8,7 +9,12 @@ import Utils (boolean, zero)
 import Vec
 import DSL
 import Semantics
+
+#if LiquidOn
 import qualified Liquid.Data.Map as M
+#else
+import qualified Data.Map as M
+#endif
 
 
 {-@ reflect updateWith @-}

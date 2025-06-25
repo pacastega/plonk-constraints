@@ -1,10 +1,15 @@
+{-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 
 module LabelingProof where
 
+#if LiquidOn
 import qualified Liquid.Data.Map as M
+#else
+import qualified Data.Map as M
+#endif
 
 import Utils
 import TypeAliases

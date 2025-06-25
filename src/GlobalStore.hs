@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 module GlobalStore where
@@ -8,7 +9,11 @@ import DSL
 import WitnessGeneration
 import Semantics (NameValuation)
 
+#if LiquidOn
 import qualified Liquid.Data.Map as M
+#else
+import qualified Data.Map as M
+#endif
 
 data GlobalStore p b =
   GStore { body  :: b

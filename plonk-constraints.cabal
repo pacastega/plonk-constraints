@@ -64,6 +64,7 @@ library
       -Wno-unused-top-binds
       -Wno-incomplete-patterns
       -fplugin=LiquidHaskell
+      -DLiquidOn
   build-depends:
       base >=4.7 && <5
     , containers
@@ -92,6 +93,7 @@ executable plonk-constraints-exe
       -Wno-unused-top-binds
       -Wno-incomplete-patterns
       -fplugin=LiquidHaskell
+      -DLiquidOn
   build-depends:
       base >=4.7 && <5
     , containers

@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
@@ -8,7 +8,11 @@ import DSL
 import Utils
 import Vec
 
+#if LiquidOn
 import qualified Liquid.Data.Map as M
+#else
+import qualified Data.Map as M
+#endif
 
 import Language.Haskell.Liquid.ProofCombinators ((?))
 

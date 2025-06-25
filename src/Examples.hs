@@ -2,7 +2,7 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 {-# OPTIONS -Wno-unused-imports #-}
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DataKinds, CPP #-}
 
 module Examples ( testArithmetic
                 , testBoolean
@@ -18,11 +18,16 @@ import GHC.TypeNats (KnownNat)
 
 import Data.Maybe (mapMaybe)
 import qualified Data.Set as S
-import qualified Liquid.Data.Map as M
 import Data.FiniteField.PrimeField
 import qualified Data.FiniteField.PrimeField as PF (toInteger)
 import Vec
 import PlinkLib
+
+#if LiquidOn
+import qualified Liquid.Data.Map as M
+#else
+import qualified Data.Map as M
+#endif
 
 import Utils           -- needed to use reflected functions
 import Circuits        -- needed to use reflected functions
