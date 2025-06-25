@@ -36,12 +36,12 @@ constantFolding (EQLC (CONST k1) k2) = Just (BOOLEAN (k1 == k2))
 constantFolding _ = Nothing -- any other pattern is not a redex
 
 
-{-@ constantFoldingProof :: v:ValuationRefl p
+{-@ constantFoldingProof :: ρ:NameValuation p
          -> d1:TypedDSL p
          -> d2:{TypedDSL p | constantFolding d1 = Just d2}
-         -> { eval d1 v = eval d2 v } @-}
+         -> { eval d1 ρ = eval d2 ρ } @-}
 constantFoldingProof :: (Fractional p, Eq p)
-                     => ValuationRefl p -> DSL p -> DSL p -> Proof
+                     => NameValuation p -> DSL p -> DSL p -> Proof
 constantFoldingProof _ d1 _ = case d1 of
   ADD _ _ -> trivial
   SUB _ _ -> trivial

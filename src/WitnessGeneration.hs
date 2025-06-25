@@ -1,7 +1,6 @@
 {-# OPTIONS -Wno-name-shadowing #-}
 {-@ LIQUID "--reflection" @-}
-module WitnessGeneration (extend, witnessGen, ValuationRefl) where
--- TODO: it shouldn't export ValuationRefl
+module WitnessGeneration (extend, witnessGen) where
 
 import Prelude hiding (flip, foldl)
 
@@ -18,9 +17,9 @@ updateWith Nothing  _        = Nothing
 updateWith (Just x) Nothing  = Just x
 updateWith (Just x) (Just y) = if x == y then Just x else Nothing
 
-extend :: ValuationRefl p -> (ValuationRefl p -> ValuationRefl p)
-       -> ValuationRefl p
-extend valuation hints = valuation ++ hints valuation
+extend :: NameValuation p -> (NameValuation p -> NameValuation p)
+       -> NameValuation p
+extend valuation hints = M.union valuation (hints valuation)
 
 {-@ reflect foldl @-}
 foldl :: (b -> a -> a) -> a -> [b] -> a
@@ -29,25 +28,25 @@ foldl f acc (x:xs) = foldl f (f x acc) xs
 
 {-@ reflect witnessGen @-}
 {-@ witnessGen :: m:Nat ->
-                  xs:[LDSL p (Btwn 0 m)] ->
-                  ys:ValuationRefl p ->
+                  [LDSL p (Btwn 0 m)] ->
+                  NameValuation p ->
                   VecN p m @-}
 witnessGen :: (Eq p, Fractional p) =>
-              Int -> [LDSL p Int] -> ValuationRefl p -> Vec p
-witnessGen m programs strValuationRefl = toVector m valuation' where
-  valuation' = foldl ((update m strValuationRefl)) M.empty programs
+              Int -> [LDSL p Int] -> NameValuation p -> Vec p
+witnessGen m programs strNameValuation = toVector m valuation' where
+  valuation' = foldl ((update m strNameValuation)) M.empty programs
 
 {-@ reflect update @-}
 {-@ update :: m:Nat
-           -> ValuationRefl p -> LDSL p (Btwn 0 m) -> M.Map (Btwn 0 m) p
+           -> NameValuation p -> LDSL p (Btwn 0 m) -> M.Map (Btwn 0 m) p
            -> M.Map (Btwn 0 m) p @-}
 update :: (Eq p, Fractional p) => Int
-       -> ValuationRefl p -> LDSL p Int -> M.Map Int p -> M.Map Int p
+       -> NameValuation p -> LDSL p Int -> M.Map Int p -> M.Map Int p
 update m _  (LWIRE _) valuation = valuation
 update m sv (LVAR s τ i) valuation = M.alter (updateWith value) i valuation
   where value = case τ of -- value of ‘s’ in user-supplied valuation
-          TF -> lookup s sv
-          TBool -> lookup s sv >>= (\x -> if boolean x then Just x else Nothing)
+          TF -> M.lookup s sv
+          TBool -> M.lookup s sv >>= (\x -> if boolean x then Just x else Nothing)
 update m _  (LCONST x i) valuation = M.alter (updateWith (Just x)) i valuation
 update m sv (LADD p1 p2 i) valuation = M.alter (updateWith sum) i valuation'
   where

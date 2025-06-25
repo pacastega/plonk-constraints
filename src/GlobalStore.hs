@@ -6,13 +6,14 @@ module GlobalStore where
 
 import DSL
 import WitnessGeneration
+import Semantics (NameValuation)
 
-import qualified Data.Map as M
+import qualified Liquid.Data.Map as M
 
 data GlobalStore p b =
   GStore { body  :: b
          , store :: [Assertion p]
-         , hints :: ValuationRefl p -> ValuationRefl p -- TODO: change to Map?
+         , hints :: NameValuation p -> NameValuation p -- TODO: change to Map?
          }
 
 instance Show b => Show (GlobalStore p b) where
@@ -22,7 +23,7 @@ instance Functor (GlobalStore p) where
   fmap f (GStore body store hints) = GStore (f body) store hints
 
 instance Applicative (GlobalStore p) where
-  pure x = GStore x [] (const [])
+  pure x = GStore x [] (const M.empty)
   GStore f store hints <*> GStore x store' hints' =
     GStore (f x) (store ++ store') (combine hints hints')
 
@@ -31,33 +32,34 @@ instance Monad (GlobalStore p) where
     GStore body' store' hints' ->
       GStore body' (store ++ store') (combine hints hints')
 
-combine :: (ValuationRefl p -> [(String, p)]) -> (ValuationRefl p -> [(String, p)])
-        -> (ValuationRefl p -> [(String, p)])
-combine hints1 hints2 valuation =
-  let hints1' = hints1 (valuation)
-      hints2' = hints2 (valuation ++ hints1')
+combine :: (NameValuation p -> NameValuation p)
+        -> (NameValuation p -> NameValuation p)
+        -> (NameValuation p -> NameValuation p)
+combine hints1 hints2 ρ =
+  let hints1' = hints1 ρ
+      hints2' = hints2 (M.union ρ hints1')
       -- the valuation is extended with the hints that came first before
       -- attemping to evaluate the new hints
-  in hints1' ++ hints2'
+  in M.union hints1' hints2'
 
 
 assert :: Assertion p -> GlobalStore p ()
-assert x = GStore () [x] (const [])
+assert x = GStore () [x] (const M.empty)
 
 -- Introduce a hint for witness generation --
 -- CAREFUL! This bypasses the type system because the variable 'name' could have
 -- been defined with an incompatible type.
-define :: String -> (ValuationRefl p -> Maybe p) -> GlobalStore p ()
+define :: String -> (NameValuation p -> Maybe p) -> GlobalStore p ()
 define name f = GStore () [] hint where
-  hint valuation = case f valuation of
-    Nothing    -> []
-    Just value -> [(name, value)]
+  hint ρ = case f ρ of
+    Nothing    -> M.empty
+    Just value -> M.singleton name value
 
 {-@ defineVec :: strs:[String]
-              -> (ValuationRefl p -> Maybe (ListN p (len strs)))
+              -> (NameValuation p -> Maybe (ListN p (len strs)))
               -> GlobalStore p () @-}
-defineVec :: [String] -> (ValuationRefl p -> Maybe [p]) -> GlobalStore p ()
+defineVec :: [String] -> (NameValuation p -> Maybe [p]) -> GlobalStore p ()
 defineVec names f = GStore () [] hints where
-  hints valuation = case f valuation of
-    Nothing   -> []
-    Just bits -> zip names bits
+  hints ρ = case f ρ of
+    Nothing   -> M.empty
+    Just bits -> M.fromList (zip names bits)

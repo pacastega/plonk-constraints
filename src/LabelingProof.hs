@@ -21,20 +21,20 @@ import Language.Haskell.Liquid.ProofCombinators
 
 --TODO: these should be in DSL.hs instead
 {-@ reflect assertionHolds @-}
-{-@ assertionHolds :: ValuationRefl p -> Assertion p -> Bool @-}
-assertionHolds :: (Fractional p, Eq p) => ValuationRefl p -> Assertion p -> Bool
+{-@ assertionHolds :: NameValuation p -> Assertion p -> Bool @-}
+assertionHolds :: (Fractional p, Eq p) => NameValuation p -> Assertion p -> Bool
 assertionHolds _ (DEF {})  = True -- dummy case
-assertionHolds v (NZERO e) = case eval e v of
+assertionHolds ρ (NZERO e) = case eval e ρ of
   Nothing     -> False
   Just (VF x) -> x /= 0
   Just (VBool b) -> b -- b /= False
   _           -> error "impossible"
-assertionHolds v (BOOL e) = case eval e v of
+assertionHolds ρ (BOOL e) = case eval e ρ of
   Nothing     -> False
   Just (VF x) -> boolean x
   Just (VBool _) -> True
   _           -> error "impossible"
-assertionHolds v (EQA e1 e2) = case (eval e1 v, eval e2 v) of
+assertionHolds ρ (EQA e1 e2) = case (eval e1 ρ, eval e2 ρ) of
   (Nothing, _)                 -> False
   (_, Nothing)                 -> False
   (Just (VF v1), Just (VF v2)) -> v1 == v2
@@ -51,7 +51,7 @@ assertionHolds v (EQA e1 e2) = case (eval e1 v, eval e2 v) of
 
 
 {-@ reflect assertionsHold @-}
-assertionsHold :: (Fractional p, Eq p) => ValuationRefl p -> Store p -> Bool
+assertionsHold :: (Fractional p, Eq p) => NameValuation p -> Store p -> Bool
 assertionsHold ρ = all' (assertionHolds ρ)
 
 
@@ -81,7 +81,7 @@ barSigma m σ es = map' (\e -> VF (σ ! (outputWire e))) es
 
 {-@ labelProof1 :: m':Nat -> m:{Nat | m >= m'}
                 -> e:{TypedDSL p | scalar e}
-                -> ρ:ValuationRefl p
+                -> ρ:NameValuation p
                 -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m)
                 -> {es':[LDSL p (Btwn 0 m)] |
                         label' e m' λ' = (m, es', λ)}
@@ -90,7 +90,7 @@ barSigma m σ es = map' (\e -> VF (σ ! (outputWire e))) es
                 -> {eval e ρ = Just v <=> barSigma m σ es' = mkList1 v} @-}
 -- semanticsHold m σ es'
 labelProof1 :: Int -> Int -> DSL p
-            -> ValuationRefl p
+            -> NameValuation p
             -> LabelEnv p Int -> LabelEnv p Int
             -> [LDSL p Int]
             -> Vec p
@@ -133,7 +133,7 @@ labelProof1 m' m e ρ λ λ' es' σ v = case e of
 {-@ labelProof :: m':Nat -> m:{Nat | m >= m'}
                -> e:{TypedDSL p | scalar e}
                -> as:Store p
-               -> ρ:ValuationRefl p
+               -> ρ:NameValuation p
                -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m)
                -> {as':[LDSL p (Btwn 0 m)] |
                        labelStore as 0 M.MTip = (m', as', λ')}
@@ -142,7 +142,7 @@ labelProof1 m' m e ρ λ λ' es' σ v = case e of
                -> σ:{VecN p m | σ = witnessGen m as' ρ}
                -> {assertionsHold ρ as <=> semanticsHold m σ as'} @-}
 labelProof :: (Fractional p, Eq p) => Int -> Int -> DSL p -> Store p
-           -> ValuationRefl p
+           -> NameValuation p
            -> LabelEnv p Int -> LabelEnv p Int
            -> [LDSL p Int] -> [LDSL p Int]
            -> Vec p

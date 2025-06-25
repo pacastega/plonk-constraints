@@ -35,6 +35,7 @@ import DSL
 import Label
 import WitnessGeneration
 import Optimizations
+import Semantics (NameValuation)
 
 import Treekz
 import SHA256
@@ -80,9 +81,9 @@ cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 nub :: Ord a => [a] -> [a]
 nub = S.toList . S.fromList
 
-{-@ test :: GlobalStore p (TypedDSL p) -> ValuationRefl p -> IO () @-}
+{-@ test :: GlobalStore p (TypedDSL p) -> NameValuation p -> IO () @-}
 test :: (Ord p, Fractional p, Show p) =>
-        GlobalStore p (DSL p) -> ValuationRefl p -> IO ()
+        GlobalStore p (DSL p) -> NameValuation p -> IO ()
 test programStore valuation = do
   let (GStore program store hints) = optimize programStore
 
@@ -113,9 +114,9 @@ test programStore valuation = do
   putStrLn $ replicate 80 '='
 
 
-{-@ test' :: GlobalStore p (TypedDSL p) -> ValuationRefl p -> String -> IO () @-}
+{-@ test' :: GlobalStore p (TypedDSL p) -> NameValuation p -> String -> IO () @-}
 test' :: (Ord p, Fractional p, Show p) =>
-         GlobalStore p (DSL p) -> ValuationRefl p -> String -> IO ()
+         GlobalStore p (DSL p) -> NameValuation p -> String -> IO ()
 test' programStore valuation tikzFilename = do
   let (GStore program store hints) = optimize programStore
 

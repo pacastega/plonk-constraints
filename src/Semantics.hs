@@ -8,15 +8,12 @@ import DSL
 import Utils
 import Vec
 
-import qualified Data.Map as M
+import qualified Liquid.Data.Map as M
 
 import Language.Haskell.Liquid.ProofCombinators ((?))
 
-type Valuation p = M.Map String p
-
--- reflectable valuation
 data DSLValue p = VF p | VBool Bool | VVecNil | VVecCons (DSLValue p) (DSLValue p)
-type ValuationRefl p = [(String, p)]
+type NameValuation p = M.Map String p
 
 {-@ measure valSize @-}
 valSize :: DSLValue p -> Int
@@ -75,11 +72,11 @@ assertFValue = id
 
 
 {-@ reflect eval @-}
-{-@ eval :: program:TypedDSL p -> ValuationRefl p
+{-@ eval :: program:TypedDSL p -> NameValuation p
          -> Maybe ({v:DSLValue p | agreesWith program v }) @-}
-eval :: (Fractional p, Eq p) => DSL p -> ValuationRefl p -> Maybe (DSLValue p)
+eval :: (Fractional p, Eq p) => DSL p -> NameValuation p -> Maybe (DSLValue p)
 eval program v = case program of
-  VAR name τ -> lookup name v >>=
+  VAR name τ -> M.lookup name v >>=
     (\value -> case τ of
         TBool -> case value of
           zero -> Just (VBool False)

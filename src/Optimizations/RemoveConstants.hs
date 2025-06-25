@@ -77,58 +77,58 @@ removeConstants _ = Nothing -- any other pattern is not a redex
 
 {-@ reflect isJust @-}
 
-{-@ removeConstantsProof :: v:ValuationRefl p
+{-@ removeConstantsProof :: ρ:NameValuation p
          -> d1:TypedDSL p
          -> d2:{TypedDSL p | removeConstants d1 = Just d2}
-         -> { isJust (eval d1 v) =>
-              eval d1 v = eval d2 v } @-}
+         -> { isJust (eval d1 ρ) =>
+              eval d1 ρ = eval d2 ρ } @-}
 removeConstantsProof :: (Fractional p, Eq p)
-                     => ValuationRefl p -> DSL p -> DSL p -> Proof
-removeConstantsProof v (ADD arg1 arg2) _ = case arg1 of
+                     => NameValuation p -> DSL p -> DSL p -> Proof
+removeConstantsProof ρ (ADD arg1 arg2) _ = case arg1 of
   -- linear combinations
   MULC p1 _ -> case arg2 of
-    MULC p2 _ -> case (eval p1 v, eval p2 v) of (Just _, Just _) -> (); _ -> ()
-    p2         -> case (eval p1 v, eval p2 v) of (Just _, Just _) -> (); _ -> ()
+    MULC p2 _ -> case (eval p1 ρ, eval p2 ρ) of (Just _, Just _) -> (); _ -> ()
+    p2         -> case (eval p1 ρ, eval p2 ρ) of (Just _, Just _) -> (); _ -> ()
 
-  CONST 0 -> case (eval arg2 v) of (Just _) -> (); _ -> ()
+  CONST 0 -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
   CONST _ -> trivial
 
   p1 -> case arg2 of
-    MULC p2 _ -> case (eval p1 v, eval p2 v) of (Just _, Just _) -> (); _ -> ()
+    MULC p2 _ -> case (eval p1 ρ, eval p2 ρ) of (Just _, Just _) -> (); _ -> ()
 
-    CONST 0 -> case (eval p1 v) of (Just _) -> (); _ -> ()
-    CONST _ -> case (eval p1 v) of (Just _) -> (); _ -> ()
+    CONST 0 -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
+    CONST _ -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
 
-removeConstantsProof v (ADDC p1 _) _ =
-  case (eval p1 v) of (Just _) -> (); _ -> ()
+removeConstantsProof ρ (ADDC p1 _) _ =
+  case (eval p1 ρ) of (Just _) -> (); _ -> ()
 
-removeConstantsProof v (SUB arg1 arg2) _ = case (arg1,arg2) of
+removeConstantsProof ρ (SUB arg1 arg2) _ = case (arg1,arg2) of
   -- subtracting 0 is a no-op
-  (p1, CONST 0) -> case (eval p1 v) of (Just _) -> (); _ -> ()
+  (p1, CONST 0) -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
   -- subtracting a constant can be done more efficiently
-  (p1, CONST _) -> case (eval p1 v) of (Just _) -> (); _ -> ()
+  (p1, CONST _) -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
 
-removeConstantsProof v (MUL arg1 arg2) _ = case arg1 of
+removeConstantsProof ρ (MUL arg1 arg2) _ = case arg1 of
 
-  CONST 1 -> case (eval arg2 v) of (Just _) -> (); _ -> ()
-  CONST 0 -> case (eval arg2 v) of (Just _) -> (); _ -> ()
+  CONST 1 -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
+  CONST 0 -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
   CONST _ -> trivial
 
   p1 -> case arg2 of
-    CONST 1 -> case (eval p1 v) of (Just _) -> (); _ -> ()
-    CONST 0 -> case (eval p1 v) of (Just _) -> (); _ -> ()
-    CONST _ -> case (eval p1 v) of (Just _) -> (); _ -> ()
+    CONST 1 -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
+    CONST 0 -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
+    CONST _ -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
 
-removeConstantsProof v (MULC p1 _) _ =
-  case (eval p1 v) of (Just _) -> (); _ -> ()
+removeConstantsProof ρ (MULC p1 _) _ =
+  case (eval p1 ρ) of (Just _) -> (); _ -> ()
 
-removeConstantsProof v (DIV arg1 arg2) _ = case (arg1,arg2) of
+removeConstantsProof ρ (DIV arg1 arg2) _ = case (arg1,arg2) of
   -- dividing by 1 is a no-op
-  (p1, CONST 1) -> case (eval p1 v) of (Just _) -> (); _ -> ()
+  (p1, CONST 1) -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
   -- TODO: dividing by a constant can be done more efficiently
-  -- (p1, CONST k) -> case (eval p1 v) of (Just x) -> (); _ -> ()
+  -- (p1, CONST k) -> case (eval p1 ρ) of (Just x) -> (); _ -> ()
 
-removeConstantsProof v (EQL arg1 arg2) _ = case (arg1,arg2) of
+removeConstantsProof ρ (EQL arg1 arg2) _ = case (arg1,arg2) of
   -- checking equality against a constant can be done more efficiently
-  (p1, CONST _) -> case (eval p1 v) of (Just _) -> (); _ -> ()
+  (p1, CONST _) -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
   (CONST _, _) -> trivial
