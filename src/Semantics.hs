@@ -78,10 +78,9 @@ eval :: (Fractional p, Eq p) => DSL p -> NameValuation p -> Maybe (DSLValue p)
 eval program v = case program of
   VAR name τ -> M.lookup name v >>=
     (\value -> case τ of
-        TBool -> case value of
-          zero -> Just (VBool False)
-          one  -> Just (VBool True)
-          _ -> Nothing
+        TBool -> if value == zero then Just (VBool False) else
+                   if value == one then Just (VBool True) else
+                     Nothing
         TF -> Just (VF value))
   CONST x -> Just (VF x)
   BOOLEAN b -> Just (VBool b)
