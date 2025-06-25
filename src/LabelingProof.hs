@@ -82,7 +82,7 @@ barSigma m σ es = map' (\e -> VF (σ ! (outputWire e))) es
 {-@ labelProof1 :: m':Nat -> m:{Nat | m >= m'}
                 -> e:{TypedDSL p | scalar e}
                 -> ρ:ValuationRefl p
-                -> λ:Env p (Btwn 0 m) -> λ':Env p (Btwn 0 m)
+                -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m)
                 -> {es':[LDSL p (Btwn 0 m)] |
                         label' e m' λ' = (m, es', λ)}
                 -> σ:{VecN p m | σ = witnessGen m es' ρ}
@@ -91,7 +91,7 @@ barSigma m σ es = map' (\e -> VF (σ ! (outputWire e))) es
 -- semanticsHold m σ es'
 labelProof1 :: Int -> Int -> DSL p
             -> ValuationRefl p
-            -> Env p Int -> Env p Int
+            -> LabelEnv p Int -> LabelEnv p Int
             -> [LDSL p Int]
             -> Vec p
             -> DSLValue p
@@ -134,7 +134,7 @@ labelProof1 m' m e ρ λ λ' es' σ v = case e of
                -> e:{TypedDSL p | scalar e}
                -> as:Store p
                -> ρ:ValuationRefl p
-               -> λ:Env p (Btwn 0 m) -> λ':Env p (Btwn 0 m)
+               -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m)
                -> {as':[LDSL p (Btwn 0 m)] |
                        labelStore as 0 M.MTip = (m', as', λ')}
                -> {es':[LDSL p (Btwn 0 m)] |
@@ -143,7 +143,7 @@ labelProof1 m' m e ρ λ λ' es' σ v = case e of
                -> {assertionsHold ρ as <=> semanticsHold m σ as'} @-}
 labelProof :: (Fractional p, Eq p) => Int -> Int -> DSL p -> Store p
            -> ValuationRefl p
-           -> Env p Int -> Env p Int
+           -> LabelEnv p Int -> LabelEnv p Int
            -> [LDSL p Int] -> [LDSL p Int]
            -> Vec p
            -> Proof
