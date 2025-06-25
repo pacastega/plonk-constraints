@@ -51,16 +51,16 @@ size (BoolToF p) = 1 + size p
 
 
 
--- {-@ reflect label @-}
--- {-@ label :: TypedDSL p
---           -> Store p
---           -> (m:Nat, [LDSL p Int], [LDSL p Int])
---                   <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
---                    \_ m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
--- label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
--- label program store = (m, labeledPrograms, labeledStore) where
---   (m', labeledStore, env') = labelStore store 0 M.empty
---   (m, labeledPrograms, _) = label' program m' env'
+{-@ reflect label @-}
+{-@ label :: TypedDSL p
+          -> Store p
+          -> (m:Nat, [LDSL p Int], [LDSL p Int])
+                  <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
+                   \_ m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
+label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
+label program store = (m, labeledPrograms, labeledStore) where
+  (m', labeledStore, env') = labelStore store 0 M.empty
+  (m, labeledPrograms, _) = label' program m' env'
 
 {-@ reflect labelStore @-}
 {-@ labelStore :: Store p -> m0:Nat -> LabelEnv p (Btwn 0 m0)
