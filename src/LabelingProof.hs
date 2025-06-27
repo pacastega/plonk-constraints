@@ -87,14 +87,15 @@ barSigma m σ es = map' (\e -> VF (σ ! (outputWire e))) es
 {-@ labelProof1 :: m':Nat -> m:{Nat | m >= m'}
                 -> e:{TypedDSL p | scalar e}
                 -> ρ:NameValuation p
-                -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m)
+                -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m')
                 -> {es':[LDSL p (Btwn 0 m)] |
                         label' e m' λ' = (m, es', λ)}
                 -> σ:{VecN p m | σ = witnessGen m es' ρ}
                 -> v:DSLValue p
                 -> {eval e ρ = Just v <=> barSigma m σ es' = mkList1 v} @-}
 -- semanticsHold m σ es'
-labelProof1 :: Int -> Int -> DSL p
+labelProof1 :: (Fractional p, Eq p, Ord p)
+            => Int -> Int -> DSL p
             -> NameValuation p
             -> LabelEnv p Int -> LabelEnv p Int
             -> [LDSL p Int]
@@ -133,6 +134,8 @@ labelProof1 m' m e ρ λ λ' es' σ v = case e of
   CONS h ts -> undefined
 
   BoolToF _ -> undefined
+labelProof1 m' m e ρ λ λ' es' σ v = case label' e m' λ' of
+  (_, _, _) -> error "the length is 1"
 
 
 {-@ labelProof :: m':Nat -> m:{Nat | m >= m'}
