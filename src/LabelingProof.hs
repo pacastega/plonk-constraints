@@ -84,6 +84,38 @@ barSigma :: Int -> Vec p -> [LDSL p Int] -> [DSLValue p]
 barSigma m σ es = map' (\e -> VF (σ ! (outputWire e))) es
 
 
+{-@ reflect factorsThrough @-}
+{-@ factorsThrough :: m:Nat
+                   -> σ:VecN p m -> λ:LabelEnv p (Btwn 0 m)
+                   -> ρ:NameValuation p
+                   -> Bool @-}
+factorsThrough :: Eq p => Int -> Vec p -> LabelEnv p Int -> NameValuation p -> Bool
+factorsThrough _ σ λ ρ =
+  all' (\(name,value) -> case M.lookup name λ of
+           --TODO: prove that keysSet ρ ⊆ keysSet λ
+                           Nothing -> True -- this should not happen
+                           Just index -> σ!index == value)
+         (M.toList ρ)
+
+
+{-@ lemma :: m':Nat -> m:{Nat | m >= m'}
+          -> e:{TypedDSL p | scalar e}
+          -> as:Store p
+          -> ρ:NameValuation p
+          -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m)
+          -> {as':[LDSL p (Btwn 0 m)] |
+                  labelStore as 0 M.MTip = (m', as', λ')}
+          -> {es':[LDSL p (Btwn 0 m)] |
+                  label' e m' λ' = (m, es', λ)}
+          -> σ:{VecN p m | σ = witnessGen m as' ρ}
+          -> { factorsThrough m σ λ ρ } @-}
+lemma :: Int -> Int -> DSL p -> Store p -> NameValuation p
+      -> LabelEnv p Int -> LabelEnv p Int
+      -> [LDSL p Int] -> [LDSL p Int] -> Vec p
+      -> Proof
+lemma = undefined -- assume it holds for now
+
+
 {-@ labelProof1 :: m':Nat -> m:{Nat | m >= m'}
                 -> e:{TypedDSL p | scalar e}
                 -> ρ:NameValuation p
