@@ -98,6 +98,7 @@ factorsThrough _ σ λ ρ =
          (M.toList ρ)
 
 
+-- this corresponds to Lemma 1. from the paper
 {-@ lemma :: m':Nat -> m:{Nat | m >= m'}
           -> e:{TypedDSL p | scalar e}
           -> as:Store p
@@ -116,6 +117,7 @@ lemma :: Int -> Int -> DSL p -> Store p -> NameValuation p
 lemma = undefined -- assume it holds for now
 
 
+-- this corresponds to Lemma 2. from the paper
 {-@ labelProof1 :: m':Nat -> m:{Nat | m >= m'}
                 -> e:{TypedDSL p | scalar e}
                 -> ρ:NameValuation p
@@ -170,6 +172,7 @@ labelProof1 m' m e ρ λ λ' es' σ v = case label' e m' λ' of
   (_, _, _) -> error "the length is 1"
 
 
+-- This is Theorem 2.
 {-@ labelProof :: m':Nat -> m:{Nat | m >= m'}
                -> e:{TypedDSL p | scalar e}
                -> as:Store p
