@@ -617,4 +617,4 @@ var name = name ++ "_" ++ show (unsafePerformIO $ fresh ())
 
 {-@ vars :: n:Nat -> String -> ListN String n @-}
 vars :: Int -> String -> [String]
-vars n name = map' (\i -> name ++ "_" ++ show i) (firstNats n)
+vars n name = map' (\i -> var name ++ "_" ++ show i) (firstNats n)
