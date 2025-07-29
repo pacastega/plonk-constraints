@@ -66,12 +66,6 @@ semanticsHold :: (Fractional p, Eq p) => Int -> Vec p -> [LDSL p Int] -> Bool
 semanticsHold m σ = all' (\x -> semanticsAreCorrect m x σ)
 
 
---TODO: this should be in Utils.hs instead
-{-@ reflect all' @-}
-all' :: (a -> Bool) -> [a] -> Bool
-all' _ [] = True
-all' p (x:xs) = p x && all' p xs
-
 {-@ reflect mkList1 @-}
 mkList1 :: a -> [a]
 mkList1 x = [x]

@@ -129,3 +129,8 @@ zero = fromInteger 0
 {-@ one :: {v:p | v ~~ 1} @-}
 one :: Num p => p
 one = fromInteger 1
+
+{-@ reflect all' @-}
+all' :: (a -> Bool) -> [a] -> Bool
+all' _ [] = True
+all' p (x:xs) = p x && all' p xs
