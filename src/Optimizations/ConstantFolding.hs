@@ -35,6 +35,7 @@ constantFolding (EQLC (CONST k1) k2) = Just (BOOLEAN (k1 == k2))
 
 constantFolding _ = Nothing -- any other pattern is not a redex
 
+{-@ reflect ? @-}
 
 {-@ constantFoldingProof :: ρ:NameValuation p
          -> d1:TypedDSL p
@@ -48,16 +49,28 @@ constantFoldingProof _ d1 _ = case d1 of
   MUL _ _ -> trivial
   DIV _ _ -> trivial
 
-  NOT _   -> trivial
-  AND _ _ -> trivial
-  OR  _ _ -> trivial
-  XOR _ _ -> trivial
+  NOT (BOOLEAN b) -> case b of True -> (); False -> ()
+  AND (BOOLEAN b) (BOOLEAN c) -> case (b,c) of
+    (False,False) -> trivial; (False,True) -> trivial;
+    (True, False) -> trivial; (True, True) -> trivial;
+  OR  (BOOLEAN b) (BOOLEAN c) -> case (b,c) of
+    (False,False) -> trivial; (False,True) -> trivial;
+    (True, False) -> trivial; (True, True) -> trivial;
+  XOR (BOOLEAN b) (BOOLEAN c) -> case (b,c) of
+    (False,False) -> trivial; (False,True) -> trivial;
+    (True, False) -> trivial; (True, True) -> trivial;
 
-  UnsafeNOT _   -> trivial
-  UnsafeAND _ _ -> trivial
-  UnsafeOR  _ _ -> trivial
-  UnsafeXOR _ _ -> trivial
+  UnsafeNOT (BOOLEAN b) -> case b of True -> (); False -> ()
+  UnsafeAND (BOOLEAN b) (BOOLEAN c) -> case (b,c) of
+    (False,False) -> trivial; (False,True) -> trivial;
+    (True, False) -> trivial; (True, True) -> trivial;
+  UnsafeOR  (BOOLEAN b) (BOOLEAN c) -> case (b,c) of
+    (False,False) -> trivial; (False,True) -> trivial;
+    (True, False) -> trivial; (True, True) -> trivial;
+  UnsafeXOR (BOOLEAN b) (BOOLEAN c) -> case (b,c) of
+    (False,False) -> trivial; (False,True) -> trivial;
+    (True, False) -> trivial; (True, True) -> trivial;
 
-  ISZERO _ -> trivial
-  EQL  _ _ -> trivial
-  EQLC _ _ -> trivial
+  ISZERO (CONST k1)            -> if k1 == 0  then trivial else trivial
+  EQL    (CONST k1) (CONST k2) -> if k1 == k2 then trivial else trivial
+  EQLC   (CONST k1) k2         -> if k1 == k2 then trivial else trivial
