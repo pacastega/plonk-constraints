@@ -206,7 +206,7 @@ inferType (CONS h ts) | Just τ' <- inferType h
                       , n >= 0
                       = Just (TVec τ (n+1))
 
-inferType (BoolToF p) | Just TBool <- inferType p = Just TF
+inferType (BoolToF p) | inferType p == Just TBool = Just TF
 
 inferType _ = Nothing
 
