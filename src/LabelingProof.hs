@@ -32,20 +32,15 @@ assertionHolds _ (DEF {})  = True -- dummy case
 assertionHolds ρ (NZERO e) = case eval e ρ of
   Nothing     -> False
   Just (VF x) -> x /= 0
-  Just (VBool b) -> b -- b /= False
   _           -> error "impossible"
 assertionHolds ρ (BOOL e) = case eval e ρ of
   Nothing     -> False
   Just (VF x) -> boolean x
-  Just (VBool _) -> True
   _           -> error "impossible"
 assertionHolds ρ (EQA e1 e2) = case (eval e1 ρ, eval e2 ρ) of
   (Nothing, _)                 -> False
   (_, Nothing)                 -> False
   (Just (VF v1), Just (VF v2)) -> v1 == v2
-  (Just (VBool b1), Just (VBool b2)) -> b1 == b2
-  (Just (VF v1)   , Just (VBool b2)) -> v1 == (if b2 then 1 else 0)
-  (Just (VBool b1), Just (VF v2))    -> (if b1 then 1 else 0) == v2
 
   (Just VVecNil,_)        -> error "impossible"
   (Just (VVecCons _ _),_) -> error "impossible"
