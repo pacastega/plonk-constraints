@@ -104,19 +104,21 @@ test programStore valuation = do
 
   let circuit = concatMap (compile m) labeledPrograms
 
-  let input = witnessGen m labeledPrograms valuation'
-  let output = map (\p -> input ! outputWire p) labeledBodies
-  let output' = map (\p -> input ! outputWire p) labeledStore
+  case witnessGen m labeledPrograms valuation' of
+    Nothing -> putStrLn "Witness generation failed"
+    Just input -> do
+      let output = map (\p -> input ! outputWire p) labeledBodies
+      let output' = map (\p -> input ! outputWire p) labeledStore
 
-  -- putStrLn $ "Program (after optimizations):   " ++ show program' ++ ", " ++ show store'
-  -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
-  -- putStrLn $ "Compiled circuit: " ++ show circuit
-  putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
-  -- putStrLn $ "Input:                " ++ show input
-  -- putStrLn $ "Auxiliary values:     " ++ cyan (show output')
-  putStrLn $ "Final result: " ++ cyan (show output)
+      -- putStrLn $ "Program (after optimizations):   " ++ show program' ++ ", " ++ show store'
+      -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
+      -- putStrLn $ "Compiled circuit: " ++ show circuit
+      putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
+      -- putStrLn $ "Input:                " ++ show input
+      -- putStrLn $ "Auxiliary values:     " ++ cyan (show output')
+      putStrLn $ "Final result: " ++ cyan (show output)
 
-  putStrLn $ replicate 80 '='
+      putStrLn $ replicate 80 '='
 
 
 {-@ test' :: GlobalStore p (TypedDSL p) -> NameValuation p -> String -> IO () @-}
@@ -131,21 +133,23 @@ test' programStore valuation tikzFilename = do
   let labeledPrograms = labeledStore ++ labeledBodies
 
   let circuit = concatMap (compile m) labeledPrograms
-  let input = witnessGen m labeledPrograms valuation'
-  let output = map (\p -> input ! outputWire p) labeledBodies
-  let output' = map (\p -> input ! outputWire p) labeledStore
+  case witnessGen m labeledPrograms valuation' of
+    Nothing -> putStrLn "Witness generation failed"
+    Just input -> do
+      let output = map (\p -> input ! outputWire p) labeledBodies
+      let output' = map (\p -> input ! outputWire p) labeledStore
 
-  -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
-  putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
-  -- putStrLn $ "Input:                " ++ show input
-  -- putStrLn $ "Auxiliary values:     " ++ cyan (show output')
-  putStrLn $ "Final result: " ++ cyan (show output)
+      -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
+      putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
+      -- putStrLn $ "Input:                " ++ show input
+      -- putStrLn $ "Auxiliary values:     " ++ cyan (show output')
+      putStrLn $ "Final result: " ++ cyan (show output)
 
-  let treekzCode = map parse labeledPrograms
-  let tikzStr = genTikzs 0.45 (14, -1.5) treekzCode
-  writeFile tikzFilename (intro ++ tikzStr ++ outro)
+      let treekzCode = map parse labeledPrograms
+      let tikzStr = genTikzs 0.45 (14, -1.5) treekzCode
+      writeFile tikzFilename (intro ++ tikzStr ++ outro)
 
-  putStrLn $ replicate 80 '='
+      putStrLn $ replicate 80 '='
 
 -- Arithmetic programs ---------------------------------------------------------
 -- (a + b) + (c + d)
