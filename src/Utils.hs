@@ -35,6 +35,10 @@ pow :: Num a => a -> Int -> a
 pow _ 0 = 1
 pow x n = x * (pow x (n-1))
 
+{-@ reflect mkList1 @-}
+mkList1 :: a -> [a]
+mkList1 x = [x]
+
 {-@ reflect mkList2 @-}
 mkList2 :: a -> a -> [a]
 mkList2 x y = [x, y]
@@ -66,9 +70,9 @@ any' :: (a -> Bool) -> Maybe a -> Bool
 any' _ Nothing  = False
 any' p (Just x) = p x
 
-{-@ liquidAssert :: {b:Bool | b} -> x:a -> {v:a | v == x && b} @-}
-liquidAssert :: Bool -> a -> a
-liquidAssert _ x = x
+{-@ liquidAssert :: {b:Bool | b} -> {b} @-}
+liquidAssert :: Bool -> ()
+liquidAssert _ = ()
 
 {-@ (??) :: x:b -> y:a -> {v:a | v == y} @-}
 (??) :: b -> a -> a

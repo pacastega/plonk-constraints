@@ -258,7 +258,7 @@ data LDSL p i =
   LNZERO  (LDSL p i)           i |
   LBOOL   (LDSL p i)             |
   LEQA    (LDSL p i) (LDSL p i)
-  deriving Show
+  deriving (Show, Eq)
 
 {-@
 data LDSL p i =

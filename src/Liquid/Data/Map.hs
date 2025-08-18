@@ -1,9 +1,11 @@
 {-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
 module Liquid.Data.Map where
 
 import Prelude hiding (lookup)
 
 data Map k v = MTip | MBin k v (Map k v)
+  deriving (Show, Eq)
 
 {-@ reflect empty @-}
 empty :: Map k v
@@ -30,6 +32,10 @@ alter f k (MBin k' v' m)
         Nothing  -> m
         Just v'' -> MBin k' v'' m
     | otherwise = MBin k' v' (alter f k m)
+
+{-@ reflect insert @-}
+insert :: Eq k => k -> v -> Map k v -> Map k v
+insert k v m = MBin k v m
 
 {-@ reflect findWithDefault @-}
 findWithDefault :: Eq k => v -> k -> Map k v -> v
