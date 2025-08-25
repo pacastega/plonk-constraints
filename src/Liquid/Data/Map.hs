@@ -3,6 +3,7 @@
 module Liquid.Data.Map where
 
 import Prelude hiding (lookup)
+import Utils (elem')
 
 data Map k v = MTip | MBin k v (Map k v)
   deriving (Show, Eq)
@@ -57,3 +58,13 @@ toList (MBin k v m) = (k,v) : toList m
 fromList :: [(k,v)] -> Map k v
 fromList []        = MTip
 fromList ((k,v):m) = MBin k v (fromList m)
+
+{-@ reflect keys @-}
+keys :: Map k v -> [k]
+keys MTip         = []
+keys (MBin k v m) = k : keys m
+
+{-@ reflect lookup' @-}
+{-@ lookup' :: key:k -> {m:Map k v | elem' key (keys m)} -> v @-}
+lookup' :: Eq k => k -> Map k v -> v
+lookup' k' (MBin k v m) = if k == k' then v else lookup' k' m

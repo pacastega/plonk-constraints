@@ -47,7 +47,9 @@ update :: (Eq p, Fractional p) => Int
 update m _  (LWIRE _) valuation = Just valuation
 update m sv (LVAR s τ i) valuation = case M.lookup s sv of
   Nothing -> Nothing -- variable is not defined in environment; TODO: should not happen
-  Just value -> Just (M.insert i value valuation)
+  Just value -> case τ of
+    TF -> Just (M.insert i value valuation)
+    TBool -> if boolean value then Just (M.insert i value valuation) else Nothing
 update m _  (LCONST x i) valuation = Just (M.insert i x valuation)
 update m sv (LADD p1 p2 i) valuation =
   case update m sv p1 valuation of

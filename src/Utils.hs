@@ -138,3 +138,8 @@ one = fromInteger 1
 all' :: (a -> Bool) -> [a] -> Bool
 all' _ [] = True
 all' p (x:xs) = p x && all' p xs
+
+{-@ reflect elem' @-}
+elem' :: Eq a => a -> [a] -> Bool
+elem' _  []     = False
+elem' x' (x:xs) = x' == x || elem' x' xs
