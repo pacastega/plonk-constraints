@@ -64,6 +64,11 @@ keys :: Map k v -> [k]
 keys MTip         = []
 keys (MBin k v m) = k : keys m
 
+{-@ reflect elems @-}
+elems :: Map k v -> [v]
+elems MTip         = []
+elems (MBin k v m) = v : elems m
+
 {-@ reflect lookup' @-}
 {-@ lookup' :: key:k -> {m:Map k v | elem' key (keys m)} -> v @-}
 lookup' :: Eq k => k -> Map k v -> v
