@@ -14,7 +14,7 @@ import qualified Liquid.Data.Map as M
 import qualified Data.Map as M
 #endif
 
-import Language.Haskell.Liquid.ProofCombinators ((?))
+import Language.Haskell.Liquid.ProofCombinators (withProof)
 
 data DSLValue p = VF p | VVecNil | VVecCons (DSLValue p) (DSLValue p)
   deriving Eq
@@ -80,8 +80,8 @@ eval program v = case program of
       TBool -> if boolean value then Just (VF value) else Nothing
       TF    -> Just (VF value)
   CONST x -> Just (VF x)
-  BOOLEAN True  -> Just (VF 1) ? boolean 1
-  BOOLEAN False -> Just (VF 0) ? boolean 0
+  BOOLEAN True  -> withProof (Just (VF 1)) (boolean 1)
+  BOOLEAN False -> withProof (Just (VF 0)) (boolean 0)
 
   -- Arithmetic operations
   ADD p1 p2 -> liftA2' add (eval p1 v) (eval p2 v)

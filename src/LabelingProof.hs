@@ -74,7 +74,6 @@ updateLemma m m' ρ e σ = case e of
     Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
 
 
-{-@ reflect ? @-}
 
 
 -- this corresponds to Lemma 2. from the paper

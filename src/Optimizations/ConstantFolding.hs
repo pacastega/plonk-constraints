@@ -35,8 +35,6 @@ constantFolding (EQLC (CONST k1) k2) = Just (BOOLEAN (k1 == k2))
 
 constantFolding _ = Nothing -- any other pattern is not a redex
 
-{-@ reflect ? @-}
-
 {-@ constantFoldingProof :: ρ:NameValuation p
          -> d1:TypedDSL p
          -> d2:{TypedDSL p | constantFolding d1 = Just d2}
