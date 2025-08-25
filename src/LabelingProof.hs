@@ -2,6 +2,7 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
+{-@ LIQUID "--cores=1" @-}
 
 module LabelingProof where
 
