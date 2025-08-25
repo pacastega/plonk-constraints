@@ -94,7 +94,7 @@ label' :: (Num p, Ord p) => DSL p -> Int -> LabelEnv p Int
 label' p nextIndex env = let i = nextIndex in case p of
     VAR s τ -> case M.lookup s env of
       Nothing -> (i+1, [LVAR s τ i], M.insert s i env)
-      Just j -> (nextIndex, [LWIRE j], env)
+      Just j -> (nextIndex, [LWIRE τ j], env)
 
     CONST x -> (i+1, [LCONST x i], env)
     BOOLEAN False  -> label' (CONST zero) nextIndex env

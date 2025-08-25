@@ -230,7 +230,7 @@ data Assertion p =
 
 -- Labeled DSL
 data LDSL p i =
-  LWIRE                          i |
+  LWIRE         Ty               i |
   LVAR   String Ty               i |
   LCONST p                       i |
 
@@ -262,7 +262,7 @@ data LDSL p i =
 
 {-@
 data LDSL p i =
-  LWIRE                          i |
+  LWIRE             ScalarTy     i |
   LVAR   String     ScalarTy     i |
   LCONST p                       i |
 
@@ -299,7 +299,7 @@ type Store p = [Assertion p]
 -- TODO: this could probably be avoided by using record syntax
 {-@ measure outputWire @-}
 outputWire :: LDSL p i -> i
-outputWire (LWIRE i)      = i
+outputWire (LWIRE _ i)    = i
 
 outputWire (LVAR _ _ i)   = i
 outputWire (LCONST _ i)   = i
@@ -334,7 +334,7 @@ outputWire (LEQA p1 p2) = outputWire p2 --FIXME: assertions don't have output
 {-@ measure nGates @-}
 {-@ nGates :: LDSL p i -> Nat @-}
 nGates :: LDSL p i -> Int
-nGates (LWIRE _)        = 0
+nGates (LWIRE _ _)      = 0
 
 nGates (LVAR _ τ _)     = case τ of TF -> 0; TBool -> 1
 nGates (LCONST _ _)     = 1
@@ -369,7 +369,7 @@ nGates (LEQA p1 p2)     = 1 + nGates p1 + nGates p2
                c:LDSL p (Btwn 0 m) ->
                Circuit p (nGates c) m @-}
 compile :: (Fractional p, Eq p) => Int -> LDSL p Int -> Circuit p
-compile m (LWIRE _)      = emptyCircuit m
+compile m (LWIRE _ _)    = emptyCircuit m
 compile m (LVAR _ τ i)   = case τ of
   TF       -> emptyCircuit m
   TBool    -> boolGate m i
@@ -490,7 +490,7 @@ compile m (LEQA p1 p2) = c
                            LDSL p (Btwn 0 m) -> VecN p m ->
                            Bool @-}
 semanticsAreCorrect :: (Eq p, Fractional p) => Int -> LDSL p Int -> Vec p -> Bool
-semanticsAreCorrect _ (LWIRE _)      _     = True
+semanticsAreCorrect _ (LWIRE _ _)    _     = True
 semanticsAreCorrect _ (LVAR _ τ i)   input = case τ of
   TF    -> True              -- field-typed variables don't have restrictions
   TBool -> boolean (input!i) -- bool-typed variables must be boolean

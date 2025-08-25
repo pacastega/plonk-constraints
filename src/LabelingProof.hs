@@ -30,7 +30,7 @@ import Language.Haskell.Liquid.ProofCombinators
 updateLemma :: (Eq p, Fractional p) => Int -> Int
                    -> NameValuation p -> LDSL p Int -> M.Map Int p -> Proof
 updateLemma m m' ρ e σ = case e of
-  LWIRE _ -> ()
+  LWIRE {} -> ()
   LVAR {} -> ()
   LCONST {} -> ()
 
@@ -126,13 +126,7 @@ labelProof1 :: (Fractional p, Eq p, Ord p)
 labelProof1 m0 m e ρ λ σ π λ' e' σ' v = case e of
   VAR s τ -> case M.lookup s λ of
     Nothing -> case τ of TF -> trivial; TBool -> trivial
-    Just j  -> let proof = elementLemma s j λ ? π s ? lookupLemma s λ in case τ of
-      TF -> proof
-      TBool -> case M.lookup s ρ of
-        Nothing -> proof
-        Just v' -> case boolean v' of
-          True -> proof
-          False -> undefined
+    Just j  -> elementLemma s j λ ? π s ? lookupLemma s λ
 
   CONST _ -> trivial
 

@@ -39,7 +39,7 @@ genTikzs r delta trees = concatMap aux trees where
 
 parse :: (Show p, Show i) => LDSL p i -> Tree String
 parse p = case p of
-  LWIRE i        -> N (wire [i])                []
+  LWIRE _ i      -> N (wire [i])                []
 
   LVAR s _ i     -> N ("$" ++ s ++ "$" ++ wire [i])         []
   LCONST x i     -> N (show x ++ wire [i])      []

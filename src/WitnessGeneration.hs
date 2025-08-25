@@ -44,9 +44,13 @@ witnessGen m programs strNameValuation = toVector m <$> valuation' where
            -> Maybe (M.Map (Btwn 0 m) p) @-}
 update :: (Eq p, Fractional p) => Int
        -> NameValuation p -> LDSL p Int -> M.Map Int p -> Maybe (M.Map Int p)
-update m _  (LWIRE _) valuation = Just valuation
+update m _  (LWIRE τ i) valuation = case M.lookup i valuation of
+  Nothing -> Nothing -- wire is not defined; TODO: should not happen
+  Just value -> case τ of
+    TF -> Just valuation -- no restrictions
+    TBool -> if boolean value then Just valuation else Nothing
 update m sv (LVAR s τ i) valuation = case M.lookup s sv of
-  Nothing -> Nothing -- variable is not defined in environment; TODO: should not happen
+  Nothing -> Nothing -- variable is not defined in environment
   Just value -> case τ of
     TF -> Just (M.insert i value valuation)
     TBool -> if boolean value then Just (M.insert i value valuation) else Nothing
