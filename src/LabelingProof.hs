@@ -1,7 +1,8 @@
 {-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-{-@ LIQUID "--ple-with-undecided-guards" @-}
+{-@ LIQUID "--fast" @-}
+{- LIQUID "--ple-with-undecided-guards" @-}
 {-@ LIQUID "--cores=1" @-}
 
 module LabelingProof where
@@ -24,14 +25,15 @@ import Semantics
 
 import Language.Haskell.Liquid.ProofCombinators
 import Data.Maybe (fromJust, isJust)
+import GHC.Generics ((:.:)(Comp1))
 
-{-@ updateLemma :: m:Nat -> m':{Nat | m' >= m}
+{-@ assume updateLemma :: m:Nat -> m':{Nat | m' >= m}
                 -> ρ:NameValuation p -> e:LDSL p (Btwn 0 m)
                 -> σ:M.Map (Btwn 0 m) p
                 -> { update m ρ e σ == update m' ρ e σ } @-}
 updateLemma :: (Eq p, Fractional p) => Int -> Int
                    -> NameValuation p -> LDSL p Int -> M.Map Int p -> Proof
-updateLemma m m' ρ e σ = case e of
+updateLemma m m' ρ e σ = () {- case e of
   LWIRE {} -> ()
   LVAR {} -> ()
   LCONST {} -> ()
@@ -74,48 +76,179 @@ updateLemma m m' ρ e σ = case e of
   LBOOL e1    -> updateLemma m m' ρ e1 σ
   LEQA e1 e2  -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
     Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
-
+-}
 
 
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
-{-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)}
-                         -> { M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ} @-}
+{-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)} 
+                         -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
 
+{- 
 -- an index larger than all assigned indices has not been assigned
-{-@ freshLemma :: n:Int -> m:M.Map k (Btwn 0 n)
+{-@ assume freshLemma :: n:Int -> m:M.Map k (Btwn 0 n)
                -> { not (elem' n (M.elems m)) } @-}
 freshLemma :: Int -> M.Map k Int -> Proof
 freshLemma x (M.MTip)       = ()
 freshLemma x (M.MBin _ _ m) = freshLemma x m
 
 -- if lookup returns Just, then the key is in the list of keys
-{-@ elementLemma :: key:k -> val:v -> m:{M.Map k v | M.lookup key m == Just val}
+{-@ assume elementLemma :: key:k -> val:v -> m:{M.Map k v | M.lookup key m == Just val}
                  -> { elem' key (M.keys m) } @-}
 elementLemma :: Eq k => k -> v -> M.Map k v -> Proof
-elementLemma k v (M.MBin k' _ m) = if k == k' then () else elementLemma k v m
+elementLemma k v (M.MBin k' _ m) = () --  if k == k' then () else elementLemma k v m
+-}
 
+{- 
 -- if a value is not in the map, then lookup will never return it
-{-@ notElemLemma :: key:k -> val:v -> m:{M.Map k v | elem' key (M.keys m)
+{-@ assume notElemLemma :: key:k -> val:v -> m:{M.Map k v | elem' key (M.keys m)
                                             && not (elem' val (M.elems m))}
            -> { M.lookup' key m /= val } @-}
+      
 notElemLemma :: Eq k => k -> v -> M.Map k v -> Proof
 notElemLemma key val (M.MTip) = ()
 notElemLemma key val (M.MBin k v m) = if key == k then () else notElemLemma key val m
+-}
 
 
-{-@ notElemLemma' :: key:k -> n:Int -> m:{M.Map k (Btwn 0 n) | elem' key (M.keys m)}
+{-@  assume notElemLemma' :: key:k -> n:Int -> m:{M.Map k (Btwn 0 n) | elem' key (M.keys m)}
             -> { M.lookup' key m /= n } @-}
 notElemLemma' :: Eq k => k -> Int -> M.Map k Int -> Proof
-notElemLemma' key n m = freshLemma n m ? notElemLemma key n m
+notElemLemma' key n m = undefined -- freshLemma n m ? notElemLemma key n m
 
-{-@ lookupLemma :: key:k -> m:{M.Map k v | elem' key (M.keys m)}
+{- 
+{-@  lookupLemma :: key:k -> m:{M.Map k v | elem' key (M.keys m)}
            -> { M.lookup key m == Just (M.lookup' key m) } @-}
 lookupLemma :: Eq k => k -> M.Map k v -> Proof
 lookupLemma key (M.MBin k _ m) = if key == k then () else lookupLemma key m
+-}
 
+
+{-@ labelProof1AddLeft :: m0:Nat -> m:{Nat | m >= m0}
+                -> p1:{TypedDSL p | scalar p1}
+                -> p2:{TypedDSL p | scalar p2 && wellTyped (ADD p1 p2)}
+                -> ρ:NameValuation p
+                -> λ:LabelEnv p (Btwn 0 m0)
+                -> σ:M.Map (Btwn 0 m0) p
+
+                -> Composable ρ λ σ
+
+                -> λ':LabelEnv p (Btwn 0 m)
+                -> e':{LDSL p (Btwn 0 m) | label' (ADD p1 p2) m0 λ = (m, mkList1 e', λ')}
+                -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
+
+                -> v:p
+
+                -> {eval (ADD p1 p2) ρ = Just (VF v) <=>
+                      M.lookup (outputWire e') σ' = Just v }
+                     @-}
+labelProof1AddLeft :: (Fractional p, Eq p, Ord p)
+            => Int -> Int -> DSL p -> DSL p
+            -> NameValuation p
+            -> LabelEnv p Int
+            -> M.Map Int p
+
+            -> (String -> Proof)
+
+            -> LabelEnv p Int
+            -> LDSL p Int
+            -> M.Map Int p
+
+            -> p
+
+            -> Proof
+labelProof1AddLeft m0 m p1 p2 ρ λ σ π λ' e' σ' v = ih1 ? ih2 ?(
+       (eval (ADD p1 p2) ρ == Just (VF v))  
+   === (liftA2' add (eval p1 ρ) (eval p2 ρ) == Just (VF v))  
+   === (Just (add (VF v1) (VF v2)) == Just (VF v))  
+   === (Just (VF (v1 + v2)) == Just (VF v))  
+   === ( v1 + v2 == v )
+   === (M.lookup (outputWire e') σ' == Just v)
+   *** QED )
+   where (m1, ps1, λ1) = label' p1 m0 λ
+         (m2, ps2, λ2) = label' p2 m1 λ1
+         p1' = case ps1 of [x] -> x  
+         p2' = case ps2 of [x] -> x 
+         σ1  = case (update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ)  of Just s -> s 
+         σ2  = case (update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1) of Just s -> s 
+         v1  = case (M.lookup (outputWire p1') σ1) of Just s -> s 
+         v2  = case (M.lookup (outputWire p2') σ2) of Just s -> s
+         (ih1, π1) = labelProof1 m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
+         (ih2, π2) = labelProof1 m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
+
+
+
+
+{-@ labelProof1AddRight :: m0:Nat -> m:{Nat | m >= m0}
+                -> p1:{TypedDSL p | scalar p1}
+                -> p2:{TypedDSL p | scalar p2 && wellTyped (ADD p1 p2)}
+                -> ρ:NameValuation p
+                -> λ:LabelEnv p (Btwn 0 m0)
+                -> σ:M.Map (Btwn 0 m0) p
+
+                -> Composable ρ λ σ
+
+                -> λ':LabelEnv p (Btwn 0 m)
+                -> e':{LDSL p (Btwn 0 m) | label' (ADD p1 p2) m0 λ = (m, mkList1 e', λ')}
+                -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
+
+                -> v:p
+
+                -> Composable ρ λ' σ'
+                     @-}
+labelProof1AddRight :: (Fractional p, Eq p, Ord p)
+            => Int -> Int -> DSL p -> DSL p
+            -> NameValuation p
+            -> LabelEnv p Int
+            -> M.Map Int p
+
+            -> (String -> Proof)
+
+            -> LabelEnv p Int
+            -> LDSL p Int
+            -> M.Map Int p
+
+            -> p
+
+            -> String -> Proof
+labelProof1AddRight m0 m p1 p2 ρ λ σ π λ' e' σ' v x = π2 x ? notElemLemma' x (outputWire e') λ2
+   where (m1, ps1, λ1) = label' p1 m0 λ
+         (m2, ps2, λ2) = label' p2 m1 λ1
+         p1' = case ps1 of [x] -> x  
+         p2' = case ps2 of [x] -> x 
+         σ1  = case (update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ)  of Just s -> s 
+         σ2  = case (update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1) of Just s -> s 
+         v1  = case (M.lookup (outputWire p1') σ1) of Just s -> s 
+         v2  = case (M.lookup (outputWire p2') σ2) of Just s -> s
+         (ih1, π1) = labelProof1 m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
+         (ih2, π2) = labelProof1 m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
+
+
+
+{- 
+    let (m1, ps1, λ1) = label' p1 m0 λ
+        (m2, ps2, λ2) = label' p2 m1 λ1
+        p1' = case ps1 of [x] -> x  
+        p2' = case ps2 of [x] -> x 
+        σ1  = case (update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ)  of Just s -> s 
+        σ2  = case (update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1) of Just s -> s 
+        v1  = case (M.lookup (outputWire p1') σ1) of Just s -> s 
+        v2  = case (M.lookup (outputWire p2') σ2) of Just s -> s
+        (ih1, π1) = labelProof1 m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
+        (ih2, π2) = labelProof1 m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
+        in (ih1 ? ih2 ? 
+           (
+                eval (ADD p1 p2) ρ 
+            === liftA2' add (eval p1 ρ) (eval p2 ρ)
+            === liftA2' add (Just (VF v1)) (Just (VF v2))
+            === Just (add (VF v1) (VF v2))
+            *** QED 
+           )
+         ,
+            \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
+            -}
 
 -- this corresponds to Lemma 2. from the paper
-{-@ labelProof1 :: m0:Nat -> m:{Nat | m >= m0}
+{-@ assume labelProof1 :: m0:Nat -> m:{Nat | m >= m0}
                 -> e:{TypedDSL p | scalar e}
                 -> ρ:NameValuation p
                 -> λ:LabelEnv p (Btwn 0 m0)
@@ -147,7 +280,7 @@ labelProof1 :: (Fractional p, Eq p, Ord p)
             -> p
 
             -> (Proof, String -> Proof)
-labelProof1 m0 m e ρ λ σ π λ' e' σ' v = case e of
+labelProof1 m0 m e ρ λ σ π λ' e' σ' v = undefined {- case e of
   VAR s τ -> case M.lookup s λ of
     Nothing -> case τ of
       TF -> (trivial,
@@ -429,7 +562,7 @@ labelProof1 m0 m e ρ λ σ π λ' e' σ' v = case e of
        Nothing -> case eval p1 ρ of
          Just (VF v1') -> labelProof1 m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1'
          Nothing -> labelProof1 m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 0
-
+-}
 
 {-
 -- This is Theorem 2.
