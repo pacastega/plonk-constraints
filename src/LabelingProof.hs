@@ -31,8 +31,11 @@ import Language.Haskell.Liquid.ProofCombinators
 {-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)}
                          -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
 
+data Pair a b = Pair a b
+{-@ data Pair a b <p :: a -> Bool, q :: b -> Bool> = Pair a<p> b<q> @-}
 
-{-@ labelProof1AddLeft :: m0:Nat -> m:{Nat | m >= m0}
+
+{-@ labelProof1Add :: m0:Nat -> m:{Nat | m >= m0}
                 -> p1:{TypedDSL p | scalar p1}
                 -> p2:{TypedDSL p | scalar p2 && wellTyped (ADD p1 p2)}
                 -> ρ:NameValuation p
@@ -47,10 +50,11 @@ import Language.Haskell.Liquid.ProofCombinators
 
                 -> v:p
 
-                -> {eval (ADD p1 p2) ρ = Just (VF v) <=>
-                      M.lookup (outputWire e') σ' = Just v }
-                     @-}
-labelProof1AddLeft :: (Fractional p, Eq p, Ord p)
+                -> Pair ({eval (ADD p1 p2) ρ = Just (VF v) <=>
+                          M.lookup (outputWire e') σ' = Just v })
+                        (Composable ρ λ' σ')
+@-}
+labelProof1Add :: (Fractional p, Eq p, Ord p)
             => Int -> Int -> DSL p -> DSL p
             -> NameValuation p
             -> LabelEnv p Int
@@ -64,15 +68,17 @@ labelProof1AddLeft :: (Fractional p, Eq p, Ord p)
 
             -> p
 
-            -> Proof
-labelProof1AddLeft m0 m p1 p2 ρ λ σ π λ' e' σ' v = ih1 ? ih2 ?(
-       (eval (ADD p1 p2) ρ == Just (VF v))
+            -> Pair Proof (String -> Proof)
+labelProof1Add m0 m p1 p2 ρ λ σ π λ' e' σ' v = Pair
+  (ih1 ? ih2 ?
+      ((eval (ADD p1 p2) ρ == Just (VF v))
    === (liftA2' add (eval p1 ρ) (eval p2 ρ) == Just (VF v))
    === (Just (add (VF v1) (VF v2)) == Just (VF v))
    === (Just (VF (v1 + v2)) == Just (VF v))
    === ( v1 + v2 == v )
    === (M.lookup (outputWire e') σ' == Just v)
-   *** QED )
+   *** QED))
+  (\x -> π2 x ? notElemLemma' x (outputWire e') λ2)
    where (m1, ps1, λ1) = label' p1 m0 λ
          (m2, ps2, λ2) = label' p2 m1 λ1
          p1' = case ps1 of [x] -> x
@@ -86,75 +92,6 @@ labelProof1AddLeft m0 m p1 p2 ρ λ σ π λ' e' σ' v = ih1 ? ih2 ?(
 
 
 
-
-{-@ labelProof1AddRight :: m0:Nat -> m:{Nat | m >= m0}
-                -> p1:{TypedDSL p | scalar p1}
-                -> p2:{TypedDSL p | scalar p2 && wellTyped (ADD p1 p2)}
-                -> ρ:NameValuation p
-                -> λ:LabelEnv p (Btwn 0 m0)
-                -> σ:M.Map (Btwn 0 m0) p
-
-                -> Composable ρ λ σ
-
-                -> λ':LabelEnv p (Btwn 0 m)
-                -> e':{LDSL p (Btwn 0 m) | label' (ADD p1 p2) m0 λ = (m, mkList1 e', λ')}
-                -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
-
-                -> v:p
-
-                -> Composable ρ λ' σ'
-                     @-}
-labelProof1AddRight :: (Fractional p, Eq p, Ord p)
-            => Int -> Int -> DSL p -> DSL p
-            -> NameValuation p
-            -> LabelEnv p Int
-            -> M.Map Int p
-
-            -> (String -> Proof)
-
-            -> LabelEnv p Int
-            -> LDSL p Int
-            -> M.Map Int p
-
-            -> p
-
-            -> String -> Proof
-labelProof1AddRight m0 m p1 p2 ρ λ σ π λ' e' σ' v x = π2 x ? notElemLemma' x (outputWire e') λ2
-   where (m1, ps1, λ1) = label' p1 m0 λ
-         (m2, ps2, λ2) = label' p2 m1 λ1
-         p1' = case ps1 of [x] -> x
-         p2' = case ps2 of [x] -> x
-         σ1  = case (update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ)  of Just s -> s
-         σ2  = case (update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1) of Just s -> s
-         v1  = case (M.lookup (outputWire p1') σ1) of Just s -> s
-         v2  = case (M.lookup (outputWire p2') σ2) of Just s -> s
-         (ih1, π1) = labelProof1 m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-         (ih2, π2) = labelProof1 m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-
-
-{-
-    let (m1, ps1, λ1) = label' p1 m0 λ
-        (m2, ps2, λ2) = label' p2 m1 λ1
-        p1' = case ps1 of [x] -> x
-        p2' = case ps2 of [x] -> x
-        σ1  = case (update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ)  of Just s -> s
-        σ2  = case (update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1) of Just s -> s
-        v1  = case (M.lookup (outputWire p1') σ1) of Just s -> s
-        v2  = case (M.lookup (outputWire p2') σ2) of Just s -> s
-        (ih1, π1) = labelProof1 m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-        (ih2, π2) = labelProof1 m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-        in (ih1 ? ih2 ?
-           (
-                eval (ADD p1 p2) ρ
-            === liftA2' add (eval p1 ρ) (eval p2 ρ)
-            === liftA2' add (Just (VF v1)) (Just (VF v2))
-            === Just (add (VF v1) (VF v2))
-            *** QED
-           )
-         ,
-            \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-            -}
 
 -- this corresponds to Lemma 2. from the paper
 {-@ assume labelProof1 :: m0:Nat -> m:{Nat | m >= m0}
