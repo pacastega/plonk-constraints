@@ -83,39 +83,43 @@ eval program v = case program of
   BOOLEAN True  -> withProof (Just (VF 1)) (boolean 1)
   BOOLEAN False -> withProof (Just (VF 0)) (boolean 0)
 
-  -- Arithmetic operations
-  ADD p1 p2 -> liftA2' add (eval p1 v) (eval p2 v)
-  SUB p1 p2 -> liftA2' sub (eval p1 v) (eval p2 v)
-  MUL p1 p2 -> liftA2' mul (eval p1 v) (eval p2 v)
-  DIV p1 p2 -> case (eval p1 v, eval p2 v) of
-    (Just (VF x), Just (VF y)) -> if y /= 0 then Just (VF (x / y)) else Nothing
-    _ -> Nothing
+  UN op p1 -> case op of
+    ADDC k    -> fmap' (add (VF k))   (eval p1 v)
+    MULC k    -> fmap' (mul (VF k))   (eval p1 v)
 
-  ADDC p1 k -> fmap' (add (VF k)) (eval p1 v)
-  MULC p1 k -> fmap' (mul (VF k)) (eval p1 v)
-  LINCOMB k1 p1 k2 p2 -> liftA2' (linCombFn k1 k2) (eval p1 v) (eval p2 v)
+    NOT       -> fmap' notFn          (eval p1 v)
+    UnsafeNOT -> fmap' notFn          (eval p1 v)
 
-  -- Boolean operations
-  NOT p1    -> fmap'   notFn (eval p1 v)
-  AND p1 p2 -> liftA2' andFn (eval p1 v) (eval p2 v)
-  OR  p1 p2 -> liftA2' orFn  (eval p1 v) (eval p2 v)
-  XOR p1 p2 -> liftA2' xorFn (eval p1 v) (eval p2 v)
+    ISZERO    -> fmap' (eqlFn (VF 0)) (eval p1 v)
+    EQLC k    -> fmap' (eqlFn (VF k)) (eval p1 v)
 
-  UnsafeNOT p1    -> fmap'   notFn (eval p1 v)
-  UnsafeAND p1 p2 -> liftA2' andFn (eval p1 v) (eval p2 v)
-  UnsafeOR  p1 p2 -> liftA2' orFn  (eval p1 v) (eval p2 v)
-  UnsafeXOR p1 p2 -> liftA2' xorFn (eval p1 v) (eval p2 v)
+    BoolToF   -> eval p1 v
 
-  ISZERO p1 -> fmap' (eqlFn (VF 0)) (eval p1 v)
-  EQL p1 p2 -> liftA2' eqlFn        (eval p1 v) (eval p2 v)
-  EQLC p1 k -> fmap' (eqlFn (VF k)) (eval p1 v)
+  BIN op p1 p2 -> case op of
+    ADD -> liftA2' add (eval p1 v) (eval p2 v)
+    SUB -> liftA2' sub (eval p1 v) (eval p2 v)
+    MUL -> liftA2' mul (eval p1 v) (eval p2 v)
+    DIV -> case (eval p1 v, eval p2 v) of
+      (Just (VF x), Just (VF y)) -> if y /= 0 then Just (VF (x / y)) else Nothing
+      _ -> Nothing
+
+    LINCOMB k1 k2 -> liftA2' (linCombFn k1 k2) (eval p1 v) (eval p2 v)
+
+    AND -> liftA2' andFn (eval p1 v) (eval p2 v)
+    OR  -> liftA2' orFn  (eval p1 v) (eval p2 v)
+    XOR -> liftA2' xorFn (eval p1 v) (eval p2 v)
+
+    UnsafeAND -> liftA2' andFn (eval p1 v) (eval p2 v)
+    UnsafeOR  -> liftA2' orFn  (eval p1 v) (eval p2 v)
+    UnsafeXOR -> liftA2' xorFn (eval p1 v) (eval p2 v)
+
+    EQL -> liftA2' eqlFn (eval p1 v) (eval p2 v)
 
   NIL _     -> Just VVecNil
   CONS h ts -> case inferType program of
                 Just (TVec τ n) -> liftA2' VVecCons (eval h v) (eval ts v)
                 _ -> Nothing
 
-  BoolToF p -> eval p v
 
 {-@ reflect linCombFn @-}
 {-@ linCombFn :: p -> p -> FValue p -> FValue p -> FValue p @-}

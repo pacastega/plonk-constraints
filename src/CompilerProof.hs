@@ -30,78 +30,31 @@ compileProof m (LVAR s τ i)   input = case τ of
   TF -> trivial
   TBool -> trivial
 compileProof m (LCONST x i)   input = trivial
-compileProof m (LADD p1 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LSUB p1 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LMUL p1 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 compileProof m (LDIV p1 p2 w i) input =
   let n1 = nGates p1
       n2 = nGates p2
   in compileProof m p1 input ?
      compileProof m p2 input ?
      satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LADDC p1 k i) input = compileProof m p1 input
-compileProof m (LMULC p1 k i) input = compileProof m p1 input
-compileProof m (LLINCOMB k1 p1 k2 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
+
+compileProof m (LUN op p1 i)  input = case op of
+  ADDC' _    -> compileProof m p1 input
+  MULC' _    -> compileProof m p1 input
+  NOT'       -> compileProof m p1 input
+  UnsafeNOT' -> compileProof m p1 input
+
+compileProof m (LBIN op p1 p2 i) input = case op of
+  ADD' -> proof; SUB' -> proof; MUL' -> proof; LINCOMB' _ _ -> proof
+  AND' -> proof; UnsafeAND' -> proof;
+  OR'  -> proof; UnsafeOR'  -> proof;
+  XOR' -> proof; UnsafeXOR' -> proof;
+  where proof = compileProof m p1 input -- IH 1
+              ? compileProof m p2 input -- IH 2
+              ? satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
+        n1 = nGates p1; n2 = nGates p2
+
 compileProof m (LEQLC p1 k w i) input = compileProof m p1 input
-compileProof m (LNOT p1 i) input = compileProof m p1 input
-compileProof m (LAND p1 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LOR p1 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LXOR p1 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LUnsafeNOT p1 i) input =
-  compileProof m p1 input
-compileProof m (LUnsafeAND p1 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LUnsafeOR p1 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
-compileProof m (LUnsafeXOR p1 p2 i) input =
-  let n1 = nGates p1
-      n2 = nGates p2
-  in compileProof m p1 input ?
-     compileProof m p2 input ?
-     satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
+
 compileProof m (LNZERO p1 w)    input = compileProof m p1 input
 compileProof m (LBOOL p1)       input = compileProof m p1 input
 compileProof m (LEQA p1 p2) input =

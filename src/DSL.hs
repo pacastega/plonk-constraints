@@ -31,44 +31,31 @@ scalarType TF       = True
 scalarType TBool    = True
 scalarType TVec {}  = False
 
+data UnOp p = ADDC p | MULC p
+            | NOT    | UnsafeNOT
+            | ISZERO | EQLC p
+            | BoolToF
+  deriving (Show, Eq, Ord)
+
+data BinOp p = ADD | SUB | MUL | DIV
+             | LINCOMB p p -- linear combination
+             | AND       | OR       | XOR
+             | UnsafeAND | UnsafeOR | UnsafeXOR
+             | EQL
+  deriving (Show, Eq, Ord)
 
 data DSL p =
-    -- Basic operations
     VAR String Ty -- variable
   | CONST p       -- constant (of type p, i.e. prime field)
   | BOOLEAN Bool
 
-    -- Arithmetic operations
-  | ADD (DSL p) (DSL p) -- addition
-  | SUB (DSL p) (DSL p) -- subtraction
-  | MUL (DSL p) (DSL p) -- multiplication
-  | DIV (DSL p) (DSL p) -- division
-
-  | ADDC (DSL p) p -- addition with a constant
-  | MULC (DSL p) p -- multiplication with a constant
-  | LINCOMB p (DSL p) p (DSL p) -- LINCOMB k1 p1 k2 p2 = k1*p1 + k2*p2
-
-    -- Boolean operations
-  | NOT (DSL p)         -- logical not
-  | AND (DSL p) (DSL p) -- logical and
-  | OR  (DSL p) (DSL p) -- logical or
-  | XOR (DSL p) (DSL p) -- logical xor
-
-  | UnsafeNOT (DSL p)         -- unsafe logical not
-  | UnsafeAND (DSL p) (DSL p) -- unsafe logical and
-  | UnsafeOR  (DSL p) (DSL p) -- unsafe logical or
-  | UnsafeXOR (DSL p) (DSL p) -- unsafe logical xor
-
-    -- Boolean constructors
-  | ISZERO (DSL p)         -- zero check
-  | EQL    (DSL p) (DSL p) -- equality check
-  | EQLC   (DSL p) p       -- equality check against constant
+  | UN  (UnOp p)  (DSL p)         -- unary operators
+  | BIN (BinOp p) (DSL p) (DSL p) -- binary operators
 
     -- Vectors
   | NIL Ty
   | CONS (DSL p) (DSL p)
 
-  | BoolToF (DSL p)
   deriving (Show, Eq, Ord)
 
 infixr 5 `CONS`
@@ -78,33 +65,12 @@ infixr 5 `CONS`
       CONST :: p -> DSL p
       BOOLEAN :: Bool -> DSL p
 
-      ADD :: (DSL p) -> (DSL p) -> DSL p
-      SUB :: (DSL p) -> (DSL p) -> DSL p
-      MUL :: (DSL p) -> (DSL p) -> DSL p
-      DIV :: (DSL p) -> (DSL p) -> DSL p
-
-      ADDC :: (DSL p) -> p -> DSL p
-      MULC :: (DSL p) -> p -> DSL p
-      LINCOMB :: p -> (DSL p) -> p -> (DSL p) -> DSL p
-
-      NOT :: (DSL p) ->            DSL p
-      AND :: (DSL p) -> (DSL p) -> DSL p
-      OR  :: (DSL p) -> (DSL p) -> DSL p
-      XOR :: (DSL p) -> (DSL p) -> DSL p
-
-      UnsafeNOT :: (DSL p) ->            DSL p
-      UnsafeAND :: (DSL p) -> (DSL p) -> DSL p
-      UnsafeOR  :: (DSL p) -> (DSL p) -> DSL p
-      UnsafeXOR :: (DSL p) -> (DSL p) -> DSL p
-
-      ISZERO :: (DSL p) ->            DSL p
-      EQL    :: (DSL p) -> (DSL p) -> DSL p
-      EQLC   :: (DSL p) -> p       -> DSL p
+      UN  :: (UnOp p)  -> DSL p -> DSL p
+      BIN :: (BinOp p) -> DSL p -> DSL p -> DSL p
 
       NIL :: Ty -> DSL p
       CONS :: (DSL p) -> (DSL p) -> DSL p
-
-      BoolToF :: (DSL p) -> DSL p @-}
+@-}
 
 {-@ measure vlength @-}
 {-@ vlength :: DSL p -> Nat @-}
@@ -164,40 +130,35 @@ inferType (VAR _ τ) = Just τ
 inferType (CONST _) = Just TF
 inferType (BOOLEAN _) = Just TBool
 
-inferType (ADD p1 p2) | inferType p1 == Just TF && inferType p2 == Just TF
-                      = Just TF
-inferType (SUB p1 p2) | inferType p1 == Just TF && inferType p2 == Just TF
-                      = Just TF
-inferType (MUL p1 p2) | inferType p1 == Just TF && inferType p2 == Just TF
-                      = Just TF
-inferType (DIV p1 p2) | inferType p1 == Just TF && inferType p2 == Just TF
-                      = Just TF
+inferType (UN op p) = case op of
+  ADDC _ -> if inferType p == Just TF then Just TF else Nothing
+  MULC _ -> if inferType p == Just TF then Just TF else Nothing
 
-inferType (ADDC p1 _) | inferType p1 == Just TF = Just TF
-inferType (MULC p1 _) | inferType p1 == Just TF = Just TF
-inferType (LINCOMB _ p1 _ p2) | inferType p1 == Just TF && inferType p2 == Just TF
-                              = Just TF
+  NOT       -> if inferType p == Just TBool then Just TBool else Nothing
+  UnsafeNOT -> if inferType p == Just TBool then Just TBool else Nothing
 
-inferType (NOT p1)    | inferType p1 == Just TBool = Just TBool
-inferType (AND p1 p2) | inferType p1 == Just TBool && inferType p2 == Just TBool
-                      = Just TBool
-inferType (OR  p1 p2) | inferType p1 == Just TBool && inferType p2 == Just TBool
-                      = Just TBool
-inferType (XOR p1 p2) | inferType p1 == Just TBool && inferType p2 == Just TBool
-                      = Just TBool
+  ISZERO -> if inferType p == Just TF then Just TBool else Nothing
+  EQLC _ -> if inferType p == Just TF then Just TBool else Nothing
 
-inferType (UnsafeNOT p1)    | inferType p1 == Just TBool = Just TBool
-inferType (UnsafeAND p1 p2) | inferType p1 == Just TBool && inferType p2 == Just TBool
-                            = Just TBool
-inferType (UnsafeOR  p1 p2) | inferType p1 == Just TBool && inferType p2 == Just TBool
-                            = Just TBool
-inferType (UnsafeXOR p1 p2) | inferType p1 == Just TBool && inferType p2 == Just TBool
-                            = Just TBool
+  BoolToF -> if inferType p == Just TBool then Just TF else Nothing
 
-inferType (EQL p1 p2) | inferType p1 == Just TF && inferType p2 == Just TF
-                      = Just TBool
-inferType (ISZERO p1) | inferType p1 == Just TF = Just TBool
-inferType (EQLC p1 _) | inferType p1 == Just TF = Just TBool
+inferType (BIN op p1 p2) = case op of
+  ADD -> if inferType p1 == Just TF && inferType p2 == Just TF then Just TF else Nothing
+  SUB -> if inferType p1 == Just TF && inferType p2 == Just TF then Just TF else Nothing
+  MUL -> if inferType p1 == Just TF && inferType p2 == Just TF then Just TF else Nothing
+  DIV -> if inferType p1 == Just TF && inferType p2 == Just TF then Just TF else Nothing
+
+  LINCOMB _ _ -> if inferType p1 == Just TF && inferType p2 == Just TF then Just TF else Nothing
+
+  AND -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
+  OR  -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
+  XOR -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
+
+  UnsafeAND -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
+  UnsafeOR  -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
+  UnsafeXOR -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
+
+  EQL -> if inferType p1 == Just TF && inferType p2 == Just TF then Just TBool else Nothing
 
 inferType (NIL τ) = Just (TVec τ 0)
 inferType (CONS h ts) | Just τ' <- inferType h
@@ -205,8 +166,6 @@ inferType (CONS h ts) | Just τ' <- inferType h
                       , τ' == τ
                       , n >= 0
                       = Just (TVec τ (n+1))
-
-inferType (BoolToF p) | inferType p == Just TBool = Just TF
 
 inferType _ = Nothing
 
@@ -227,6 +186,16 @@ data Assertion p =
   | EQA   (ScalarDSL p) (ScalarDSL p)
 @-}
 
+data UnOp' p = ADDC' p | MULC' p
+             | NOT' | UnsafeNOT'
+  deriving (Show, Eq, Ord)
+
+data BinOp' p = ADD' | SUB' | MUL'
+              | LINCOMB' p p
+              | AND' | OR' | XOR'
+              | UnsafeAND' | UnsafeOR' | UnsafeXOR'
+  deriving (Show, Eq, Ord)
+
 
 -- Labeled DSL
 data LDSL p i =
@@ -234,24 +203,10 @@ data LDSL p i =
   LVAR   String Ty               i |
   LCONST p                       i |
 
-  LADD   (LDSL p i) (LDSL p i)   i |
-  LSUB   (LDSL p i) (LDSL p i)   i |
-  LMUL   (LDSL p i) (LDSL p i)   i |
   LDIV   (LDSL p i) (LDSL p i) i i |
 
-  LADDC  (LDSL p i) p            i |
-  LMULC  (LDSL p i) p            i |
-  LLINCOMB p (LDSL p i) p (LDSL p i) i |
-
-  LNOT   (LDSL p i)            i |
-  LAND   (LDSL p i) (LDSL p i) i |
-  LOR    (LDSL p i) (LDSL p i) i |
-  LXOR   (LDSL p i) (LDSL p i) i |
-
-  LUnsafeNOT   (LDSL p i)            i |
-  LUnsafeAND   (LDSL p i) (LDSL p i) i |
-  LUnsafeOR    (LDSL p i) (LDSL p i) i |
-  LUnsafeXOR   (LDSL p i) (LDSL p i) i |
+  LUN  (UnOp' p)  (LDSL p i)            i |
+  LBIN (BinOp' p) (LDSL p i) (LDSL p i) i |
 
   LEQLC   (LDSL p i) p       i i |
 
@@ -266,25 +221,10 @@ data LDSL p i =
   LVAR   String     ScalarTy     i |
   LCONST p                       i |
 
-  LADD   (LDSL p i) (LDSL p i)   i |
-  LSUB   (LDSL p i) (LDSL p i)   i |
-  LMUL   (LDSL p i) (LDSL p i)   i |
   LDIV   (LDSL p i) (LDSL p i) i i |
 
-  LADDC  (LDSL p i) p            i |
-  LMULC  (LDSL p i) p            i |
-
-  LLINCOMB p (LDSL p i) p (LDSL p i) i |
-
-  LNOT   (LDSL p i)            i |
-  LAND   (LDSL p i) (LDSL p i) i |
-  LOR    (LDSL p i) (LDSL p i) i |
-  LXOR   (LDSL p i) (LDSL p i) i |
-
-  LUnsafeNOT   (LDSL p i)            i |
-  LUnsafeAND   (LDSL p i) (LDSL p i) i |
-  LUnsafeOR    (LDSL p i) (LDSL p i) i |
-  LUnsafeXOR   (LDSL p i) (LDSL p i) i |
+  LUN  (UnOp' p)  (LDSL p i)            i |
+  LBIN (BinOp' p) (LDSL p i) (LDSL p i) i |
 
   LEQLC   (LDSL p i) p       i i |
 
@@ -303,24 +243,11 @@ outputWire (LWIRE _ i)    = i
 
 outputWire (LVAR _ _ i)   = i
 outputWire (LCONST _ i)   = i
-outputWire (LADD _ _ i)   = i
-outputWire (LSUB _ _ i)   = i
-outputWire (LMUL _ _ i)   = i
+
 outputWire (LDIV _ _ _ i) = i
 
-outputWire (LADDC _ _ i)   = i
-outputWire (LMULC _ _ i)   = i
-outputWire (LLINCOMB _ _ _ _ i) = i
-
-outputWire (LNOT _   i) = i
-outputWire (LAND _ _ i) = i
-outputWire (LOR  _ _ i) = i
-outputWire (LXOR _ _ i) = i
-
-outputWire (LUnsafeNOT _   i) = i
-outputWire (LUnsafeAND _ _ i) = i
-outputWire (LUnsafeOR  _ _ i) = i
-outputWire (LUnsafeXOR _ _ i) = i
+outputWire (LUN _ _ i)    = i
+outputWire (LBIN _ _ _ i) = i
 
 outputWire (LEQLC _ _ _ i) = i
 
@@ -338,24 +265,15 @@ nGates (LWIRE _ _)      = 0
 
 nGates (LVAR _ τ _)     = case τ of TF -> 0; TBool -> 1
 nGates (LCONST _ _)     = 1
-nGates (LADD p1 p2 _)   = 1 + nGates p1 + nGates p2
-nGates (LSUB p1 p2 _)   = 1 + nGates p1 + nGates p2
-nGates (LMUL p1 p2 _)   = 1 + nGates p1 + nGates p2
+
 nGates (LDIV p1 p2 _ _) = 2 + nGates p1 + nGates p2
 
-nGates (LADDC p1 _ _) = 1 + nGates p1
-nGates (LMULC p1 _ _) = 1 + nGates p1
-nGates (LLINCOMB _ p1 _ p2 _) = 1 + nGates p1 + nGates p2
-
-nGates (LNOT p1    _) = 2 + nGates p1
-nGates (LAND p1 p2 _) = 3 + nGates p1 + nGates p2
-nGates (LOR  p1 p2 _) = 3 + nGates p1 + nGates p2
-nGates (LXOR p1 p2 _) = 3 + nGates p1 + nGates p2
-
-nGates (LUnsafeNOT p1    _) = 1 + nGates p1
-nGates (LUnsafeAND p1 p2 _) = 1 + nGates p1 + nGates p2
-nGates (LUnsafeOR  p1 p2 _) = 1 + nGates p1 + nGates p2
-nGates (LUnsafeXOR p1 p2 _) = 1 + nGates p1 + nGates p2
+nGates (LUN  op p  _)    = nGates p + case op of
+  ADDC' _ -> 1; MULC' _ -> 1; NOT' -> 2; UnsafeNOT' -> 1
+nGates (LBIN op p1 p2 _) = nGates p1 + nGates p2 + case op of
+  ADD' -> 1; SUB' -> 1; MUL' -> 1; LINCOMB' _ _ -> 1
+  AND' -> 3; OR'  -> 3; XOR' -> 3
+  UnsafeAND' -> 1; UnsafeOR' -> 1; UnsafeXOR' -> 1
 
 nGates (LEQLC p1 _ _ _) = 2 + nGates p1
 
@@ -375,92 +293,40 @@ compile m (LVAR _ τ i)   = case τ of
   TBool    -> boolGate m i
   TVec τ n -> error "Vector variables have been unfolded by now"
 compile m (LCONST x i)   = constGate m x i
-compile m (LADD p1 p2 i) = c
+
+compile m (LDIV p1 p2 w i) = append' (divGate m [i1, i2, i, w]) c'
   where
     c1 = compile m p1; c2 = compile m p2
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
-    c = append' (addGate m [i1, i2, i]) c'
-compile m (LSUB p1 p2 i) = c
+
+compile m (LUN op p1 i) = case op of
+  ADDC' k    -> append' (addGateConst  m k [i1, i]) c1
+  MULC' k    -> append' (mulGateConst  m k [i1, i]) c1
+  NOT'       -> append' (notGate       m   [i1, i]) c1
+  UnsafeNOT' -> append' (unsafeNotGate m   [i1, i]) c1
+  where
+    c1 = compile m p1; i1 = outputWire p1
+
+compile m (LBIN op p1 p2 i) = case op of
+  ADD' -> append' (addGate m [i1, i2, i]) c'
+  SUB' -> append' (addGate m [i, i2, i1]) c'
+  MUL' -> append' (mulGate m [i1, i2, i]) c'
+
+  LINCOMB' k1 k2 -> append' (linCombGate m [k1, k2] [i1, i2, i]) c'
+
+  AND' -> append' (andGate m [i1, i2, i]) c'
+  OR'  -> append' (orGate  m [i1, i2, i]) c'
+  XOR' -> append' (xorGate m [i1, i2, i]) c'
+
+  UnsafeAND' -> append' (unsafeAndGate m [i1, i2, i]) c'
+  UnsafeOR'  -> append' (unsafeOrGate  m [i1, i2, i]) c'
+  UnsafeXOR' -> append' (unsafeXorGate m [i1, i2, i]) c'
   where
     c1 = compile m p1; c2 = compile m p2
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
-    c = append' (addGate m [i, i2, i1]) c'
-compile m (LMUL p1 p2 i) = c
-  where
-    c1 = compile m p1; c2 = compile m p2
-    i1 = outputWire p1; i2 = outputWire p2
-    c' = append' c1 c2
-    c = append' (mulGate m [i1, i2, i]) c'
-compile m (LDIV p1 p2 w i) = c
-  where
-    c1 = compile m p1; c2 = compile m p2
-    i1 = outputWire p1; i2 = outputWire p2
-    c' = append' c1 c2
-    c = append' (divGate m [i1, i2, i, w]) c'
-compile m (LADDC p1 k i) = c
-  where
-    c1 = compile m p1
-    i1 = outputWire p1
-    c = append' (addGateConst m k [i1, i]) c1
-compile m (LMULC p1 k i) = c
-  where
-    c1 = compile m p1
-    i1 = outputWire p1
-    c = append' (mulGateConst m k [i1, i]) c1
-compile m (LLINCOMB k1 p1 k2 p2 i) = c
-  where
-    c1 = compile m p1; c2 = compile m p2
-    i1 = outputWire p1; i2 = outputWire p2
-    c' = append' c1 c2
-    c = append' (linCombGate m [k1, k2] [i1, i2, i]) c'
-compile m (LNOT p1 i) = c
-  where
-    c1 = compile m p1
-    i1 = outputWire p1
-    c = append' (notGate m [i1, i]) c1
-compile m (LAND p1 p2 i) = c
-  where
-    c1 = compile m p1; c2 = compile m p2
-    i1 = outputWire p1; i2 = outputWire p2
-    c' = append' c1 c2
-    c = append' (andGate m [i1, i2, i]) c'
-compile m (LOR  p1 p2 i) = c
-  where
-    c1 = compile m p1; c2 = compile m p2
-    i1 = outputWire p1; i2 = outputWire p2
-    c' = append' c1 c2
-    c = append' (orGate m [i1, i2, i]) c'
-compile m (LXOR p1 p2 i) = c
-  where
-    c1 = compile m p1; c2 = compile m p2
-    i1 = outputWire p1; i2 = outputWire p2
-    c' = append' c1 c2
-    c = append' (xorGate m [i1, i2, i]) c'
-compile m (LUnsafeNOT p1 i) = c
-  where
-    c1 = compile m p1
-    i1 = outputWire p1
-    c = append' (unsafeNotGate m [i1, i]) c1
-compile m (LUnsafeAND p1 p2 i) = c
-  where
-    c1 = compile m p1; c2 = compile m p2
-    i1 = outputWire p1; i2 = outputWire p2
-    c' = append' c1 c2
-    c = append' (unsafeAndGate m [i1, i2, i]) c'
-compile m (LUnsafeOR  p1 p2 i) = c
-  where
-    c1 = compile m p1; c2 = compile m p2
-    i1 = outputWire p1; i2 = outputWire p2
-    c' = append' c1 c2
-    c = append' (unsafeOrGate m [i1, i2, i]) c'
-compile m (LUnsafeXOR p1 p2 i) = c
-  where
-    c1 = compile m p1; c2 = compile m p2
-    i1 = outputWire p1; i2 = outputWire p2
-    c' = append' c1 c2
-    c = append' (unsafeXorGate m [i1, i2, i]) c'
+
 compile m (LEQLC p1 k w i) = c
   where
     c1 = compile m p1
@@ -495,90 +361,48 @@ semanticsAreCorrect _ (LVAR _ τ i)   input = case τ of
   TF    -> True              -- field-typed variables don't have restrictions
   TBool -> boolean (input!i) -- bool-typed variables must be boolean
 semanticsAreCorrect _ (LCONST x i)   input = input!i == x
-semanticsAreCorrect m (LADD p1 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 && input!i == input!i1 + input!i2
-semanticsAreCorrect m (LSUB p1 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 && input!i == input!i1 - input!i2
-semanticsAreCorrect m (LMUL p1 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 && input!i == input!i1 * input!i2
+
 semanticsAreCorrect m (LDIV p1 p2 w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   correct2 = semanticsAreCorrect m p2 input
   i1 = outputWire p1; i2 = outputWire p2
   correct = correct1 && correct2 && input!w * input!i2 == 1 &&
     if input!i2 /= 0 then input!i == input!i1 / input!i2 else True
-semanticsAreCorrect m (LADDC p1 k i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  i1 = outputWire p1
-  correct = correct1 && input!i == input!i1 + k
-semanticsAreCorrect m (LMULC p1 k i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  i1 = outputWire p1
-  correct = correct1 && input!i == input!i1 * k
-semanticsAreCorrect m (LLINCOMB k1 p1 k2 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 && input!i == k1*input!i1 + k2*input!i2
-semanticsAreCorrect m (LNOT p1 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  i1 = outputWire p1
-  correct = correct1 &&
-    (input!i == if input!i1 == 1 then 0 else 1) &&
-    boolean (input!i1)
-semanticsAreCorrect m (LAND p1 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 &&
+
+semanticsAreCorrect m (LUN op p1 i) input = case op of
+  ADDC' k -> correct1 && input!i == input!i1 + k
+  MULC' k -> correct1 && input!i == input!i1 * k
+  NOT'    -> correct1 && (input!i == if input!i1 == 1 then 0 else 1) &&
+                          boolean (input!i1)
+  UnsafeNOT' -> correct1 && (input!i == 1 - input!i1)
+  where
+    correct1 = semanticsAreCorrect m p1 input; i1 = outputWire p1
+
+semanticsAreCorrect m (LBIN op p1 p2 i) input = case op of
+  ADD' -> correct1 && correct2 && input!i == input!i1 + input!i2
+  SUB' -> correct1 && correct2 && input!i == input!i1 - input!i2
+  MUL' -> correct1 && correct2 && input!i == input!i1 * input!i2
+  LINCOMB' k1 k2 -> correct1 && correct2 && input!i == k1*input!i1 + k2*input!i2
+  AND' -> correct1 && correct2 &&
     (input!i == if input!i1 == 0 || input!i2 == 0 then 0 else 1) &&
     boolean (input!i1) && boolean (input!i2)
-semanticsAreCorrect m (LOR  p1 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 &&
+  OR' -> correct1 && correct2 &&
     (input!i == if input!i1 == 1 || input!i2 == 1 then 1 else 0) &&
     boolean (input!i1) && boolean (input!i2)
-semanticsAreCorrect m (LXOR p1 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 &&
+  XOR' -> correct1 && correct2 &&
     (input!i == if input!i1 /= input!i2 then 1 else 0) &&
     boolean (input!i1) && boolean (input!i2)
-semanticsAreCorrect m (LUnsafeNOT p1 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  i1 = outputWire p1
-  correct = correct1 &&
-    (input!i == 1 - input!i1)
-semanticsAreCorrect m (LUnsafeAND p1 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 &&
+  UnsafeAND' -> correct1 && correct2 &&
     (input!i == input!i1 * input!i2)
-semanticsAreCorrect m (LUnsafeOR  p1 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 &&
+  UnsafeOR' -> correct1 && correct2 &&
     (input!i == input!i1 + input!i2 - input!i1*input!i2)
-semanticsAreCorrect m (LUnsafeXOR p1 p2 i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
-  i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 &&
+  UnsafeXOR' -> correct1 && correct2 &&
     (input!i == input!i1 + input!i2 - 2*input!i1*input!i2)
+  where
+    correct1 = semanticsAreCorrect m p1 input
+    correct2 = semanticsAreCorrect m p2 input
+    i1 = outputWire p1; i2 = outputWire p2
+
 semanticsAreCorrect m (LEQLC p1 k w i) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1

@@ -43,24 +43,29 @@ parse p = case p of
 
   LVAR s _ i     -> N ("$" ++ s ++ "$" ++ wire [i])         []
   LCONST x i     -> N (show x ++ wire [i])      []
-  LADD p1 p2 i   -> N ("$+$" ++ wire [i])       [parse p1, parse p2]
-  LSUB p1 p2 i   -> N ("$-$" ++ wire [i])       [parse p1, parse p2]
-  LMUL p1 p2 i   -> N ("$\\times$" ++ wire [i]) [parse p1, parse p2]
-  LADDC p1 k i   -> N ("$+" ++ show k ++ "$" ++ wire [i]) [parse p1]
-  LMULC p1 k i   -> N ("$*" ++ show k ++ "$" ++ wire [i]) [parse p1]
+
   LDIV p1 p2 _ i -> N ("$/$" ++ wire [i])       [parse p1, parse p2]
 
-  LLINCOMB k1 p1 k2 p2 i -> N ("$" ++ show k1 ++ "\\cdot + " ++ show k2 ++ "\\cdot$" ++ wire [i]) [parse p1, parse p2]
+  LUN op p1 i -> case op of
+    ADDC' k    -> N ("$+" ++ show k ++ "$" ++ wire [i]) [parse p1]
+    MULC' k    -> N ("$*" ++ show k ++ "$" ++ wire [i]) [parse p1]
+    NOT'       -> N ("$\\neg$" ++ wire [i])             [parse p1]
+    UnsafeNOT' -> N ("$\\hat\\neg$" ++ wire [i])        [parse p1]
 
-  LNOT p1    i   -> N ("$\\neg$" ++ wire [i])    [parse p1]
-  LAND p1 p2 i   -> N ("$\\wedge$" ++ wire [i]) [parse p1, parse p2]
-  LOR  p1 p2 i   -> N ("$\\vee$" ++ wire [i])   [parse p1, parse p2]
-  LXOR p1 p2 i   -> N ("$\\oplus$" ++ wire [i]) [parse p1, parse p2]
+  LBIN op p1 p2 i -> case op of
+    ADD' -> N ("$+$" ++ wire [i])       [parse p1, parse p2]
+    SUB' -> N ("$-$" ++ wire [i])       [parse p1, parse p2]
+    MUL' -> N ("$\\times$" ++ wire [i]) [parse p1, parse p2]
+    LINCOMB' k1 k2 ->
+      N ("$" ++ show k1 ++ "\\cdot + " ++ show k2 ++ "\\cdot$" ++ wire [i])
+        [parse p1, parse p2]
+    AND' -> N ("$\\wedge$" ++ wire [i]) [parse p1, parse p2]
+    OR'  -> N ("$\\vee$" ++ wire [i])   [parse p1, parse p2]
+    XOR' -> N ("$\\oplus$" ++ wire [i]) [parse p1, parse p2]
 
-  LUnsafeNOT p1    i   -> N ("$\\hat\\neg$" ++ wire [i])    [parse p1]
-  LUnsafeAND p1 p2 i   -> N ("$\\hat\\wedge$" ++ wire [i]) [parse p1, parse p2]
-  LUnsafeOR  p1 p2 i   -> N ("$\\hat\\vee$" ++ wire [i])   [parse p1, parse p2]
-  LUnsafeXOR p1 p2 i   -> N ("$\\hat\\oplus$" ++ wire [i]) [parse p1, parse p2]
+    UnsafeAND' -> N ("$\\hat\\wedge$" ++ wire [i]) [parse p1, parse p2]
+    UnsafeOR'  -> N ("$\\hat\\vee$" ++ wire [i])   [parse p1, parse p2]
+    UnsafeXOR' -> N ("$\\hat\\oplus$" ++ wire [i]) [parse p1, parse p2]
 
   LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parse p1]
 
