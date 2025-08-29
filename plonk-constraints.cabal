@@ -33,6 +33,7 @@ library
       Examples
       GlobalStore
       Label
+      LabelingLemmas
       LabelingProof
       LogicGates
       Optimizations
