@@ -37,7 +37,7 @@ data Pair a b = Pair a b
 
 {-@ labelProof1Add :: m0:Nat -> m:{Nat | m >= m0}
                 -> p1:{TypedDSL p | scalar p1}
-                -> p2:{TypedDSL p | scalar p2 && wellTyped (ADD p1 p2)}
+                -> p2:{TypedDSL p | scalar p2 && wellTyped (BIN ADD p1 p2)}
                 -> ρ:NameValuation p
                 -> λ:LabelEnv p (Btwn 0 m0)
                 -> σ:M.Map (Btwn 0 m0) p
@@ -45,12 +45,13 @@ data Pair a b = Pair a b
                 -> Composable ρ λ σ
 
                 -> λ':LabelEnv p (Btwn 0 m)
-                -> e':{LDSL p (Btwn 0 m) | label' (ADD p1 p2) m0 λ = (m, mkList1 e', λ')}
+                -> e':{LDSL p (Btwn 0 m) |
+                       label' (BIN ADD p1 p2) m0 λ = (m, mkList1 e', λ')}
                 -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
 
                 -> v:p
 
-                -> Pair ({eval (ADD p1 p2) ρ = Just (VF v) <=>
+                -> Pair ({eval (BIN ADD p1 p2) ρ = Just (VF v) <=>
                           M.lookup (outputWire e') σ' = Just v })
                         (Composable ρ λ' σ')
 @-}
@@ -71,7 +72,7 @@ labelProof1Add :: (Fractional p, Eq p, Ord p)
             -> Pair Proof (String -> Proof)
 labelProof1Add m0 m p1 p2 ρ λ σ π λ' e' σ' v = Pair
   (ih1 ? ih2 ?
-      ((eval (ADD p1 p2) ρ == Just (VF v))
+      ((eval (BIN ADD p1 p2) ρ == Just (VF v))
    === (liftA2' add (eval p1 ρ) (eval p2 ρ) == Just (VF v))
    === (Just (add (VF v1) (VF v2)) == Just (VF v))
    === (Just (VF (v1 + v2)) == Just (VF v))

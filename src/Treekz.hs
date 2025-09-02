@@ -47,25 +47,25 @@ parse p = case p of
   LDIV p1 p2 _ i -> N ("$/$" ++ wire [i])       [parse p1, parse p2]
 
   LUN op p1 i -> case op of
-    ADDC' k    -> N ("$+" ++ show k ++ "$" ++ wire [i]) [parse p1]
-    MULC' k    -> N ("$*" ++ show k ++ "$" ++ wire [i]) [parse p1]
-    NOT'       -> N ("$\\neg$" ++ wire [i])             [parse p1]
-    UnsafeNOT' -> N ("$\\hat\\neg$" ++ wire [i])        [parse p1]
+    ADDC k    -> N ("$+" ++ show k ++ "$" ++ wire [i]) [parse p1]
+    MULC k    -> N ("$*" ++ show k ++ "$" ++ wire [i]) [parse p1]
+    NOT       -> N ("$\\neg$" ++ wire [i])             [parse p1]
+    UnsafeNOT -> N ("$\\hat\\neg$" ++ wire [i])        [parse p1]
 
   LBIN op p1 p2 i -> case op of
-    ADD' -> N ("$+$" ++ wire [i])       [parse p1, parse p2]
-    SUB' -> N ("$-$" ++ wire [i])       [parse p1, parse p2]
-    MUL' -> N ("$\\times$" ++ wire [i]) [parse p1, parse p2]
-    LINCOMB' k1 k2 ->
+    ADD -> N ("$+$" ++ wire [i])       [parse p1, parse p2]
+    SUB -> N ("$-$" ++ wire [i])       [parse p1, parse p2]
+    MUL -> N ("$\\times$" ++ wire [i]) [parse p1, parse p2]
+    LINCOMB k1 k2 ->
       N ("$" ++ show k1 ++ "\\cdot + " ++ show k2 ++ "\\cdot$" ++ wire [i])
         [parse p1, parse p2]
-    AND' -> N ("$\\wedge$" ++ wire [i]) [parse p1, parse p2]
-    OR'  -> N ("$\\vee$" ++ wire [i])   [parse p1, parse p2]
-    XOR' -> N ("$\\oplus$" ++ wire [i]) [parse p1, parse p2]
+    AND -> N ("$\\wedge$" ++ wire [i]) [parse p1, parse p2]
+    OR  -> N ("$\\vee$" ++ wire [i])   [parse p1, parse p2]
+    XOR -> N ("$\\oplus$" ++ wire [i]) [parse p1, parse p2]
 
-    UnsafeAND' -> N ("$\\hat\\wedge$" ++ wire [i]) [parse p1, parse p2]
-    UnsafeOR'  -> N ("$\\hat\\vee$" ++ wire [i])   [parse p1, parse p2]
-    UnsafeXOR' -> N ("$\\hat\\oplus$" ++ wire [i]) [parse p1, parse p2]
+    UnsafeAND -> N ("$\\hat\\wedge$" ++ wire [i]) [parse p1, parse p2]
+    UnsafeOR  -> N ("$\\hat\\vee$" ++ wire [i])   [parse p1, parse p2]
+    UnsafeXOR -> N ("$\\hat\\oplus$" ++ wire [i]) [parse p1, parse p2]
 
   LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parse p1]
 

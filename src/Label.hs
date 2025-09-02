@@ -23,37 +23,18 @@ type LabelEnv p i = M.Map String i
 size :: DSL p -> Int
 size (VAR _ _) = 1
 size (CONST _) = 1
-size (BOOLEAN _) = 2 -- BOOLEAN -> CONST
+size (BOOLEAN _) = 2 -- syntactic sugar: BOOLEAN -> CONST
 
-size (ADD p1 p2) = 1 + size p1 + size p2
-size (SUB p1 p2) = 1 + size p1 + size p2
-size (MUL p1 p2) = 1 + size p1 + size p2
-size (DIV p1 p2) = 1 + size p1 + size p2
+size (UN op p1) = case op of
+  ISZERO -> 1 + size p1 + 1 -- syntactic sugar: ISZERO -> EQLC
+  _      -> 1 + size p1
 
-size (ADDC p1 _) = 1 + size p1
-size (MULC p1 _) = 1 + size p1
-size (LINCOMB _ p1 _ p2) = 1 + size p1 + size p2
-
-size (NOT p1) = 1 + size p1
-size (AND p1 p2) = 1 + size p1 + size p2
-size (OR  p1 p2) = 1 + size p1 + size p2
-size (XOR p1 p2) = 1 + size p1 + size p2
-
-size (UnsafeNOT p1) = 1 + size p1
-size (UnsafeAND p1 p2) = 1 + size p1 + size p2
-size (UnsafeOR  p1 p2) = 1 + size p1 + size p2
-size (UnsafeXOR p1 p2) = 1 + size p1 + size p2
-
--- syntactic sugar needs extra steps to desugar
-size (ISZERO p1) = 1 + size p1           + 1 --        ISZERO -> EQLC
-size (EQL p1 p2) = 1 + size p1 + size p2 + 3 -- EQL -> ISZERO -> EQLC
-size (EQLC p1 _) = 1 + size p1
+size (BIN op p1 p2) = case op of
+  EQL -> 1 + size p1 + size p2 + 3 -- syntactic sugar: EQL -> ISZERO -> EQLC
+  _   -> 1 + size p1 + size p2
 
 size (NIL _) = 0
 size (CONS h ts) = 1 + size h + size ts
-
-size (BoolToF p) = 1 + size p
-
 
 
 {-@ reflect label @-}
@@ -100,62 +81,29 @@ label' p nextIndex env = let i = nextIndex in case p of
     BOOLEAN False  -> label' (CONST zero) nextIndex env
     BOOLEAN True   -> label' (CONST one) nextIndex env
 
-    ADD p1 p2 -> (i'+1, [LADD p1' p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-    SUB p1 p2 -> (i'+1, [LSUB p1' p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-    MUL p1 p2 -> (i'+1, [LMUL p1' p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-    DIV p1 p2 -> (w'+1, [LDIV p1' p2' w' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-            w' = i'+1
-    ADDC p1 k -> (i'+1, [LADDC p1' k i'], env')
-      where (i', [p1'], env') = label' p1 i env
-    MULC p1 k -> (i'+1, [LMULC p1' k i'], env')
-      where (i', [p1'], env') = label' p1 i env
-    LINCOMB k1 p1 k2 p2 -> (i'+1, [LLINCOMB k1 p1' k2 p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
+    UN op p1 -> case op of
+      BoolToF -> label' p1 i env -- noop
+      ISZERO -> label' (UN (EQLC zero) p1) nextIndex env
+      EQLC k -> (w'+1, [LEQLC p1' k w' i'], env')
+        where (i', [p1'], env') = label' p1 i env; w' = i'+1
+      _ -> (i'+1, [LUN op p1' i'], env')
+        where (i', [p1'], env') = label' p1 i env
 
-    NOT p1    -> (i'+1, [LNOT p1' i'], env')
-      where (i', [p1'], env') = label' p1 i env
-    AND p1 p2 -> (i'+1, [LAND p1' p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-    OR  p1 p2 -> (i'+1, [LOR  p1' p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-    XOR p1 p2 -> (i'+1, [LXOR p1' p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-
-    UnsafeNOT p1    -> (i'+1, [LUnsafeNOT p1' i'], env')
-      where (i', [p1'], env') = label' p1 i env
-    UnsafeAND p1 p2 -> (i'+1, [LUnsafeAND p1' p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-    UnsafeOR  p1 p2 -> (i'+1, [LUnsafeOR  p1' p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-    UnsafeXOR p1 p2 -> (i'+1, [LUnsafeXOR p1' p2' i'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
-
-    ISZERO p1 -> label' (EQLC p1 zero) nextIndex env
-    EQL p1 p2 -> label' (ISZERO (p1 `SUB` p2)) nextIndex env
-    EQLC p1 k -> (w'+1, [LEQLC p1' k w' i'], env')
-      where (i', [p1'], env') = label' p1 i env; w' = i'+1
+    BIN op p1 p2 -> case op of
+      DIV -> (w'+1, [LDIV p1' p2' w' i'], env')
+        where (i'', [p1'], env'') = label' p1 i   env
+              (i' , [p2'], env')  = label' p2 i'' env''
+              w' = i'+1
+      EQL -> label' (UN ISZERO (BIN SUB p1 p2)) nextIndex env
+      _ -> (i'+1, [LBIN op p1' p2' i'], env')
+        where (i'', [p1'], env'') = label' p1 i   env
+              (i' , [p2'], env')  = label' p2 i'' env''
 
     NIL _ -> (i, [], env)
     CONS h ts -> (i'', h' ++ ts', env'')
       where (i',  h',  env')  = label' h  i  env
             (i'', ts', env'') = label' ts i' env'
 
-    BoolToF p -> label' p i env -- noop
 
 {-@ reflect labelStore' @-}
 {-@ labelStore' :: assertion:(Assertion p) ->

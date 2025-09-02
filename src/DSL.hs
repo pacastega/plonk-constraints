@@ -3,6 +3,8 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
+{-@ LIQUID "--save" @-}
+{-@ LIQUID "--exactdc" @-}
 
 module DSL where
 
@@ -43,6 +45,19 @@ data BinOp p = ADD | SUB | MUL | DIV
              | UnsafeAND | UnsafeOR | UnsafeXOR
              | EQL
   deriving (Show, Eq, Ord)
+
+{-@ measure desugaredUnOp @-}
+desugaredUnOp :: UnOp p -> Bool
+desugaredUnOp op = case op of
+  ISZERO -> False; EQLC _ -> False; BoolToF -> False -- syntactic sugar
+  _ -> True -- all others are "real" operators
+
+{-@ measure desugaredBinOp @-}
+desugaredBinOp :: BinOp p -> Bool
+desugaredBinOp op = case op of
+  DIV -> False; EQL -> False -- syntactic sugar
+  _ -> True -- all others are "real" operators
+
 
 data DSL p =
     VAR String Ty -- variable
@@ -186,16 +201,9 @@ data Assertion p =
   | EQA   (ScalarDSL p) (ScalarDSL p)
 @-}
 
-data UnOp' p = ADDC' p | MULC' p
-             | NOT' | UnsafeNOT'
-  deriving (Show, Eq, Ord)
 
-data BinOp' p = ADD' | SUB' | MUL'
-              | LINCOMB' p p
-              | AND' | OR' | XOR'
-              | UnsafeAND' | UnsafeOR' | UnsafeXOR'
-  deriving (Show, Eq, Ord)
-
+{-@ type UnOp'  p = {op:UnOp  p | desugaredUnOp op} @-}
+{-@ type BinOp' p = {op:BinOp p | desugaredBinOp op} @-}
 
 -- Labeled DSL
 data LDSL p i =
@@ -205,8 +213,8 @@ data LDSL p i =
 
   LDIV   (LDSL p i) (LDSL p i) i i |
 
-  LUN  (UnOp' p)  (LDSL p i)            i |
-  LBIN (BinOp' p) (LDSL p i) (LDSL p i) i |
+  LUN  (UnOp p)  (LDSL p i)            i |
+  LBIN (BinOp p) (LDSL p i) (LDSL p i) i |
 
   LEQLC   (LDSL p i) p       i i |
 
@@ -269,11 +277,11 @@ nGates (LCONST _ _)     = 1
 nGates (LDIV p1 p2 _ _) = 2 + nGates p1 + nGates p2
 
 nGates (LUN  op p  _)    = nGates p + case op of
-  ADDC' _ -> 1; MULC' _ -> 1; NOT' -> 2; UnsafeNOT' -> 1
+  ADDC _ -> 1; MULC _ -> 1; NOT -> 2; UnsafeNOT -> 1
 nGates (LBIN op p1 p2 _) = nGates p1 + nGates p2 + case op of
-  ADD' -> 1; SUB' -> 1; MUL' -> 1; LINCOMB' _ _ -> 1
-  AND' -> 3; OR'  -> 3; XOR' -> 3
-  UnsafeAND' -> 1; UnsafeOR' -> 1; UnsafeXOR' -> 1
+  ADD -> 1; SUB -> 1; MUL -> 1; LINCOMB _ _ -> 1
+  AND -> 3; OR  -> 3; XOR -> 3
+  UnsafeAND -> 1; UnsafeOR -> 1; UnsafeXOR -> 1
 
 nGates (LEQLC p1 _ _ _) = 2 + nGates p1
 
@@ -301,27 +309,27 @@ compile m (LDIV p1 p2 w i) = append' (divGate m [i1, i2, i, w]) c'
     c' = append' c1 c2
 
 compile m (LUN op p1 i) = case op of
-  ADDC' k    -> append' (addGateConst  m k [i1, i]) c1
-  MULC' k    -> append' (mulGateConst  m k [i1, i]) c1
-  NOT'       -> append' (notGate       m   [i1, i]) c1
-  UnsafeNOT' -> append' (unsafeNotGate m   [i1, i]) c1
+  ADDC k    -> append' (addGateConst  m k [i1, i]) c1
+  MULC k    -> append' (mulGateConst  m k [i1, i]) c1
+  NOT       -> append' (notGate       m   [i1, i]) c1
+  UnsafeNOT -> append' (unsafeNotGate m   [i1, i]) c1
   where
     c1 = compile m p1; i1 = outputWire p1
 
 compile m (LBIN op p1 p2 i) = case op of
-  ADD' -> append' (addGate m [i1, i2, i]) c'
-  SUB' -> append' (addGate m [i, i2, i1]) c'
-  MUL' -> append' (mulGate m [i1, i2, i]) c'
+  ADD -> append' (addGate m [i1, i2, i]) c'
+  SUB -> append' (addGate m [i, i2, i1]) c'
+  MUL -> append' (mulGate m [i1, i2, i]) c'
 
-  LINCOMB' k1 k2 -> append' (linCombGate m [k1, k2] [i1, i2, i]) c'
+  LINCOMB k1 k2 -> append' (linCombGate m [k1, k2] [i1, i2, i]) c'
 
-  AND' -> append' (andGate m [i1, i2, i]) c'
-  OR'  -> append' (orGate  m [i1, i2, i]) c'
-  XOR' -> append' (xorGate m [i1, i2, i]) c'
+  AND -> append' (andGate m [i1, i2, i]) c'
+  OR  -> append' (orGate  m [i1, i2, i]) c'
+  XOR -> append' (xorGate m [i1, i2, i]) c'
 
-  UnsafeAND' -> append' (unsafeAndGate m [i1, i2, i]) c'
-  UnsafeOR'  -> append' (unsafeOrGate  m [i1, i2, i]) c'
-  UnsafeXOR' -> append' (unsafeXorGate m [i1, i2, i]) c'
+  UnsafeAND -> append' (unsafeAndGate m [i1, i2, i]) c'
+  UnsafeOR  -> append' (unsafeOrGate  m [i1, i2, i]) c'
+  UnsafeXOR -> append' (unsafeXorGate m [i1, i2, i]) c'
   where
     c1 = compile m p1; c2 = compile m p2
     i1 = outputWire p1; i2 = outputWire p2
@@ -370,33 +378,33 @@ semanticsAreCorrect m (LDIV p1 p2 w i) input = correct where
     if input!i2 /= 0 then input!i == input!i1 / input!i2 else True
 
 semanticsAreCorrect m (LUN op p1 i) input = case op of
-  ADDC' k -> correct1 && input!i == input!i1 + k
-  MULC' k -> correct1 && input!i == input!i1 * k
-  NOT'    -> correct1 && (input!i == if input!i1 == 1 then 0 else 1) &&
+  ADDC k -> correct1 && input!i == input!i1 + k
+  MULC k -> correct1 && input!i == input!i1 * k
+  NOT    -> correct1 && (input!i == if input!i1 == 1 then 0 else 1) &&
                           boolean (input!i1)
-  UnsafeNOT' -> correct1 && (input!i == 1 - input!i1)
+  UnsafeNOT -> correct1 && (input!i == 1 - input!i1)
   where
     correct1 = semanticsAreCorrect m p1 input; i1 = outputWire p1
 
 semanticsAreCorrect m (LBIN op p1 p2 i) input = case op of
-  ADD' -> correct1 && correct2 && input!i == input!i1 + input!i2
-  SUB' -> correct1 && correct2 && input!i == input!i1 - input!i2
-  MUL' -> correct1 && correct2 && input!i == input!i1 * input!i2
-  LINCOMB' k1 k2 -> correct1 && correct2 && input!i == k1*input!i1 + k2*input!i2
-  AND' -> correct1 && correct2 &&
+  ADD -> correct1 && correct2 && input!i == input!i1 + input!i2
+  SUB -> correct1 && correct2 && input!i == input!i1 - input!i2
+  MUL -> correct1 && correct2 && input!i == input!i1 * input!i2
+  LINCOMB k1 k2 -> correct1 && correct2 && input!i == k1*input!i1 + k2*input!i2
+  AND -> correct1 && correct2 &&
     (input!i == if input!i1 == 0 || input!i2 == 0 then 0 else 1) &&
     boolean (input!i1) && boolean (input!i2)
-  OR' -> correct1 && correct2 &&
+  OR -> correct1 && correct2 &&
     (input!i == if input!i1 == 1 || input!i2 == 1 then 1 else 0) &&
     boolean (input!i1) && boolean (input!i2)
-  XOR' -> correct1 && correct2 &&
+  XOR -> correct1 && correct2 &&
     (input!i == if input!i1 /= input!i2 then 1 else 0) &&
     boolean (input!i1) && boolean (input!i2)
-  UnsafeAND' -> correct1 && correct2 &&
+  UnsafeAND -> correct1 && correct2 &&
     (input!i == input!i1 * input!i2)
-  UnsafeOR' -> correct1 && correct2 &&
+  UnsafeOR -> correct1 && correct2 &&
     (input!i == input!i1 + input!i2 - input!i1*input!i2)
-  UnsafeXOR' -> correct1 && correct2 &&
+  UnsafeXOR -> correct1 && correct2 &&
     (input!i == input!i1 + input!i2 - 2*input!i1*input!i2)
   where
     correct1 = semanticsAreCorrect m p1 input

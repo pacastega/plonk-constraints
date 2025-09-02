@@ -38,16 +38,16 @@ compileProof m (LDIV p1 p2 w i) input =
      satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)
 
 compileProof m (LUN op p1 i)  input = case op of
-  ADDC' _    -> compileProof m p1 input
-  MULC' _    -> compileProof m p1 input
-  NOT'       -> compileProof m p1 input
-  UnsafeNOT' -> compileProof m p1 input
+  ADDC _    -> compileProof m p1 input
+  MULC _    -> compileProof m p1 input
+  NOT       -> compileProof m p1 input
+  UnsafeNOT -> compileProof m p1 input
 
 compileProof m (LBIN op p1 p2 i) input = case op of
-  ADD' -> proof; SUB' -> proof; MUL' -> proof; LINCOMB' _ _ -> proof
-  AND' -> proof; UnsafeAND' -> proof;
-  OR'  -> proof; UnsafeOR'  -> proof;
-  XOR' -> proof; UnsafeXOR' -> proof;
+  ADD -> proof; SUB -> proof; MUL -> proof; LINCOMB _ _ -> proof
+  AND -> proof; UnsafeAND -> proof;
+  OR  -> proof; UnsafeOR  -> proof;
+  XOR -> proof; UnsafeXOR -> proof;
   where proof = compileProof m p1 input -- IH 1
               ? compileProof m p2 input -- IH 2
               ? satisfiesDistr n1 n2 m input (compile m p1) (compile m p2)

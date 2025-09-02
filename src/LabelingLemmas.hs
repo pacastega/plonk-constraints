@@ -31,39 +31,14 @@ updateLemma m m' ρ e σ = case e of
   LVAR {} -> ()
   LCONST {} -> ()
 
-  LADD e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
-
-  LSUB e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
-  LMUL e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
   LDIV e1 e2 _ _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
     Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
 
-  LADDC e1 _ _ -> updateLemma m m' ρ e1 σ
-  LMULC e1 _ _ -> updateLemma m m' ρ e1 σ
-  LLINCOMB _ e1 _ e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
-
-  LNOT e1 _ -> updateLemma m m' ρ e1 σ
-  LAND e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
-  LOR  e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
-  LXOR e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
-
-  LUnsafeNOT e1 _ -> updateLemma m m' ρ e1 σ
-  LUnsafeAND e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
-  LUnsafeOR  e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
-  LUnsafeXOR e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
+  LUN _ e1 _ -> updateLemma m m' ρ e1 σ
+  LBIN _ e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ e1 σ of
     Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
 
   LEQLC e1 _ _ _ -> updateLemma m m' ρ e1 σ
-  LNZERO e1 _    -> updateLemma m m' ρ e1 σ
 
   LNZERO e1 _ -> updateLemma m m' ρ e1 σ
   LBOOL e1    -> updateLemma m m' ρ e1 σ

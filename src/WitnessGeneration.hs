@@ -55,36 +55,6 @@ update m sv (LVAR s τ i) valuation = case M.lookup s sv of
     TF -> Just (M.insert i value valuation)
     TBool -> if boolean value then Just (M.insert i value valuation) else Nothing
 update m _  (LCONST x i) valuation = Just (M.insert i x valuation)
-update m sv (LADD p1 p2 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
-      Nothing -> Nothing
-      Just valuation2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (x1 + x2) valuation2)
-           _                  -> Nothing
-update m sv (LSUB p1 p2 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
-      Nothing -> Nothing
-      Just valuation2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (x1 - x2) valuation2)
-           _                  -> Nothing
-update m sv (LMUL p1 p2 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
-      Nothing -> Nothing
-      Just valuation2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (x1 * x2) valuation2)
-           _                  -> Nothing
 update m sv (LDIV p1 p2 w i) valuation =
   case update m sv p1 valuation of
     Nothing -> Nothing
@@ -98,23 +68,21 @@ update m sv (LDIV p1 p2 w i) valuation =
                let valuation3 = M.insert i (x1 / x2) valuation2
                in Just (M.insert w (1 / x2) valuation3)
            _                  -> Nothing
-update m sv (LADDC p1 k i) valuation =
+update m sv (LUN op p1 i) valuation =
   case update m sv p1 valuation of
     Nothing -> Nothing
     Just valuation1 ->
       let i1 = outputWire p1
       in case M.lookup i1 valuation1
-      of Just x1 -> Just (M.insert i (x1 + k) valuation1)
+      of Just x1 ->
+           let value = case op of
+                 ADDC k1 -> k1 + x1
+                 MULC k1 -> k1 * x1
+                 NOT -> 1 - x1
+                 UnsafeNOT -> 1 - x1
+           in Just (M.insert i value valuation1)
          _       -> Nothing
-update m sv (LMULC p1 k i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 ->
-      let i1 = outputWire p1
-      in case M.lookup i1 valuation1
-      of Just x1 -> Just (M.insert i (x1 * k) valuation1)
-         _       -> Nothing
-update m sv (LLINCOMB k1 p1 k2 p2 i) valuation =
+update m sv (LBIN op p1 p2 i) valuation =
   case update m sv p1 valuation of
     Nothing -> Nothing
     Just valuation1 -> case update m sv p2 valuation1 of
@@ -122,83 +90,19 @@ update m sv (LLINCOMB k1 p1 k2 p2 i) valuation =
       Just valuation2 ->
         let i1 = outputWire p1; i2 = outputWire p2
         in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (k1*x1 + k2*x2) valuation2)
-           _                  -> Nothing
-update m sv (LNOT p1 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 ->
-      let i1 = outputWire p1
-      in case M.lookup i1 valuation1
-      of Just x1 -> Just (M.insert i (1 - x1) valuation1)
-         _       -> Nothing
-update m sv (LAND p1 p2 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
-      Nothing -> Nothing
-      Just valuation2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (x1 * x2) valuation2)
-           _                  -> Nothing
-update m sv (LOR  p1 p2 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
-      Nothing -> Nothing
-      Just valuation2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (x1 + x2 - x1*x2) valuation2)
-           _                  -> Nothing
-update m sv (LXOR p1 p2 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
-      Nothing -> Nothing
-      Just valuation2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (x1 + x2 - 2*x1*x2) valuation2)
-           _                  -> Nothing
-update m sv (LUnsafeNOT p1 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 ->
-      let i1 = outputWire p1
-      in case M.lookup i1 valuation1
-      of Just x1 -> Just (M.insert i (1 - x1) valuation1)
-         _       -> Nothing
-update m sv (LUnsafeAND p1 p2 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
-      Nothing -> Nothing
-      Just valuation2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (x1 * x2) valuation2)
-           _                  -> Nothing
-update m sv (LUnsafeOR  p1 p2 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
-      Nothing -> Nothing
-      Just valuation2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (x1 + x2 - x1*x2) valuation2)
-           _                  -> Nothing
-update m sv (LUnsafeXOR p1 p2 i) valuation =
-  case update m sv p1 valuation of
-    Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
-      Nothing -> Nothing
-      Just valuation2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 valuation1, M.lookup i2 valuation2)
-        of (Just x1, Just x2) -> Just (M.insert i (x1 + x2 - 2*x1*x2) valuation2)
+        of (Just x1, Just x2) ->
+             let value = case op of
+                   ADD -> x1 + x2
+                   SUB -> x1 - x2
+                   MUL -> x1 * x2
+                   LINCOMB k1 k2 -> k1*x1 + k2*x2
+                   AND -> x1 * x2
+                   OR  -> x1 + x2 -   x1*x2
+                   XOR -> x1 + x2 - 2*x1*x2
+                   UnsafeAND -> x1 * x2
+                   UnsafeOR  -> x1 + x2 -   x1*x2
+                   UnsafeXOR -> x1 + x2 - 2*x1*x2
+             in Just (M.insert i value valuation2)
            _                  -> Nothing
 
 update m sv (LEQLC p1 k w i) valuation =

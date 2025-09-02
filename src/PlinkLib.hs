@@ -12,6 +12,17 @@ import Semantics
 
 import GlobalStore
 
+-- Aliases for arithmetic operations -------------------------------------------
+{-@ plus :: {x:DSL p | typed x TF} -> {y:DSL p | typed y TF}
+         -> {z:DSL p | typed z TF} @-}
+plus :: Num p => DSL p -> DSL p -> DSL p
+plus = BIN ADD
+
+{-@ times :: {x:DSL p | typed x TF} -> {y:DSL p | typed y TF}
+          -> {z:DSL p | typed z TF} @-}
+times :: Num p => DSL p -> DSL p -> DSL p
+times = BIN ADD
+
 -- General functions for variables ---------------------------------------------
 {-@ vecVar :: strs:[String] -> τ:ScalarTy
            -> {v:DSL p | typed v (TVec τ (len strs)) && vlength v = len strs} @-}
@@ -135,22 +146,22 @@ vChunk τ n xs      = let (ys, zs) = vTakeDrop τ n xs in ys : (vChunk τ n zs)
 -- Bitwise operations ----------------------------------------------------------
 {-@ vNot :: u:PlinkVec p TBool
          -> w:{PlinkVec p TBool | vlength w = vlength u} @-}
-vNot = vMap TBool TBool UnsafeNOT
+vNot = vMap TBool TBool (UN UnsafeNOT)
 
 {-@ vAnd :: u:PlinkVec p TBool
          -> v:{PlinkVec p TBool | vlength v = vlength u}
          -> w:{PlinkVec p TBool | vlength w = vlength u} @-}
-vAnd = vZipWith TBool TBool TBool UnsafeAND
+vAnd = vZipWith TBool TBool TBool (BIN UnsafeAND)
 
 {-@ vOr :: u:PlinkVec p TBool
         -> v:{PlinkVec p TBool | vlength v = vlength u}
         -> w:{PlinkVec p TBool | vlength w = vlength u} @-}
-vOr = vZipWith TBool TBool TBool UnsafeOR
+vOr = vZipWith TBool TBool TBool (BIN UnsafeOR)
 
 {-@ vXor :: u:PlinkVec p TBool
         -> v:{PlinkVec p TBool | vlength v = vlength u}
         -> w:{PlinkVec p TBool | vlength w = vlength u} @-}
-vXor = vZipWith TBool TBool TBool UnsafeXOR
+vXor = vZipWith TBool TBool TBool (BIN UnsafeXOR)
 
 -- Shift & rotate --------------------------------------------------------------
 {-@ rotateL :: τ:Ty
@@ -204,8 +215,8 @@ binaryValue v = pure $ go v (CONST 0) where
          -> ({d:DSL p | typed d TF}) @-}
   go :: (Integral p, Fractional p, Eq p) => DSL p -> DSL p -> DSL p
   go (NIL _)     acc = acc
-  go (CONS x xs) acc = go xs (x' `ADD` (CONST 2 `MUL` acc))
-    where x' = BoolToF x
+  go (CONS x xs) acc = go xs (x' `plus` (CONST 2 `times` acc))
+    where x' = UN BoolToF x
 
 {-@ binaryRepr :: n:Nat -> p -> ListN p n @-}
 binaryRepr :: (Integral p, Eq p) => Int -> p -> [p]
@@ -266,7 +277,7 @@ addMod e x y = do
   let z = VAR z' TF
 
   assert $ BOOL b
-  assert $ (x `ADD` y) `EQA` (z `ADD` (b `MUL` CONST modulus))
+  assert $ (x `plus` y) `EQA` (z `plus` (b `times` CONST modulus))
 
   define b' (\v -> (\x y -> if x + y < modulus then 0 else 1)
                    <$> (case eval x v of Just (VF x') -> Just x'; Nothing -> Nothing)
