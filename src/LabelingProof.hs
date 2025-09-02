@@ -30,7 +30,7 @@ import Language.Haskell.Liquid.ProofCombinators
 {-@ reflect foo @-}
 foo :: UnOp Int -> Int
 foo (ADDC x) = x
-foo _        = 0 
+foo _        = 0
 
 
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
