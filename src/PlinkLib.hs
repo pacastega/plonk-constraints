@@ -159,8 +159,8 @@ vAnd = vZipWith TBool TBool TBool (BIN UnsafeAND)
 vOr = vZipWith TBool TBool TBool (BIN UnsafeOR)
 
 {-@ vXor :: u:PlinkVec p TBool
-        -> v:{PlinkVec p TBool | vlength v = vlength u}
-        -> w:{PlinkVec p TBool | vlength w = vlength u} @-}
+         -> v:{PlinkVec p TBool | vlength v = vlength u}
+         -> w:{PlinkVec p TBool | vlength w = vlength u} @-}
 vXor = vZipWith TBool TBool TBool (BIN UnsafeXOR)
 
 -- Shift & rotate --------------------------------------------------------------
