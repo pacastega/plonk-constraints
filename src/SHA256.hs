@@ -140,34 +140,34 @@ plus32 :: (Integral p, Fractional p, Ord p) =>
 plus32 = addMod 32 -- addition modulo 2^32
 
 
--- {-@ processMsg :: {msg:PlinkVec p TBool | (vlength msg) mod 512 = 0}
---                -> GlobalStore p (PlinkVec p TBool) @-}
--- -- TODO: can we prove the resulting length is what it should be?
--- processMsg :: (Integral p, Fractional p, Ord p) =>
---               DSL p -> GlobalStore p (DSL p)
--- processMsg msg = do
---   let chunks = vChunk TBool 512 msg -- split into 512-bit chunks
---   finalHashes <- foldl processChunk (pure h) chunks -- process all the chunks
---   finalHashes' <- sequence' $ map (toBinary 32) finalHashes -- convert to binary
---   return $ vConcat TBool finalHashes' -- concatenate all the hashes
+{-@ processMsg :: {msg:PlinkVec p TBool | (vlength msg) mod 512 = 0}
+               -> GlobalStore p (PlinkVec p TBool) @-}
+-- TODO: can we prove the resulting length is what it should be?
+processMsg :: (Integral p, Fractional p, Ord p) =>
+              DSL p -> GlobalStore p (DSL p)
+processMsg msg = do
+  let chunks = vChunk TBool 512 msg -- split into 512-bit chunks
+  finalHashes <- foldl processChunk (pure h) chunks -- process all the chunks
+  finalHashes' <- sequence' $ map (toBinary 32) finalHashes -- convert to binary
+  return $ vConcat TBool finalHashes' -- concatenate all the hashes
 
--- {-@ processChunk :: GlobalStore p (ListN (Word p) 8)
---                  -> {v:DSL p | typed v (TVec TBool 512) && vlength v = 512}
---                  -> GlobalStore p (ListN (Word p) 8) @-}
--- processChunk :: (Integral p, Fractional p, Ord p) =>
---                 GlobalStore p [Word p] -> DSL p
---              -> GlobalStore p [Word p]
--- processChunk currentHash chunk = do
---   let words = vChunk TBool 32 chunk -- split chunk as list of 16 32-bit words
---   words' <- sequence' $ map fromBinary words -- convert to list of 16 32-bit ints
---   extended <- extend words' -- extend to list of 64 32-bit ints
+{-@ processChunk :: GlobalStore p (ListN (Word p) 8)
+                 -> {v:DSL p | typed v (TVec TBool 512) && vlength v = 512}
+                 -> GlobalStore p (ListN (Word p) 8) @-}
+processChunk :: (Integral p, Fractional p, Ord p) =>
+                GlobalStore p [Word p] -> DSL p
+             -> GlobalStore p [Word p]
+processChunk currentHash chunk = do
+  let words = vChunk TBool 32 chunk -- split chunk as list of 16 32-bit words
+  words' <- sequence' $ map fromBinary words -- convert to list of 16 32-bit ints
+  extended <- extend words' -- extend to list of 64 32-bit ints
 
---   currentHash' <- currentHash -- unwrap it
+  currentHash' <- currentHash -- unwrap it
 
---   workingVariables <- compress (pure currentHash') extended
---   finalHashes <- sequence' $ zipWith' plus32 currentHash' workingVariables
+  workingVariables <- compress (pure currentHash') extended
+  finalHashes <- sequence' $ zipWith' plus32 currentHash' workingVariables
 
---   return finalHashes
+  return finalHashes
 
 rotate :: DSL p -> Int -> DSL p
 rotate = rotateR TBool
@@ -265,16 +265,16 @@ compress = aux 64 where
 
 {-@ assume ord :: Char -> Btwn 0 256 @-}
 
--- {-@ sha256 :: {s:String | len s < pow 2 61} ->
---               GlobalStore p (PlinkVec p TBool) @-}
--- sha256 :: (Integral p, Fractional p, Ord p)
---        => String -> GlobalStore p (DSL p)
--- sha256 = processMsg . padding . toBits where
---   {-@ toBits :: s:String
---              -> {v:DSL p | typed v (TVec TBool (8 * len s))
---                         && vlength v = 8 * len s} @-}
---   toBits :: Num p => String -> DSL p
---   toBits [] = NIL TBool
---   toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
+{-@ sha256 :: {s:String | len s < pow 2 61} ->
+              GlobalStore p (PlinkVec p TBool) @-}
+sha256 :: (Integral p, Fractional p, Ord p)
+       => String -> GlobalStore p (DSL p)
+sha256 = processMsg . padding . toBits where
+  {-@ toBits :: s:String
+             -> {v:DSL p | typed v (TVec TBool (8 * len s))
+                        && vlength v = 8 * len s} @-}
+  toBits :: Num p => String -> DSL p
+  toBits [] = NIL TBool
+  toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs
 
---   (+++) = vAppend TBool
+  (+++) = vAppend TBool
