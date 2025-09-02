@@ -16,6 +16,17 @@ import GlobalStore
 
 import Data.Char (ord)
 
+
+{-@ reflect barOp @-}
+barOp :: BinOp (BinOp Int) -> Int 
+barOp ADD = 0 
+barOp _   = 1
+
+{-@ reflect foo @-}
+foo :: UnOp Int -> Int
+foo (ADDC x) = x
+foo _        = 0 
+
 {-@ type Word p = {d:DSL p | typed d TF} @-}
 type Word p = DSL p
 

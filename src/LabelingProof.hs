@@ -27,6 +27,12 @@ import LabelingLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 
+{-@ reflect foo @-}
+foo :: UnOp Int -> Int
+foo (ADDC x) = x
+foo _        = 0 
+
+
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
 {-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)}
                          -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}

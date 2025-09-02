@@ -4,7 +4,6 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 {-@ LIQUID "--save" @-}
-{-@ LIQUID "--exactdc" @-}
 
 module DSL where
 
