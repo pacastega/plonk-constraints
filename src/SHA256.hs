@@ -2,9 +2,8 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
-{-@ LIQUID "--save" @-}
 {-@ infix +++ @-}
-module SHA256  where
+module SHA256 (sha256) where
 
 import Prelude hiding (Word)
 
@@ -168,6 +167,8 @@ processChunk currentHash chunk = do
 
   return finalHashes
 
+{-@ rotate :: u:PlinkVec p TBool -> Btwn 0 (vlength u)
+           -> {v:PlinkVec p TBool | vlength v = vlength u} @-}
 rotate :: DSL p -> Int -> DSL p
 rotate = rotateR TBool
 
