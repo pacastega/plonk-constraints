@@ -18,10 +18,36 @@ import GlobalStore
 plus :: Num p => DSL p -> DSL p -> DSL p
 plus = BIN ADD
 
+{-@ minus :: {x:DSL p | typed x TF} -> {y:DSL p | typed y TF}
+         -> {z:DSL p | typed z TF} @-}
+minus :: Num p => DSL p -> DSL p -> DSL p
+minus = BIN SUB
+
 {-@ times :: {x:DSL p | typed x TF} -> {y:DSL p | typed y TF}
           -> {z:DSL p | typed z TF} @-}
 times :: Num p => DSL p -> DSL p -> DSL p
 times = BIN ADD
+
+{-@ over :: {x:DSL p | typed x TF} -> {y:DSL p | typed y TF}
+         -> {z:DSL p | typed z TF} @-}
+over :: Num p => DSL p -> DSL p -> DSL p
+over = BIN DIV
+
+{-@ (/\) :: {x:DSL p | typed x TBool} -> {y:DSL p | typed y TBool}
+         -> {z:DSL p | typed z TBool} @-}
+(/\) :: Num p => DSL p -> DSL p -> DSL p
+(/\) = BIN AND
+
+{-@ (\/) :: {x:DSL p | typed x TBool} -> {y:DSL p | typed y TBool}
+         -> {z:DSL p | typed z TBool} @-}
+(\/) :: Num p => DSL p -> DSL p -> DSL p
+(\/) = BIN OR
+
+{-@ (=?) :: {x:DSL p | typed x TF} -> {y:DSL p | typed y TF}
+         -> {z:DSL p | typed z TBool} @-}
+(=?) :: Num p => DSL p -> DSL p -> DSL p
+(=?) = BIN EQL
+
 
 -- General functions for variables ---------------------------------------------
 {-@ vecVar :: strs:[String] -> τ:ScalarTy

@@ -155,17 +155,17 @@ test' programStore valuation tikzFilename = do
 -- (a + b) + (c + d)
 {-@ arith1 :: {v:DSL F17 | typed v TF} @-}
 arith1 :: DSL F17
-arith1 = ADD (ADD (VAR "a" TF) (VAR "b" TF)) (ADD (VAR "c" TF) (VAR "d" TF))
+arith1 = (VAR "a" TF `plus` VAR "b" TF) `plus` (VAR "c" TF `plus` VAR "d" TF)
 
 -- (a + 15) * (b + 3)
 {-@ arith2 :: {v:DSL F17 | typed v TF} @-}
 arith2 :: DSL F17
-arith2 = MUL (ADD (VAR "a" TF) (CONST 15)) (ADD (VAR "b" TF) (CONST 3))
+arith2 = (VAR "a" TF `plus` CONST 15) `times` (VAR "b" TF `plus` CONST 3)
 
 -- num / den
 {-@ arith3 :: {v:DSL F17 | typed v TF} @-}
 arith3 :: DSL F17
-arith3 = DIV (VAR "num" TF) (VAR "den" TF)
+arith3 = VAR "num" TF `over` VAR "den" TF
 
 testArithmetic :: IO ()
 testArithmetic = do
@@ -178,18 +178,18 @@ testArithmetic = do
 -- a == 0 || (a /= 0 && b == 1)
 {-@ bool1 :: {v:DSL F17 | typed v TBool} @-}
 bool1 :: DSL F17
-bool1 = ISZERO (VAR "a" TF) `OR`
-        (NOT (ISZERO (VAR "a" TF)) `AND` (ISZERO (VAR "b" TF)))
+bool1 = UN ISZERO (VAR "a" TF) \/
+        ((UN NOT (UN ISZERO (VAR "a" TF))) /\ (UN ISZERO (VAR "b" TF)))
 
 -- 7 * inv == 1
 {-@ bool2 :: {v:DSL F17 | typed v TBool} @-}
 bool2 :: DSL F17
-bool2 = (CONST 7 `MUL` VAR "inv" TF) `EQL` CONST 1
+bool2 = (CONST 7 `times` VAR "inv" TF) =? CONST 1
 
 -- addTo5 + 2 == 5
 {-@ bool3 :: {v:DSL F17 | typed v TBool} @-}
 bool3 :: DSL F17
-bool3 = (VAR "addsTo5" TF `ADD` CONST 2) `EQL` CONST 5
+bool3 = (VAR "addsTo5" TF `plus` CONST 2) =? CONST 5
 
 testBoolean :: IO ()
 testBoolean = do
@@ -275,9 +275,9 @@ testBoolean = do
 -- Vector programs -------------------------------------------------------------
 {-@ vec1 :: {v:DSL PF | typed v (TVec TF 3)} @-}
 vec1 :: DSL PF
-vec1 = (CONST 42)                    `CONS`        -- 42
-       (CONST 4    `SUB` VAR "a" TF) `CONS`        -- 4 - a
-       (VAR "b" TF `ADD` CONST 5)    `CONS` NIL TF -- b + 5
+vec1 = (CONST 42)                      `CONS`        -- 42
+       (CONST 4    `minus` VAR "a" TF) `CONS`        -- 4 - a
+       (VAR "b" TF `plus`  CONST 5)    `CONS` NIL TF -- b + 5
 
 {-@ range :: lo:p -> hi:{p | hi >= lo} ->
              {res:DSL p | typed res (TVec TF (hi-lo))}
@@ -308,8 +308,8 @@ vec3 = lenThm TF 4 (range 1 5) ?? get TF (range 1 5) 3 where
 {-@ vecMul :: a:PlinkVec p TF ->
               b:{PlinkVec p TF | vlength b = vlength a} ->
               c:{PlinkVec p TF | vlength c = vlength a} @-}
-vecMul :: DSL p -> DSL p -> DSL p
-vecMul = vZipWith TF TF TF MUL
+vecMul :: Num p => DSL p -> DSL p -> DSL p
+vecMul = vZipWith TF TF TF times
 
 -- [1, 2, 3] * [5, 6, 7] = [1*5, 2*6, 3*7] = [5, 12, 21]
 {-@ vec4 :: {v:DSL PF | typed v (TVec TF 3)} @-}
@@ -423,19 +423,19 @@ testSha = do
 -- (3 - (2 + 1)) + x ≡ x
 {-@ opt1 :: GlobalStore BigPF ({v:DSL BigPF | typed v TF}) @-}
 opt1 :: GlobalStore BigPF (DSL BigPF)
-opt1 = let p = (CONST 3 `SUB` (CONST 2 `ADD` CONST 1)) `ADD` (VAR "x" TF)
+opt1 = let p = (CONST 3 `minus` (CONST 2 `plus` CONST 1)) `plus` (VAR "x" TF)
        in inferType p ?? pure p
 
 -- (3 - 2) * x + y ≡ x + y
 {-@ opt2 :: GlobalStore BigPF ({v:DSL BigPF | typed v TF}) @-}
 opt2 :: GlobalStore BigPF (DSL BigPF)
-opt2 = let p = ((CONST 3 `SUB` CONST 2) `MUL` (VAR "x" TF)) `ADD` (VAR "y" TF)
+opt2 = let p = ((CONST 3 `minus` CONST 2) `times` (VAR "x" TF)) `plus` (VAR "y" TF)
        in inferType p ?? pure p
 
 -- (3 - 1) * x + y ≡ lincomb(2,x, 1,y)
 {-@ opt3 :: GlobalStore BigPF ({v:DSL BigPF | typed v TF}) @-}
 opt3 :: GlobalStore BigPF (DSL BigPF)
-opt3 = let p = ((CONST 3 `SUB` CONST 1) `MUL` (VAR "x" TF)) `ADD` (VAR "y" TF)
+opt3 = let p = ((CONST 3 `minus` CONST 1) `times` (VAR "x" TF)) `plus` (VAR "y" TF)
        in inferType p ?? pure p
 
 testOpt :: IO ()
