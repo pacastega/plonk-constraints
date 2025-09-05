@@ -36,9 +36,6 @@ foo _        = 0
 {-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)}
                          -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
 
-data Pair a b = Pair a b
-{-@ data Pair a b <p :: a -> Bool, q :: b -> Bool> = Pair a<p> b<q> @-}
-
 
 -- this corresponds to Lemma 2. from the paper
 {-@ labelProof1 :: m0:Nat -> m:{Nat | m >= m0}
