@@ -143,7 +143,7 @@ labelProof1 m0 m e ρ λ σ π λ' e' σ' v = case e of
               (ih1, π1) = labelProof1 m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
               (ih2, π2) = labelProof1 m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
 
-     ADD ->
+      ADD ->
         let (m1, ps1, λ1) = label' p1 m0 λ
             (m2, ps2, λ2) = label' p2 m1 λ1
             p1' = case ps1 of [x] -> x
