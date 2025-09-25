@@ -32,372 +32,6 @@ foo (ADDC x) = x
 foo _        = 0
 
 
--- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
-{-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)}
-                         -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
-
-
-{-@ labelProofUn  :: m0:Nat -> m:{Nat | m >= m0}
-                  -> p1:{TypedDSL p | scalar p1}
-                  -> op:{UnOp p | wellTyped (UN op p1)}
-                  -> ρ:NameValuation p
-                  -> λ:LabelEnv p (Btwn 0 m0)
-                  -> σ:M.Map (Btwn 0 m0) p
-
-                  -> Composable ρ λ σ
-
-                  -> λ':LabelEnv p (Btwn 0 m)
-                  -> e':{LDSL p (Btwn 0 m) | label' (UN op p1) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
-
-                  -> v:p
-
-                  -> ({ eval (UN op p1) ρ = Just (VF v) <=>
-                      M.lookup (outputWire e') σ' = Just v },
-                    Composable ρ λ' σ')
-                  / [size p1, 1] @-}
-labelProofUn :: (Fractional p, Eq p, Ord p)
-              => Int -> Int -> DSL p -> UnOp p
-              -> NameValuation p
-              -> LabelEnv p Int
-              -> M.Map Int p
-
-              -> (String -> Proof)
-
-              -> LabelEnv p Int
-              -> LDSL p Int
-              -> M.Map Int p
-
-              -> p
-
-              -> (Proof, String -> Proof)
-labelProofUn m0 m p1 op ρ λ σ π λ' e' σ' v = case op of
-  ADDC k -> (ih1 ? (eval (UN op p1) ρ === Just (add (VF k) (VF v1))),
-            \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          p1' = case ps1 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
-
-  MULC k -> (ih1 ? (eval (UN op p1) ρ === Just (mul (VF k) (VF v1))),
-            \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          p1' = case ps1 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
-
-  NOT -> (ih1
-          ? case eval p1 ρ of Just v -> v
-          ? (eval (UN op p1) ρ === Just (notFn (VF v1))),
-         \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          p1' = case ps1 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
-
-  UnsafeNOT -> (ih1
-                ? case eval p1 ρ of Just v -> v
-                ? (eval (UN op p1) ρ === Just (notFn (VF v1))),
-               \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          p1' = case ps1 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
-
-  ISZERO -> if v1 == 0
-            then (ih1 ? (eval (UN op p1) ρ === Just (eqlFn (VF 0) (VF v1))),
-                 \x -> let j = M.lookup' x λ1
-                       in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
-                               ? (M.lookup j σ'
-                                  === M.lookup j (M.insert w zero σ1)
-                                  === M.lookup j σ1))
-                 ? liquidAssert (σ' == M.insert i one (M.insert w zero σ1))
-            else (ih1 ? (eval (UN op p1) ρ === Just (eqlFn (VF 0) (VF v1))),
-                 \x -> let j = M.lookup' x λ1
-                       in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
-                               ? (M.lookup j σ'
-                                  === M.lookup j (M.insert w (1/v1) σ1)
-                                  === M.lookup j σ1))
-                 ? liquidAssert (σ' == M.insert i zero (M.insert w (1/v1) σ1))
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (LEQLC _ _ w i) = e'
-          p1' = case ps1 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
-
-  EQLC k -> if v1 == k
-            then (ih1 ? (eval (UN op p1) ρ === Just (eqlFn (VF k) (VF v1))),
-                 \x -> let j = M.lookup' x λ1
-                       in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
-                               ? (M.lookup j σ'
-                                  === M.lookup j (M.insert w 0 σ1)
-                                  === M.lookup j σ1))
-                 ? liquidAssert (σ' == M.insert i one (M.insert w zero σ1))
-            else (ih1 ? (eval (UN op p1) ρ === Just (eqlFn (VF k) (VF v1))),
-                 \x -> let j = M.lookup' x λ1
-                       in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
-                               ? (M.lookup j σ'
-                                  === M.lookup j (M.insert w (1/(v1-k)) σ1)
-                                  === M.lookup j σ1))
-                 ? liquidAssert (σ' == M.insert i zero (M.insert w (1/(v1-k)) σ1))
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (LEQLC _ _ w i) = e'
-          p1' = case ps1 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
-
-  BoolToF -> case M.lookup (outputWire p1') σ1 of
-      Just v1 -> labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
-      Nothing -> case eval p1 ρ of
-        Just (VF v1') -> labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1'
-        Nothing -> labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 0
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          p1' = case ps1 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
-
-
-{-@ labelProofBin :: m0:Nat -> m:{Nat | m >= m0}
-                  -> p1:{TypedDSL p | scalar p1}
-                  -> p2:{TypedDSL p | scalar p2}
-                  -> op:{BinOp p | wellTyped (BIN op p1 p2)}
-                  -> ρ:NameValuation p
-                  -> λ:LabelEnv p (Btwn 0 m0)
-                  -> σ:M.Map (Btwn 0 m0) p
-
-                  -> Composable ρ λ σ
-
-                  -> λ':LabelEnv p (Btwn 0 m)
-                  -> e':{LDSL p (Btwn 0 m) | label' (BIN op p1 p2) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
-
-                  -> v:p
-
-                  -> ({ eval (BIN op p1 p2) ρ = Just (VF v) <=>
-                      M.lookup (outputWire e') σ' = Just v },
-                    Composable ρ λ' σ')
-                  / [size p1 + size p2, 1] @-}
-labelProofBin :: (Fractional p, Eq p, Ord p)
-              => Int -> Int -> DSL p -> DSL p -> BinOp p
-              -> NameValuation p
-              -> LabelEnv p Int
-              -> M.Map Int p
-
-              -> (String -> Proof)
-
-              -> LabelEnv p Int
-              -> LDSL p Int
-              -> M.Map Int p
-
-              -> p
-
-              -> (Proof, String -> Proof)
-labelProofBin m0 m p1 p2 op ρ λ σ π λ' e' σ' v = case op of
-  DIV -> (ih1 ? ih2,
-         \x -> let j = M.lookup' x λ2
-               in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
-                       ? (M.lookup j σ'
-                          === M.lookup j (M.insert i (v1/v2) σ2)
-                          === M.lookup j σ2))
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          (LDIV _ _ w i) = e'
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  EQL -> if v1 == v2
-         then (ih1 ? ih2
-               ? liquidAssert (M.lookup (outputWire sub) σ3 == Just (v1 - v2))
-               ? (eval (BIN op p1 p2) ρ === Just (eqlFn (VF v1) (VF v2))),
-               \x -> let j = M.lookup' x λ2
-                     in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
-                             ? (M.lookup j σ'
-                                === M.lookup j (M.insert w zero σ3)
-                                === M.lookup j σ3))
-              ? liquidAssert (σ' == M.insert i one (M.insert w zero σ3))
-         else (ih1 ? ih2
-               ? liquidAssert (M.lookup (outputWire sub) σ3 == Just (v1 - v2))
-               ? (eval (BIN EQL p1 p2) ρ === Just (eqlFn (VF v1) (VF v2))),
-               \x -> let j = M.lookup' x λ2
-                     in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
-                             ? (M.lookup j σ'
-                                === M.lookup j (M.insert w (1/(v1-v2)) σ3)
-                                === M.lookup j σ3))
-              ? liquidAssert (σ' == M.insert i zero (M.insert w (1/(v1-v2)) σ3))
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          (m3, [sub], λ3) = label' (BIN SUB p1 p2) m0 λ
-          (LEQLC _ _ w i) = e'
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          σ3 = case update m3 ρ sub σ  ? updateLemma m3 m ρ sub σ  of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  ADD -> (ih1 ? ih2
-          ? (eval (BIN op p1 p2) ρ === Just (add (VF v1) (VF v2))),
-         \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  SUB -> (ih1 ? ih2
-          ? (eval (BIN op p1 p2) ρ === Just (sub (VF v1) (VF v2))),
-         \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  MUL -> (ih1 ? ih2
-          ? (eval (BIN op p1 p2) ρ === Just (mul (VF v1) (VF v2))),
-         \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  LINCOMB k1 k2 -> (ih1 ? ih2
-                    ? (eval (BIN op p1 p2) ρ === Just (linCombFn k1 k2 (VF v1) (VF v2))),
-                   \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  AND -> (ih1 ? ih2
-          ? case eval p1 ρ of Just v -> v ? case eval p2 ρ of Just v -> v
-          ? (eval (BIN op p1 p2) ρ === Just (andFn (VF v1) (VF v2))),
-         \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  OR  -> (ih1 ? ih2
-          ? case eval p1 ρ of Just v -> v ? case eval p2 ρ of Just v -> v
-          ? (eval (BIN op p1 p2) ρ === Just (orFn (VF v1) (VF v2))),
-         \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  XOR -> (ih1 ? ih2
-          ? case eval p1 ρ of Just v -> v ? case eval p2 ρ of Just v -> v
-          ? (eval (BIN op p1 p2) ρ === Just (xorFn (VF v1) (VF v2))),
-         \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  UnsafeAND -> (ih1 ? ih2
-                ? case eval p1 ρ of Just v -> v ? case eval p2 ρ of Just v -> v
-                ? (eval (BIN op p1 p2) ρ === Just (andFn (VF v1) (VF v2))),
-               \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  UnsafeOR  -> (ih1 ? ih2
-                ? case eval p1 ρ of Just v -> v ? case eval p2 ρ of Just v -> v
-                ? (eval (BIN op p1 p2) ρ === Just (orFn (VF v1) (VF v2))),
-               \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-  UnsafeXOR -> (ih1 ? ih2
-                ? case eval p1 ρ of Just v -> v ? case eval p2 ρ of Just v -> v
-                ? (eval (BIN op p1 p2) ρ === Just (xorFn (VF v1) (VF v2))),
-               \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-    where (m1, ps1, λ1) = label' p1 m0 λ
-          (m2, ps2, λ2) = label' p2 m1 λ1
-          p1' = case ps1 of [x] -> x
-          p2' = case ps2 of [x] -> x
-          σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-          σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
-          v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-          v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
-          (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
-          (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
-
-
 -- this corresponds to Lemma 2. from the paper
 {-@ labelProof' :: m0:Nat -> m:{Nat | m >= m0}
                 -> e:{TypedDSL p | scalar e}
@@ -452,8 +86,137 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
     True -> (trivial, \x -> π x ? notElemLemma' x (outputWire e') λ)
     False -> (trivial, \x -> π x ? notElemLemma' x (outputWire e') λ)
 
-  UN  op p1    -> labelProofUn  m0 m p1    op ρ λ σ π λ' e' σ' v
-  BIN op p1 p2 -> labelProofBin m0 m p1 p2 op ρ λ σ π λ' e' σ' v
+  UN  op p1    -> case op of
+
+    ISZERO -> if v1 == 0
+              then (ih1 ? (eval (UN op p1) ρ === Just (eqlFn (VF 0) (VF v1))),
+                   \x -> let j = M.lookup' x λ1
+                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
+                                 ? (M.lookup j σ'
+                                    === M.lookup j (M.insert w zero σ1)
+                                    === M.lookup j σ1))
+                   ? liquidAssert (σ' == M.insert i one (M.insert w zero σ1))
+              else (ih1 ? (eval (UN op p1) ρ === Just (eqlFn (VF 0) (VF v1))),
+                   \x -> let j = M.lookup' x λ1
+                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
+                                 ? (M.lookup j σ'
+                                    === M.lookup j (M.insert w (1/v1) σ1)
+                                    === M.lookup j σ1))
+                   ? liquidAssert (σ' == M.insert i zero (M.insert w (1/v1) σ1))
+      where (LEQLC _ _ w i) = e'
+            (m1, ps1, λ1) = label' p1 m0 λ
+            p1' = case ps1 of [x] -> x
+            σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
+            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
+            (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
+
+    EQLC k -> if v1 == k
+              then (ih1 ? (eval (UN op p1) ρ === Just (eqlFn (VF k) (VF v1))),
+                   \x -> let j = M.lookup' x λ1
+                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
+                                 ? (M.lookup j σ'
+                                    === M.lookup j (M.insert w 0 σ1)
+                                    === M.lookup j σ1))
+                   ? liquidAssert (σ' == M.insert i one (M.insert w zero σ1))
+              else (ih1 ? (eval (UN op p1) ρ === Just (eqlFn (VF k) (VF v1))),
+                   \x -> let j = M.lookup' x λ1
+                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
+                                 ? (M.lookup j σ'
+                                    === M.lookup j (M.insert w (1/(v1-k)) σ1)
+                                    === M.lookup j σ1))
+                   ? liquidAssert (σ' == M.insert i zero (M.insert w (1/(v1-k)) σ1))
+      where (LEQLC _ _ w i) = e'
+            (m1, ps1, λ1) = label' p1 m0 λ
+            p1' = case ps1 of [x] -> x
+            σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
+            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
+            (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
+
+    BoolToF -> case M.lookup (outputWire p1') σ1 of
+        Just v1 -> labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
+        Nothing -> case eval p1 ρ of
+          Just (VF v1') -> labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1'
+          Nothing -> labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 0
+      where (m1, ps1, λ1) = label' p1 m0 λ
+            p1' = case ps1 of [x] -> x
+            σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
+            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
+            (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
+
+    _ -> label1Inc op p1 m0 λ m1 p1' λ1 m e' λ'
+      ?? labelProofUn  m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1
+      where (m1, ps1, λ1) = label' p1 m0 λ
+            p1' = case ps1 of [x] -> x
+            σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
+            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
+            (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
+
+
+  BIN op p1 p2 -> case op of
+
+    DIV -> (ih1 ? ih2,
+           \x -> let j = M.lookup' x λ2
+                 in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
+                         ? (M.lookup j σ'
+                            === M.lookup j (M.insert i (v1/v2) σ2)
+                            === M.lookup j σ2))
+      where (m1, ps1, λ1) = label' p1 m0 λ
+            (m2, ps2, λ2) = label' p2 m1 λ1
+            (LDIV _ _ w i) = e'
+            p1' = case ps1 of [x] -> x
+            p2' = case ps2 of [x] -> x
+            σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
+            σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
+            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
+            v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
+            (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
+            (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
+
+    EQL -> if v1 == v2
+           then (ih1 ? ih2
+                 ? liquidAssert (M.lookup (outputWire sub) σ3 == Just (v1 - v2))
+                 ? (eval (BIN op p1 p2) ρ === Just (eqlFn (VF v1) (VF v2))),
+                 \x -> let j = M.lookup' x λ2
+                       in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
+                               ? (M.lookup j σ'
+                                  === M.lookup j (M.insert w zero σ3)
+                                  === M.lookup j σ3))
+                ? liquidAssert (σ' == M.insert i one (M.insert w zero σ3))
+           else (ih1 ? ih2
+                 ? liquidAssert (M.lookup (outputWire sub) σ3 == Just (v1 - v2))
+                 ? (eval (BIN EQL p1 p2) ρ === Just (eqlFn (VF v1) (VF v2))),
+                 \x -> let j = M.lookup' x λ2
+                       in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
+                               ? (M.lookup j σ'
+                                  === M.lookup j (M.insert w (1/(v1-v2)) σ3)
+                                  === M.lookup j σ3))
+                ? liquidAssert (σ' == M.insert i zero (M.insert w (1/(v1-v2)) σ3))
+      where (m1, ps1, λ1) = label' p1 m0 λ
+            (m2, ps2, λ2) = label' p2 m1 λ1
+            (m3, [sub], λ3) = label' (BIN SUB p1 p2) m0 λ
+            (LEQLC _ _ w i) = e'
+            p1' = case ps1 of [x] -> x
+            p2' = case ps2 of [x] -> x
+            σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
+            σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
+            σ3 = case update m3 ρ sub σ  ? updateLemma m3 m ρ sub σ  of Just s -> s
+            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
+            v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
+            (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
+            (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
+
+    _ -> label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
+      ?? labelProofBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 v v1 v2 ih1 π1 ih2 π2
+      where (m1, ps1, λ1) = label' p1 m0 λ
+            (m2, ps2, λ2) = label' p2 m1 λ1
+            p1' = case ps1 of [x] -> x
+            p2' = case ps2 of [x] -> x
+            σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
+            σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
+            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
+            v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
+            (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
+            (ih2, π2) = labelProof' m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
 
 
 
