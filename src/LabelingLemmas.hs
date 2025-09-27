@@ -93,7 +93,7 @@ label1Inc op e1 m0 λ m1 e1' λ1 m e' λ' = case op of
   EQLC _  -> error "impossible"
   _       -> ()
 
-{-@ label2Inc :: op:BinOp' p -> e1:DSL p -> e2:{DSL p | wellTyped (BIN op e1 e2)} -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
+{-@ label2Inc :: op:{BinOp p | desugaredBinOp op || op == EQL || op == DIV } -> e1:DSL p -> e2:{DSL p | wellTyped (BIN op e1 e2)} -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
               -> m1:Int -> e1':LDSL p (Btwn 0 m1) -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, mkList1 e1', λ1)}
               -> m2:Int -> e2':LDSL p (Btwn 0 m2) -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, mkList1 e2', λ2)}
               ->  m:Int ->  e':LDSL p Int -> λ':{LabelEnv p Int | label' (BIN op e1 e2) m0 λ = (m, mkList1 e', λ')}
@@ -102,13 +102,10 @@ label2Inc :: (Num p, Ord p) => BinOp p -> DSL p -> DSL p -> Int -> LabelEnv p In
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
-          -> (Proof)
-label2Inc op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ' = case op of
-  DIV -> error "impossible"
-  EQL -> error "imposible"
-  _   -> trivial
-       ? case label' e1 m0 λ  of (m1,_,_) -> m1
-       ? case label' e2 m1 λ1 of (m2,_,_) -> m2
+          -> Proof
+label2Inc op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ' 
+  = trivial ? case label' e1 m0 λ  of (m1,_,_) -> m1
+            ? case label' e2 m1 λ1 of (m2,_,_) -> m2
 
 
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))

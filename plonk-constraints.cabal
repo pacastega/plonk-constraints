@@ -33,6 +33,9 @@ library
       Examples
       GlobalStore
       Label
+      LabelingEQL
+      LabelingDIV
+      LabelingVar
       LabelingLemmas
       LabelingProof
       LogicGates
@@ -63,6 +66,7 @@ library
       -Wpartial-fields
       -Wredundant-constraints
       -Wno-unused-top-binds
+      -Wno-unused-imports
       -Wno-incomplete-patterns
       -fplugin=LiquidHaskell
       -DLiquidOn
@@ -92,6 +96,7 @@ executable plonk-constraints-exe
       -Wpartial-fields
       -Wredundant-constraints
       -Wno-unused-top-binds
+      -Wno-unused-imports
       -Wno-incomplete-patterns
       -fplugin=LiquidHaskell
       -DLiquidOn

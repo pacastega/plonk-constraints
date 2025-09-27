@@ -56,9 +56,10 @@ desugaredBinOp op = case op of
   DIV -> False; EQL -> False -- syntactic sugar
   _ -> True -- all others are "real" operators
 
+type Var = String 
 
 data DSL p =
-    VAR String Ty -- variable
+    VAR Var Ty -- variable
   | CONST p       -- constant (of type p, i.e. prime field)
   | BOOLEAN Bool
 
@@ -74,7 +75,7 @@ data DSL p =
 infixr 5 `CONS`
 
 {-@ data DSL p where
-      VAR :: name:String -> t:ScalarTy -> DSL p
+      VAR :: name:Var -> t:ScalarTy -> DSL p
       CONST :: p -> DSL p
       BOOLEAN :: Bool -> DSL p
 
@@ -185,7 +186,7 @@ inferType _ = Nothing
 
 -- (Non-expression) assertions
 data Assertion p =
-    DEF   String  (DSL p) Ty -- variable definition
+    DEF   Var     (DSL p) Ty -- variable definition
   | NZERO (DSL p)            -- non-zero assertion
   | BOOL  (DSL p)            -- booleanity assertion
   | EQA   (DSL p) (DSL p)    -- equality assertion
@@ -193,7 +194,7 @@ data Assertion p =
 
 {-@
 data Assertion p =
-    DEF   String        (ScalarDSL p) ScalarTy
+    DEF   Var          (ScalarDSL p) ScalarTy
   | NZERO (ScalarDSL p)
   | BOOL  (ScalarDSL p)
   | EQA   (ScalarDSL p) (ScalarDSL p)
@@ -205,9 +206,9 @@ data Assertion p =
 
 -- Labeled DSL
 data LDSL p i =
-  LWIRE         Ty               i |
-  LVAR   String Ty               i |
-  LCONST p                       i |
+  LWIRE      Ty               i |
+  LVAR   Var Ty               i |
+  LCONST p                    i |
 
   LDIV   (LDSL p i) (LDSL p i) i i |
 
@@ -223,9 +224,9 @@ data LDSL p i =
 
 {-@
 data LDSL p i =
-  LWIRE             ScalarTy     i |
-  LVAR   String     ScalarTy     i |
-  LCONST p                       i |
+  LWIRE      ScalarTy     i |
+  LVAR   Var ScalarTy     i |
+  LCONST p                i |
 
   LDIV   (LDSL p i) (LDSL p i) i i |
 
@@ -442,9 +443,9 @@ fresh () = (
        writeIORef counter (x+1)
        return x)
 
-var :: String -> String
+var :: Var -> Var
 var name = name ++ "_" ++ show (unsafePerformIO $ fresh ())
 
-{-@ vars :: n:Nat -> String -> ListN String n @-}
-vars :: Int -> String -> [String]
+{-@ vars :: n:Nat -> Var -> ListN Var n @-}
+vars :: Int -> Var -> [Var]
 vars n name = map' (\i -> var name ++ "_" ++ show i) (firstNats n)
