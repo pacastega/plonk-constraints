@@ -5,7 +5,7 @@
 {-@ LIQUID "--linear"        @-}
 {-@ LIQUID "--cores=1"       @-}
 
-module LabelingEQL where
+module LabelingProof.LabelingEQL where
 
 #if LiquidOn
 import qualified Liquid.Data.Map as M
@@ -22,7 +22,7 @@ import Label
 import WitnessGeneration
 import Semantics
 
-import LabelingLemmas
+import LabelingProof.LabelingLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
 

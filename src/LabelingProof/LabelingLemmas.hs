@@ -2,7 +2,7 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
-module LabelingLemmas where
+module LabelingProof.LabelingLemmas where
 
 #if LiquidOn
 import qualified Liquid.Data.Map as M
@@ -50,7 +50,7 @@ updateLemma m m' ρ e σ = case e of
 {-@ freshLemma :: n:Int -> m:M.Map k (Btwn 0 n)
                -> { not (elem' n (M.elems m)) } @-}
 freshLemma :: Int -> M.Map k Int -> Proof
-freshLemma x (M.MTip)       = ()
+freshLemma _  M.MTip        = ()
 freshLemma x (M.MBin _ _ m) = freshLemma x m
 
 -- if lookup returns Just, then the key is in the list of keys
@@ -64,8 +64,8 @@ elementLemma k v (M.MBin k' _ m) = if k == k' then () else elementLemma k v m
                                             && not (elem' val (M.elems m))}
            -> { M.lookup' key m /= val } @-}
 notElemLemma :: Eq k => k -> v -> M.Map k v -> Proof
-notElemLemma key val (M.MTip) = ()
-notElemLemma key val (M.MBin k v m) = if key == k then () else notElemLemma key val m
+notElemLemma _   _   M.MTip         = ()
+notElemLemma key val (M.MBin k _ m) = if key == k then () else notElemLemma key val m
 
 
 {-@ notElemLemma' :: key:k -> n:Int -> m:{M.Map k (Btwn 0 n) | elem' key (M.keys m)}
@@ -79,18 +79,18 @@ lookupLemma :: Eq k => k -> M.Map k v -> Proof
 lookupLemma key (M.MBin k _ m) = if key == k then () else lookupLemma key m
 
 
-{-@ label1Inc :: op:UnOp' p -> e1:{DSL p | wellTyped (UN op e1)} -> m0:Nat -> λ:LabelEnv p Int
+{-@ label1Inc :: op:UnOp p -> e1:{DSL p | wellTyped (UN op e1)} -> m0:Nat -> λ:LabelEnv p Int
               -> m1:Int -> e1':LDSL p Int -> λ1:{LabelEnv p Int | label' e1 m0 λ = (m1, mkList1 e1', λ1)}
               ->  m:Int ->  e':LDSL p Int -> λ':{LabelEnv p Int | label' (UN op e1) m0 λ = (m, mkList1 e', λ')}
               -> {m >= m1} @-}
-label1Inc :: (Num p, Ord p) => UnOp p -> DSL p -> Int -> LabelEnv p Int
+label1Inc :: Num p => UnOp p -> DSL p -> Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Proof
-label1Inc op e1 m0 λ m1 e1' λ1 m e' λ' = case op of
-  BoolToF -> error "impossible"
-  ISZERO  -> error "impossible"
-  EQLC _  -> error "impossible"
+label1Inc op _ _ _ _ _ _ _ _ _ = case op of
+  BoolToF -> ()
+  ISZERO  -> ()
+  EQLC _  -> ()
   _       -> ()
 
 {-@ label2Inc :: op:{BinOp p | desugaredBinOp op || op == EQL || op == DIV } -> e1:DSL p -> e2:{DSL p | wellTyped (BIN op e1 e2)} -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
@@ -103,7 +103,7 @@ label2Inc :: (Num p, Ord p) => BinOp p -> DSL p -> DSL p -> Int -> LabelEnv p In
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Proof
-label2Inc op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ' 
+label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ' 
   = trivial ? case label' e1 m0 λ  of (m1,_,_) -> m1
             ? case label' e2 m1 λ1 of (m2,_,_) -> m2
 

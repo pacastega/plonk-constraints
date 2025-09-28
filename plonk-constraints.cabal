@@ -33,10 +33,12 @@ library
       Examples
       GlobalStore
       Label
-      LabelingEQL
-      LabelingDIV
-      LabelingVar
-      LabelingLemmas
+      LabelingProof.LabelingLemmas
+      LabelingProof.LabelingEQL
+      LabelingProof.LabelingDIV
+      LabelingProof.LabelingVar
+      LabelingProof.LabelingISZERO
+      LabelingProof.LabelingEQLC
       LabelingProof
       LogicGates
       Optimizations
