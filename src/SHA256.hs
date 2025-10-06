@@ -150,7 +150,7 @@ processMsg msg = do
   return $ vConcat TBool finalHashes' -- concatenate all the hashes
 
 {-@ processChunk :: GlobalStore p (ListN (Word p) 8)
-                 -> {v:DSL p | typed v (TVec TBool 512) && vlength v = 512}
+                 -> {v:DSL p | typed v (TVec TBool) && vlength v = 512}
                  -> GlobalStore p (ListN (Word p) 8) @-}
 processChunk :: (Integral p, Fractional p, Ord p) =>
                 GlobalStore p [Word p] -> DSL p
@@ -271,7 +271,7 @@ sha256 :: (Integral p, Fractional p, Ord p)
        => String -> GlobalStore p (DSL p)
 sha256 = processMsg . padding . toBits where
   {-@ toBits :: s:String
-             -> {v:DSL p | typed v (TVec TBool (8 * len s))
+             -> {v:DSL p | typed v (TVec TBool)
                         && vlength v = 8 * len s} @-}
   toBits :: Num p => String -> DSL p
   toBits [] = NIL TBool

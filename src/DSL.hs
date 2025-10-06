@@ -21,8 +21,7 @@ import System.IO.Unsafe
 
 import Language.Haskell.Liquid.ProofCombinators
 
-data Ty = TF | TBool | TVec Ty Int deriving (Eq, Ord, Show)
-{-@ data Ty = TF | TBool | TVec Ty Nat @-}
+data Ty = TF | TBool | TVec Ty deriving (Eq, Ord, Show)
 {-@ type ScalarTy = {τ:Ty | scalarType τ} @-}
 
 {-@ measure scalarType @-}
@@ -56,7 +55,7 @@ desugaredBinOp op = case op of
   DIV -> False; EQL -> False -- syntactic sugar
   _ -> True -- all others are "real" operators
 
-type Var = String 
+type Var = String
 
 data DSL p =
     VAR Var Ty -- variable
@@ -89,7 +88,6 @@ infixr 5 `CONS`
 {-@ measure vlength @-}
 {-@ vlength :: DSL p -> Nat @-}
 vlength :: DSL p -> Int
-vlength (VAR _ (TVec _ n)) = n
 vlength (NIL _)     = 0
 vlength (CONS _ ps) = 1 + vlength ps
 vlength _           = 1
@@ -174,12 +172,11 @@ inferType (BIN op p1 p2) = case op of
 
   EQL -> if inferType p1 == Just TF && inferType p2 == Just TF then Just TBool else Nothing
 
-inferType (NIL τ) = Just (TVec τ 0)
+inferType (NIL τ) = Just (TVec τ)
 inferType (CONS h ts) | Just τ' <- inferType h
-                      , Just (TVec τ n) <- inferType ts
+                      , Just (TVec τ) <- inferType ts
                       , τ' == τ
-                      , n >= 0
-                      = Just (TVec τ (n+1))
+                      = Just (TVec τ)
 
 inferType _ = Nothing
 
@@ -296,9 +293,9 @@ nGates (LEQA p1 p2)     = 1 + nGates p1 + nGates p2
 compile :: (Fractional p, Eq p) => Int -> LDSL p Int -> Circuit p
 compile m (LWIRE _ _)    = emptyCircuit m
 compile m (LVAR _ τ i)   = case τ of
-  TF       -> emptyCircuit m
-  TBool    -> boolGate m i
-  TVec τ n -> error "Vector variables have been unfolded by now"
+  TF     -> emptyCircuit m
+  TBool  -> boolGate m i
+  TVec τ -> error "Vector variables have been unfolded by now"
 compile m (LCONST x i)   = constGate m x i
 
 compile m (LDIV p1 p2 w i) = append' (divGate m [i1, i2, i, w]) c'

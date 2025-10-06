@@ -53,28 +53,17 @@ over = BIN DIV
 
 -- General functions for variables ---------------------------------------------
 {-@ vecVar :: strs:[String] -> τ:ScalarTy
-           -> {v:DSL p | typed v (TVec τ (len strs)) && vlength v = len strs} @-}
+           -> {v:DSL p | typed v (TVec τ) && vlength v = len strs} @-}
 vecVar :: [String] -> Ty -> DSL p
 vecVar strs τ = fromList τ (map' (\s -> VAR s τ) strs)
 
-{-@ lazy expandVecVar @-}
-{-@ expandVecVar :: vVar:{DSL p | isVar vVar && vector vVar}
-                 -> {v:DSL p | vlength v = vlength vVar} @-}
-expandVecVar :: DSL p -> DSL p
-expandVecVar (VAR name (TVec τ n)) = fromList τ variables where
-  varNames = vars n name -- n "fresh" copies of name
-  variables = case τ of
-    TVec {} -> map (expandVecVar . mkVar) varNames
-    _       -> map mkVar                  varNames
-  mkVar s = VAR s τ
-
 
 -- List-like functions ---------------------------------------------------------
-{-@ type PlinkVec p T = {v:DSL p | typed v (TVec T (vlength v))} @-}
+{-@ type PlinkVec p T = {v:DSL p | typed v (TVec T)} @-}
 
 {-@ fromList :: τ:Ty
              -> l:[{v:DSL p | typed v τ}]
-             -> {v:DSL p | typed v (TVec τ (len l)) && vlength v = len l} @-}
+             -> {v:DSL p | typed v (TVec τ) && vlength v = len l} @-}
 fromList :: Ty -> [DSL p] -> DSL p
 fromList τ []     = NIL τ
 fromList τ (x:xs) = x `CONS` fromList τ xs
@@ -118,8 +107,8 @@ lengths (p:ps) = vlength p + lengths ps
 
 {-@ reflect vTakeDrop @-}
 {-@ vTakeDrop :: τ:Ty -> n:Nat -> u:{PlinkVec p τ | vlength u >= n}
-              -> res:{({v:DSL p | typed v (TVec τ n) && vlength v = n},
-                       {w:DSL p | typed w (TVec τ ((vlength u) - n))
+              -> res:{({v:DSL p | typed v (TVec τ) && vlength v = n},
+                       {w:DSL p | typed w (TVec τ)
                                 && vlength w = (vlength u) - n})
                      | u == vAppend τ (fst res) (snd res)} @-}
 vTakeDrop :: Ty -> Int -> DSL p -> (DSL p, DSL p)
@@ -128,7 +117,7 @@ vTakeDrop τ n (CONS x xs) = let (ys, zs) = vTakeDrop τ (n-1) xs
                             in (CONS x ys, zs)
 
 {-@ vReplicate :: τ:Ty -> n:Nat -> {p:DSL p | typed p τ}
-               -> {v:DSL p | typed v (TVec τ n) && vlength v = n} @-}
+               -> {v:DSL p | typed v (TVec τ) && vlength v = n} @-}
 vReplicate :: Ty -> Int -> DSL p -> DSL p
 vReplicate τ 0 _ = NIL τ
 vReplicate τ n p = CONS p (vReplicate τ (n-1) p)
@@ -167,7 +156,7 @@ vMap τ1 τ2 op (CONS x xs) = op x `CONS` vMap τ1 τ2 op xs
 
 {-@ vChunk :: τ:Ty -> n:Nat1
            -> v:{PlinkVec p τ | (vlength v) mod n = 0}
-           -> {l:[{w:DSL p | typed w (TVec τ n) && vlength w = n}]
+           -> {l:[{w:DSL p | typed w (TVec τ) && vlength w = n}]
                 | n * len l = vlength v}
             / [vlength v] @-}
 vChunk :: Ty -> Int -> DSL p -> [DSL p]
@@ -224,13 +213,13 @@ shiftR xs n = let (ys, _) = vTakeDrop TBool (vlength xs - n) xs in
 
 -- Integers mod 2^n -----------------------------------------------------------
 {-@ fromInt :: n:Nat -> x:Btwn 0 (pow 2 n) ->
-              {v:DSL p | typed v (TVec TBool n) && vlength v = n} @-}
+              {v:DSL p | typed v (TVec TBool) && vlength v = n} @-}
 fromInt :: Num p => Int -> Int -> DSL p
 fromInt n = go 0 (NIL TBool) where
   {-@ go :: m:{Nat | m <= n} ->
-            {acc:DSL p | typed acc (TVec TBool m) && vlength acc = m} ->
+            {acc:DSL p | typed acc (TVec TBool) && vlength acc = m} ->
             x:Btwn 0 (pow 2 n) ->
-            {v:DSL p | typed v (TVec TBool n) && vlength v = n} / [n-m] @-}
+            {v:DSL p | typed v (TVec TBool) && vlength v = n} / [n-m] @-}
   go :: Num p => Int -> DSL p -> Int -> DSL p
   go m acc x
     | m == n    = acc
@@ -278,7 +267,7 @@ fromBinary vec = do
 
 
 {-@ toBinary :: n:Nat1 -> {d:DSL p | typed d TF}
-             -> GlobalStore p ({v:DSL p | typed v (TVec TBool n)
+             -> GlobalStore p ({v:DSL p | typed v (TVec TBool)
                                        && vlength v = n}) @-}
 toBinary :: (Integral p, Fractional p, Eq p) =>
             Int -> DSL p -> GlobalStore p (DSL p)

@@ -51,15 +51,9 @@ agreesWith p v = case inferType p of
 hasType :: (Num p, Eq p) => Ty -> DSLValue p -> Bool
 hasType TF         (VF _) = True      -- unrestricted field values
 hasType TBool      (VF x) = boolean x -- field values in {0,1}
-hasType (TVec τ n) v =
-    if n == 0
-    then case v of
-      VVecNil -> True
-      _       -> False
-    else case v of
-      VVecCons x xs -> hasType τ x && hasType (TVec τ (n-1)) xs
-      _             -> False
-hasType _          _               = False
+hasType (TVec τ) VVecNil  = True
+hasType (TVec τ) (VVecCons x xs)  = hasType τ x && hasType (TVec τ) xs
+hasType _         _               = False
 
 
 
@@ -117,7 +111,7 @@ eval program v = case program of
 
   NIL _     -> Just VVecNil
   CONS h ts -> case inferType program of
-                Just (TVec τ n) -> liftA2' VVecCons (eval h v) (eval ts v)
+                Just (TVec τ) -> liftA2' VVecCons (eval h v) (eval ts v)
                 _ -> Nothing
 
 
