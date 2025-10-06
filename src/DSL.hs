@@ -196,9 +196,9 @@ data Assertion p =
 {-@
 data Assertion p =
     DEF   Var          (ScalarDSL p) ScalarTy
-  | NZERO (ScalarDSL p)
-  | BOOL  (ScalarDSL p)
-  | EQA   (ScalarDSL p) (ScalarDSL p)
+  | NZERO (FieldDSL p)
+  | BOOL  (FieldDSL p)
+  | EQA   (FieldDSL p) (FieldDSL p)
 @-}
 
 
