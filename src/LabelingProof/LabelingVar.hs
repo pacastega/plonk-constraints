@@ -28,8 +28,8 @@ import Language.Haskell.Liquid.ProofCombinators
 
 
 {-@ labelVar :: m0:Nat -> m:{Nat | m >= m0}
-                -> s:Var 
-                -> τ:{Ty | scalar (VAR s τ)}
+                -> s:Var
+                -> τ:ScalarTy
                 -> ρ:NameValuation p
                 -> λ:LabelEnv p (Btwn 0 m0)
                 -> σ:M.Map (Btwn 0 m0) p
@@ -47,7 +47,7 @@ import Language.Haskell.Liquid.ProofCombinators
                     Composable ρ λ' σ')
                  @-}
 labelVar :: (Fractional p, Eq p, Ord p)
-            => Int -> Int -> Var -> Ty 
+            => Int -> Int -> Var -> Ty
             -> NameValuation p
             -> LabelEnv p Int
             -> M.Map Int p

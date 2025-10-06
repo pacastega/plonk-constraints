@@ -30,7 +30,7 @@ import Language.Haskell.Liquid.ProofCombinators
 
 {-@ labelProofEQLC  :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
                   -> k:p
-                  -> p1:{TypedDSL p | scalar p1 && wellTyped (UN (EQLC k) p1)}
+                  -> p1:{ScalarDSL p | wellTyped (UN (EQLC k) p1)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> λ1:LabelEnv p (Btwn 0 m1)
@@ -73,7 +73,7 @@ labelProofEQLC :: (Fractional p, Eq p, Ord p)
               -> (Proof, Var -> Proof)
 labelProofEQLC _m0 _m1 _m k p1 ρ _λ λ1 _σ _π _λ' _p1' e' σ' σ1 _v v1 ih1 π1
  = if v1 == k
-              then (ih1 ? (eval (UN (EQLC k) p1) ρ === fmap' (eqlFn (VF k)) (eval p1 ρ) 
+              then (ih1 ? (eval (UN (EQLC k) p1) ρ === fmap' (eqlFn (VF k)) (eval p1 ρ)
                                                    === Just (eqlFn (VF k) (VF v1))),
                    \x -> let j = M.lookup' x λ1
                          in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
@@ -81,7 +81,7 @@ labelProofEQLC _m0 _m1 _m k p1 ρ _λ λ1 _σ _π _λ' _p1' e' σ' σ1 _v v1 ih1
                                     === M.lookup j (M.insert w 0 σ1)
                                     === M.lookup j σ1))
                    ? liquidAssert (σ' == M.insert i one (M.insert w zero σ1))
-              else (ih1 ? (eval (UN (EQLC k) p1) ρ === fmap' (eqlFn (VF k)) (eval p1 ρ) 
+              else (ih1 ? (eval (UN (EQLC k) p1) ρ === fmap' (eqlFn (VF k)) (eval p1 ρ)
                                                    === Just (eqlFn (VF k) (VF v1))),
                    \x -> let j = M.lookup' x λ1
                          in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1

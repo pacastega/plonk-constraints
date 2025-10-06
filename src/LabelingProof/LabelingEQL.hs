@@ -27,8 +27,8 @@ import LabelingProof.LabelingLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 {-@ labelProofEQL :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
-                  -> p1:{TypedDSL p | scalar p1}
-                  -> p2:{TypedDSL p | scalar p2 && wellTyped (BIN EQL p1 p2)}
+                  -> p1:ScalarDSL p
+                  -> p2:{ScalarDSL p | wellTyped (BIN EQL p1 p2)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> λ1:LabelEnv p (Btwn 0 m1)
@@ -56,7 +56,7 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> ({ eval p2 ρ = Just (VF v2) <=> M.lookup (outputWire p2') σ2 = Just v2 })
                   -> Composable ρ λ2 σ2
 
-                  
+
 
                   -> ({ eval (BIN EQL p1 p2) ρ = Just (VF v) <=>
                       M.lookup (outputWire e') σ' = Just v }, Composable ρ λ' σ')
@@ -79,8 +79,8 @@ labelProofEQL :: (Fractional p, Ord p)
               -> Proof -> (Var -> Proof)
 
               -> (Proof, Var -> Proof)
-labelProofEQL m0 _m1 _m2 m p1 p2 ρ λ _λ1 λ2 σ _π _λ' _p1' _p2' e' σ' _σ1 _σ2 _v v1 v2 ih1 _π1 ih2 π2 = if v1 == v2  
-      then (ih1 ? ih2 ? h3 
+labelProofEQL m0 _m1 _m2 m p1 p2 ρ λ _λ1 λ2 σ _π _λ' _p1' _p2' e' σ' _σ1 _σ2 _v v1 v2 ih1 _π1 ih2 π2 = if v1 == v2
+      then (ih1 ? ih2 ? h3
                  ? liquidAssert (M.lookup (outputWire osub) σ3 == Just (v1 - v2))
                  ? (eval (BIN EQL p1 p2) ρ === Just (eqlFn (VF v1) (VF v2))),
                  \x -> let j = M.lookup' x λ2
@@ -89,7 +89,7 @@ labelProofEQL m0 _m1 _m2 m p1 p2 ρ λ _λ1 λ2 σ _π _λ' _p1' _p2' e' σ' _σ
                                   === M.lookup j (M.insert w zero σ3)
                                   === M.lookup j σ3))
                 ? liquidAssert (σ' == M.insert i one (M.insert w zero σ3))
-           else (ih1 ? ih2 ? h3 
+           else (ih1 ? ih2 ? h3
                  ? liquidAssert (M.lookup (outputWire osub) σ3 == Just (v1 - v2))
                  ? (eval (BIN EQL p1 p2) ρ === Just (eqlFn (VF v1) (VF v2))),
                  \x -> let j = M.lookup' x λ2
@@ -102,8 +102,7 @@ labelProofEQL m0 _m1 _m2 m p1 p2 ρ λ _λ1 λ2 σ _π _λ' _p1' _p2' e' σ' _σ
           (LEQLC _ _ w i) = e'
           osub = case sub' of [x] -> x
           σ3 = case update m3 ρ osub σ  ? updateLemma m3 m ρ osub σ  of Just s -> s
-          h3 =   eval (BIN EQL p1 p2) ρ 
+          h3 =   eval (BIN EQL p1 p2) ρ
              === liftA2' eqlFn (eval p1 ρ) (eval p2 ρ) ? ih1 ? ih2
-             === liftA2' eqlFn (Just (VF v1)) (Just (VF v2)) 
+             === liftA2' eqlFn (Just (VF v1)) (Just (VF v2))
              === Just (eqlFn (VF v1) (VF v2))
-                  

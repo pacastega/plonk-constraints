@@ -29,7 +29,7 @@ import Language.Haskell.Liquid.ProofCombinators
 
 
 {-@ labelProofISZERO  :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
-                  -> p1:{TypedDSL p | scalar p1 && wellTyped (UN ISZERO p1)}
+                  -> p1:{ScalarDSL p | wellTyped (UN ISZERO p1)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> λ1:LabelEnv p (Btwn 0 m1)
@@ -91,4 +91,3 @@ labelProofISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1
             p1' = case ps1 of [x] -> x
             σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-

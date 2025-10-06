@@ -27,8 +27,8 @@ import LabelingProof.LabelingLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 {-@ labelProofDIV :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
-                  -> p1:{TypedDSL p | scalar p1}
-                  -> p2:{TypedDSL p | scalar p2 && wellTyped (BIN DIV p1 p2)}
+                  -> p1:ScalarDSL p
+                  -> p2:{ScalarDSL p | wellTyped (BIN DIV p1 p2)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> λ1:LabelEnv p (Btwn 0 m1)
@@ -56,7 +56,7 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> ({ eval p2 ρ = Just (VF v2) <=> M.lookup (outputWire p2') σ2 = Just v2 })
                   -> Composable ρ λ2 σ2
 
-                  
+
 
                   -> ({ eval (BIN DIV p1 p2) ρ = Just (VF v) <=>
                       M.lookup (outputWire e') σ' = Just v }, Composable ρ λ' σ')
@@ -79,7 +79,7 @@ labelProofDIV :: (Fractional p, Ord p)
               -> Proof -> (Var -> Proof)
 
               -> (Proof, Var -> Proof)
-labelProofDIV _m0 _m1 _m2 _m _p1 _p2 _ρ _λ _λ1 λ2 _σ _π _λ' _p1' _p2' e' σ' _σ1 σ2 _v v1 v2 ih1 _π1 ih2 π2 
+labelProofDIV _m0 _m1 _m2 _m _p1 _p2 _ρ _λ _λ1 λ2 _σ _π _λ' _p1' _p2' e' σ' _σ1 σ2 _v v1 v2 ih1 _π1 ih2 π2
   = (ih1 ? ih2,
            \x -> let j = M.lookup' x λ2
                  in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
@@ -87,4 +87,3 @@ labelProofDIV _m0 _m1 _m2 _m _p1 _p2 _ρ _λ _λ1 λ2 _σ _π _λ' _p1' _p2' e' 
                             === M.lookup j (M.insert i (v1/v2) σ2)
                             === M.lookup j σ2))
       where (LDIV _ _ w i) = e'
-            

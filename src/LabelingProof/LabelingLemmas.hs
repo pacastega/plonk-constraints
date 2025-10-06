@@ -103,7 +103,7 @@ label2Inc :: (Num p, Ord p) => BinOp p -> DSL p -> DSL p -> Int -> LabelEnv p In
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Proof
-label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ' 
+label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
   = trivial ? case label' e1 m0 λ  of (m1,_,_) -> m1
             ? case label' e2 m1 λ1 of (m2,_,_) -> m2
 
@@ -114,7 +114,7 @@ label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
 
 
 {-@ labelProofUn  :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
-                  -> p1:{TypedDSL p | scalar p1}
+                  -> p1:ScalarDSL p
                   -> op:{UnOp' p | wellTyped (UN op p1)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
@@ -165,8 +165,8 @@ labelProofUn m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1 = cas
 
 
 {-@ labelProofBin :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
-                  -> p1:{TypedDSL p | scalar p1}
-                  -> p2:{TypedDSL p | scalar p2}
+                  -> p1:ScalarDSL p
+                  -> p2:ScalarDSL p
                   -> op:{BinOp' p | wellTyped (BIN op p1 p2)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)

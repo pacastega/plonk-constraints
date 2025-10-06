@@ -42,7 +42,7 @@ bar _        = 0
 
 -- this corresponds to Lemma 2. from the paper
 {-@ labelProof' :: m0:Nat -> m:{Nat | m >= m0}
-                -> e:{TypedDSL p | scalar e}
+                -> e:ScalarDSL p
                 -> ρ:NameValuation p
                 -> λ:LabelEnv p (Btwn 0 m0)
                 -> σ:M.Map (Btwn 0 m0) p
@@ -164,7 +164,7 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
 {-
 -- This is Theorem 2.
 {-@ labelProof :: m':Nat -> m:{Nat | m >= m'}
-               -> e:{TypedDSL p | scalar e}
+               -> e:ScalarDSL p
                -> as:Store p
                -> ρ:NameValuation p
                -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m)
