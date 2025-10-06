@@ -291,7 +291,7 @@ vec2 :: DSL PF
 vec2 = set TF (range 1 5) 2 (CONST 42)
 
 -- 3rd position of (range 1 5)
-{-@ vec3 :: FieldlDSL PF @-}
+{-@ vec3 :: FieldDSL PF @-}
 vec3 :: DSL PF
 vec3 = get TF (range 1 5) 3 where
 
