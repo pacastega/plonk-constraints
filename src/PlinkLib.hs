@@ -12,6 +12,8 @@ import Semantics
 
 import GlobalStore
 
+import Language.Haskell.Liquid.ProofCombinators
+
 -- Aliases for arithmetic operations -------------------------------------------
 {-@ plus :: {x:DSL p | typed x TF} -> {y:DSL p | typed y TF}
          -> {z:DSL p | typed z TF} @-}
@@ -77,6 +79,7 @@ fromList :: Ty -> [DSL p] -> DSL p
 fromList τ []     = NIL τ
 fromList τ (x:xs) = x `CONS` fromList τ xs
 
+{-@ reflect get @-}
 {-@ get :: τ:Ty -> v:PlinkVec p τ -> Btwn 0 (vlength v)
         -> {v:DSL p | typed v τ} @-}
 get :: Ty -> DSL p -> Int -> DSL p
@@ -91,6 +94,7 @@ set :: Ty -> DSL p -> Int -> DSL p -> DSL p
 set _ (CONS _ ps) 0 x = CONS x ps
 set τ (CONS p ps) i x = CONS p (set τ ps (i-1) x)
 
+{-@ reflect vAppend @-}
 {-@ vAppend :: τ:Ty
             -> u:PlinkVec p τ
             -> v:PlinkVec p τ
@@ -112,11 +116,12 @@ lengths :: [DSL p] -> Int
 lengths [] = 0
 lengths (p:ps) = vlength p + lengths ps
 
+{-@ reflect vTakeDrop @-}
 {-@ vTakeDrop :: τ:Ty -> n:Nat -> u:{PlinkVec p τ | vlength u >= n}
-              -> ({v:DSL p | typed v (TVec τ n) && vlength v = n},
-                  {w:DSL p | typed w (TVec τ ((vlength u) - n))
-                          && vlength w = (vlength u) - n})
-@-}
+              -> res:{({v:DSL p | typed v (TVec τ n) && vlength v = n},
+                       {w:DSL p | typed w (TVec τ ((vlength u) - n))
+                                && vlength w = (vlength u) - n})
+                     | u == vAppend τ (fst res) (snd res)} @-}
 vTakeDrop :: Ty -> Int -> DSL p -> (DSL p, DSL p)
 vTakeDrop τ 0 xs          = (NIL τ, xs)
 vTakeDrop τ n (CONS x xs) = let (ys, zs) = vTakeDrop τ (n-1) xs
@@ -197,6 +202,7 @@ rotateL :: Ty -> DSL p -> Int -> DSL p
 rotateL τ xs n = let (ys, zs) = vTakeDrop τ n xs
                  in vAppend τ zs ys
 
+{-@ reflect rotateR @-}
 {-@ rotateR :: τ:Ty
             -> u:PlinkVec p τ -> Btwn 0 (vlength u)
             -> {v:PlinkVec p τ | vlength v = vlength u} @-}
@@ -314,3 +320,30 @@ addMod e x y = do
 
   _evidence <- toBinary e z -- z can be encoded using ‘e’ bits
   return z
+
+-- Proof of correctness of rotateR ---------------------------------------------
+
+{-@ lookupAppend1 :: τ:Ty
+                  -> xs:PlinkVec p τ -> ys:PlinkVec p τ -> i:Btwn 0 (vlength xs)
+                  -> {get τ (vAppend τ xs ys) i = get τ xs i} @-}
+lookupAppend1 :: Eq p => Ty -> DSL p -> DSL p -> Int -> Proof
+lookupAppend1 _ (CONS x xs) ys 0 = trivial
+lookupAppend1 τ (CONS _ xs) ys i = lookupAppend1 τ xs ys (i-1)
+
+{-@ lookupAppend2 :: τ:Ty
+                  -> xs:PlinkVec p τ -> ys:PlinkVec p τ -> i:Btwn 0 (vlength ys)
+                  -> {get τ (vAppend τ xs ys) (i + vlength xs) = get τ ys i} @-}
+lookupAppend2 :: Eq p => Ty -> DSL p -> DSL p -> Int -> Proof
+lookupAppend2 _ (NIL τ)     ys i = trivial
+lookupAppend2 τ (CONS x xs) ys i = lookupAppend2 τ xs ys i
+
+{-@ rotateRCorrect :: τ:Ty
+                   -> xs:PlinkVec p τ -> n:Btwn 0 (vlength xs)
+                   -> i:Btwn 0 (vlength xs)
+                   -> {get τ (rotateR τ xs n) i = get τ xs ((i + vlength xs - n) mod (vlength xs))} @-}
+rotateRCorrect :: Eq p => Ty -> DSL p -> Int -> Int -> Proof
+rotateRCorrect τ xs n i = let (ys, zs) = vTakeDrop τ (vlength xs - n) xs in
+  if i < n
+  then lookupAppend1 τ zs ys i  ? lookupAppend2 τ ys zs i
+  else lookupAppend2 τ zs ys i' ? lookupAppend1 τ ys zs i'
+    where i' = i - n
