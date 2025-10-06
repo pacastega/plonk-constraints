@@ -25,7 +25,7 @@ foo :: UnOp Int -> Int
 foo (ADDC x) = x
 foo _        = 0
 
-{-@ type Word p = {d:DSL p | typed d TF} @-}
+{-@ type Word p = FieldDSL p @-}
 type Word p = DSL p
 
 {-@ h :: ListN (Word p) 8 @-}
@@ -115,8 +115,8 @@ k = [ CONST 0x428a2f98
     , CONST 0xc67178f2
     ]
 
-{-@ padding :: msg:{PlinkVec p TBool | vlength msg < pow 2 64}
-            -> {res:PlinkVec p TBool | (vlength res) mod 512 = 0} @-}
+{-@ padding :: msg:{VecDSL p TBool | vlength msg < pow 2 64}
+            -> {res:VecDSL p TBool | (vlength res) mod 512 = 0} @-}
 padding :: Num p => DSL p -> DSL p
 padding msg = msg +++ (fromList TBool [BOOLEAN True])
                   +++ (vReplicate TBool k (BOOLEAN False)) +++ len
@@ -138,8 +138,8 @@ plus32 :: (Integral p, Fractional p, Ord p) =>
 plus32 = addMod 32 -- addition modulo 2^32
 
 
-{-@ processMsg :: {msg:PlinkVec p TBool | (vlength msg) mod 512 = 0}
-               -> GlobalStore p (PlinkVec p TBool) @-}
+{-@ processMsg :: {msg:VecDSL p TBool | (vlength msg) mod 512 = 0}
+               -> GlobalStore p (VecDSL p TBool) @-}
 -- TODO: can we prove the resulting length is what it should be?
 processMsg :: (Integral p, Fractional p, Ord p) =>
               DSL p -> GlobalStore p (DSL p)
@@ -150,7 +150,7 @@ processMsg msg = do
   return $ vConcat TBool finalHashes' -- concatenate all the hashes
 
 {-@ processChunk :: GlobalStore p (ListN (Word p) 8)
-                 -> {v:DSL p | typed v (TVec TBool) && vlength v = 512}
+                 -> {v:VecDSL p TBool | vlength v = 512}
                  -> GlobalStore p (ListN (Word p) 8) @-}
 processChunk :: (Integral p, Fractional p, Ord p) =>
                 GlobalStore p [Word p] -> DSL p
@@ -167,8 +167,8 @@ processChunk currentHash chunk = do
 
   return finalHashes
 
-{-@ rotate :: u:PlinkVec p TBool -> Btwn 0 (vlength u)
-           -> {v:PlinkVec p TBool | vlength v = vlength u} @-}
+{-@ rotate :: u:VecDSL p TBool -> Btwn 0 (vlength u)
+           -> {v:VecDSL p TBool | vlength v = vlength u} @-}
 rotate :: DSL p -> Int -> DSL p
 rotate = rotateR TBool
 
@@ -266,13 +266,12 @@ compress = aux 64 where
 {-@ assume ord :: Char -> Btwn 0 256 @-}
 
 {-@ sha256 :: {s:String | len s < pow 2 61} ->
-              GlobalStore p (PlinkVec p TBool) @-}
+              GlobalStore p (VecDSL p TBool) @-}
 sha256 :: (Integral p, Fractional p, Ord p)
        => String -> GlobalStore p (DSL p)
 sha256 = processMsg . padding . toBits where
   {-@ toBits :: s:String
-             -> {v:DSL p | typed v (TVec TBool)
-                        && vlength v = 8 * len s} @-}
+             -> {v:VecDSL p TBool | vlength v = 8 * len s} @-}
   toBits :: Num p => String -> DSL p
   toBits [] = NIL TBool
   toBits (c:cs) = fromInt 8 (ord c) +++ toBits cs

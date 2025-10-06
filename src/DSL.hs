@@ -98,7 +98,7 @@ isVar VAR {} = True
 isVar _      = False
 
 
-{-@ boolFromIntegral :: a -> {v:DSL p | typed v TBool} @-}
+{-@ boolFromIntegral :: a -> BoolDSL p @-}
 boolFromIntegral :: Integral a => a -> DSL p
 boolFromIntegral x = BOOLEAN (x /= 0)
 
@@ -109,6 +109,10 @@ typed p τ = inferType p == Just τ
 
 {-@ type ScalarDSL p = {d:DSL p | scalar d} @-}
 {-@ type TypedDSL p = {d:DSL p | wellTyped d} @-}
+
+{-@ type FieldDSL p   = {v:DSL p | typed v TF} @-}
+{-@ type BoolDSL  p   = {v:DSL p | typed v TBool} @-}
+{-@ type VecDSL   p T = {v:DSL p | typed v (TVec T)} @-}
 
 {-@ reflect wellTyped @-}
 wellTyped :: DSL p -> Bool
