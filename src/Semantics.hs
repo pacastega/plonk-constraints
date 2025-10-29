@@ -16,16 +16,16 @@ import qualified Data.Map as M
 
 import Language.Haskell.Liquid.ProofCombinators (withProof)
 
-data DSLValue p = VF p | VVecNil | VVecCons (DSLValue p) (DSLValue p)
+data DSLValue p = VF p | VNil | VCons (DSLValue p) (DSLValue p)
   deriving Eq
 
 type NameValuation p = M.Map String p
 
 {-@ measure valSize @-}
 valSize :: DSLValue p -> Int
-valSize (VF _)          = 1
-valSize (VVecNil)       = 0
-valSize (VVecCons x xs) = valSize x + valSize xs
+valSize (VF _)       = 1
+valSize (VNil)       = 0
+valSize (VCons x xs) = valSize x + valSize xs
 
 -- FIXME: ideally, vectors would be encoded as a single constructor for DSLValue
 -- that takes a Haskell list of other DSLValue's, and valSize could call the
@@ -49,11 +49,11 @@ agreesWith p v = case inferType p of
 {-@ reflect hasType @-}
 {-@ hasType :: τ:Ty -> val:DSLValue p -> Bool / [valSize val] @-}
 hasType :: (Num p, Eq p) => Ty -> DSLValue p -> Bool
-hasType TF         (VF _) = True      -- unrestricted field values
-hasType TBool      (VF x) = boolean x -- field values in {0,1}
-hasType (TVec τ) VVecNil  = True
-hasType (TVec τ) (VVecCons x xs)  = hasType τ x && hasType (TVec τ) xs
-hasType _         _               = False
+hasType TF       (VF _)       = True      -- unrestricted field values
+hasType TBool    (VF x)       = boolean x -- field values in {0,1}
+hasType (TVec τ) VNil         = True
+hasType (TVec τ) (VCons x xs) = hasType τ x && hasType (TVec τ) xs
+hasType _         _           = False
 
 
 
@@ -109,10 +109,8 @@ eval program v = case program of
 
     EQL -> liftA2' eqlFn (eval p1 v) (eval p2 v)
 
-  NIL _     -> Just VVecNil
-  CONS h ts -> case inferType program of
-                Just (TVec τ) -> liftA2' VVecCons (eval h v) (eval ts v)
-                _ -> Nothing
+  NIL _     -> Just VNil
+  CONS h ts -> liftA2' VCons (eval h v) (eval ts v)
 
 
 {-@ reflect linCombFn @-}
