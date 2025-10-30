@@ -74,7 +74,7 @@ data DSL p =
 infixr 5 `CONS`
 
 {-@ data DSL p where
-      VAR :: name:Var -> t:ScalarTy -> DSL p
+      VAR :: name:Var -> ScalarTy -> DSL p
       CONST :: p -> DSL p
       BOOLEAN :: Bool -> DSL p
 

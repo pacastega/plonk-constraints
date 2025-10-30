@@ -144,6 +144,11 @@ vMap :: Ty -> Ty -> (DSL p -> DSL p) -> DSL p -> DSL p
 vMap _  τ2 _  (NIL _)       = NIL τ2
 vMap τ1 τ2 op (CONS x xs) = op x `CONS` vMap τ1 τ2 op xs
 
+{-@ vSum :: VecDSL p TF -> FieldDSL p @-}
+vSum :: Num p => DSL p -> DSL p
+vSum (NIL _) = CONST 0
+vSum (CONS x xs) = x `plus` vSum xs
+
 {-@ vChunk :: τ:Ty -> n:Nat1
            -> v:{VecDSL p τ | (vlength v) mod n = 0}
            -> {l:[{w:VecDSL p τ | vlength w = n}]

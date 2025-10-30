@@ -48,6 +48,7 @@ library
       Optimizations.ConstantFolding
       Optimizations.RemoveConstants
       PlinkLib
+      Poseidon2.Poseidon2
       Poseidon2.Poseidon2Cnst
       Semantics
       SHA256
