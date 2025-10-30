@@ -26,6 +26,7 @@ library
   exposed-modules:
       Liquid.Data.Map
       ArithmeticGates
+      BooleanProof
       Circuits
       CompilerProof
       Constraints
