@@ -48,6 +48,7 @@ library
       Optimizations.ConstantFolding
       Optimizations.RemoveConstants
       PlinkLib
+      Poseidon2.Poseidon2Cnst
       Semantics
       SHA256
       TypeAliases
@@ -78,6 +79,7 @@ library
   build-depends:
       base >=4.7 && <5
     , containers
+    , ghc-prim
     , finite-field
     , liquid-prelude
     , liquidhaskell
