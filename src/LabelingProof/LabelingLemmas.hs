@@ -8,6 +8,7 @@ module LabelingProof.LabelingLemmas where
 import qualified Liquid.Data.Map as M
 #else
 import qualified Data.Map as M
+import qualified MapFunctions as M
 #endif
 
 import Utils
@@ -46,6 +47,9 @@ updateLemma m m' ρ e σ = case e of
     Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
 
 
+-- Lemmas specific for the LH-friendly implementation of maps ------------------
+#if LiquidOn
+
 -- an index larger than all assigned indices has not been assigned
 {-@ freshLemma :: n:Int -> m:M.Map k (Btwn 0 n)
                -> { not (elem' n (M.elems m)) } @-}
@@ -62,21 +66,42 @@ elementLemma k v (M.MBin k' _ m) = if k == k' then () else elementLemma k v m
 -- if a value is not in the map, then lookup will never return it
 {-@ notElemLemma :: key:k -> val:v -> m:{M.Map k v | elem' key (M.keys m)
                                             && not (elem' val (M.elems m))}
-           -> { M.lookup' key m /= val } @-}
+                 -> { M.lookup' key m /= val } @-}
 notElemLemma :: Eq k => k -> v -> M.Map k v -> Proof
 notElemLemma _   _   M.MTip         = ()
 notElemLemma key val (M.MBin k _ m) = if key == k then () else notElemLemma key val m
 
-
 {-@ notElemLemma' :: key:k -> n:Int -> m:{M.Map k (Btwn 0 n) | elem' key (M.keys m)}
-            -> { M.lookup' key m /= n } @-}
+                  -> { M.lookup' key m /= n } @-}
 notElemLemma' :: Eq k => k -> Int -> M.Map k Int -> Proof
 notElemLemma' key n m = freshLemma n m ? notElemLemma key n m
 
 {-@ lookupLemma :: key:k -> m:{M.Map k v | elem' key (M.keys m)}
-           -> { M.lookup key m == Just (M.lookup' key m) } @-}
+                -> { M.lookup key m == Just (M.lookup' key m) } @-}
 lookupLemma :: Eq k => k -> M.Map k v -> Proof
 lookupLemma key (M.MBin k _ m) = if key == k then () else lookupLemma key m
+
+#else
+
+-- they have no computational value, but we do need them to be defined
+
+freshLemma :: Int -> M.Map k Int -> Proof
+freshLemma _ _ = ()
+
+elementLemma :: Eq k => k -> v -> M.Map k v -> Proof
+elementLemma _ _ _ = ()
+
+notElemLemma :: Eq k => k -> v -> M.Map k v -> Proof
+notElemLemma _ _ _ = ()
+
+notElemLemma' :: Eq k => k -> Int -> M.Map k Int -> Proof
+notElemLemma' _ _ _ = ()
+
+lookupLemma :: Eq k => k -> M.Map k v -> Proof
+lookupLemma _ _ = ()
+
+#endif
+--------------------------------------------------------------------------------
 
 
 {-@ label1Inc :: op:UnOp p -> e1:{DSL p | wellTyped (UN op e1)} -> m0:Nat -> λ:LabelEnv p Int

@@ -41,6 +41,7 @@ library
       LabelingProof.LabelingEQLC
       LabelingProof
       LogicGates
+      MapFunctions
       Optimizations
       Optimizations.Base
       Optimizations.ConstantFolding
