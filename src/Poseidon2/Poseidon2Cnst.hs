@@ -19,7 +19,7 @@ type F_BLS12 = PrimeField 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffff
 -- general instances -----------------------------------------------------------
 
 {-@ type ValidT = {t:Int | t = 2 || t = 3 || t = 4} @-}
-{-@ type ValidD = {t:Int | t = 3 || t = 5 || t = 7} @-}
+{-@ type ValidD = {d:Int | d = 3 || d = 5 || d = 7} @-}
 {-@ type VecDSL' p N = {v:DSL p | typed v (TVec TF) && vlength v = N} @-}
 
 {-@ data Instance fp = Ins { t :: ValidT
