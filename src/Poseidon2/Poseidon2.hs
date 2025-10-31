@@ -1,4 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
+{-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
 module Poseidon2.Poseidon2 where
 
 import Utils
@@ -7,11 +9,6 @@ import PlinkLib
 import Poseidon2.Poseidon2Cnst
 
 import Language.Haskell.Liquid.ProofCombinators
-
-{-@ assume zipWith :: (a -> b -> c)
-                   ->  xs:[a]
-                   -> {ys:[b] | len ys = len xs}
-                   -> {zs:[c] | len zs = len xs} @-}
 
 {-@ matMulInternal :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
                    -> VecDSL' F_BLS12 (t ins) @-}
@@ -62,6 +59,15 @@ matMulExternal (Ins {..}) xs = case t of
             t5 = BIN (LINCOMB 4 1) t0 t2 --; t5 :: F_BLS12
             t6 = t3 `plus` t5 --; t6 :: F_BLS12
             t7 = t2 `plus` t4 --; t7 :: F_BLS12
+            {-@ t0 :: FieldDSL F_BLS12 @-}
+            {-@ t1 :: FieldDSL F_BLS12 @-}
+            {-@ t2 :: FieldDSL F_BLS12 @-}
+            {-@ t3 :: FieldDSL F_BLS12 @-}
+            {-@ t4 :: FieldDSL F_BLS12 @-}
+            {-@ t5 :: FieldDSL F_BLS12 @-}
+            {-@ t6 :: FieldDSL F_BLS12 @-}
+            {-@ t7 :: FieldDSL F_BLS12 @-}
+
   _ -> error "this value for t is not supported"
 
 {-@ sbox :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
@@ -99,6 +105,7 @@ tGT0 Ins {} = ()
 partialRound :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
 partialRound ins state@(CONS h ts) rc = matMulInternal ins
      (CONS (sbox_p ins (h `plus` rc)) ts)
+partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 
 -- poseidon2^π permutation
 {-@ permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
