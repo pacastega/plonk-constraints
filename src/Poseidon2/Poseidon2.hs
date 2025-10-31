@@ -108,6 +108,7 @@ partialRound ins state@(CONS h ts) rc = matMulInternal ins
 partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 
 {-@ qualif MyEqLen( v : DSL @(0), x : int): ((x = (vlength v))) @-}
+{-@ qualif MyTyped( v : DSL @(0), t : Ty): ((typed v t)) @-}
 
 -- poseidon2^π permutation
 {-@ permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
