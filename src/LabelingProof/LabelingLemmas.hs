@@ -134,7 +134,7 @@ label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
 
 
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
-{-@ type Composable Ρ Λ Σ = var:{_ | elem' var (M.keys Λ)}
+{-@ type Composable Ρ Λ Σ = var:{(Var,Ty) | elem' var (M.keys Λ)}
                          -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
 
 
