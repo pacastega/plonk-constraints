@@ -179,9 +179,9 @@ arith3 = VAR "num" TF `over` VAR "den" TF
 testArithmetic :: IO ()
 testArithmetic = do
   -- (1+1)  + (1+1) = 4
-  test (pure arith1) (M.fromList [("a",1), ("b",1), ("c",1), ("d",1)])
-  test (pure arith2) (M.fromList [("a",7), ("b",3)])     -- (7+15) * (3+3) = 13
-  test (pure arith3) (M.fromList [("num",3), ("den",9)]) -- 3 / 9          = 6
+  test (pure arith1) (M.fromList [(("a",TF),1), (("b",TF),1), (("c",TF),1), (("d",TF),1)])
+  test (pure arith2) (M.fromList [(("a",TF),7), (("b",TF),3)])     -- (7+15) * (3+3) = 13
+  test (pure arith3) (M.fromList [(("num",TF),3), (("den",TF),9)]) -- 3 / 9          = 6
 
 -- Boolean programs ------------------------------------------------------------
 -- a == 0 || (a /= 0 && b == 1)
@@ -202,15 +202,15 @@ bool3 = (VAR "addsTo5" TF `plus` CONST 2) =? CONST 5
 
 testBoolean :: IO ()
 testBoolean = do
-  test (pure bool1) (M.fromList [("a",0), ("b",3)]) -- a == 0
-  test (pure bool1) (M.fromList [("a",1), ("b",0)]) -- a /= 0 && b == 0
-  test (pure bool1) (M.fromList [("a",1), ("b",8)]) -- a /= 0 && b /= 0
+  test (pure bool1) (M.fromList [(("a",TF),0), (("b",TF),3)]) -- a == 0
+  test (pure bool1) (M.fromList [(("a",TF),1), (("b",TF),0)]) -- a /= 0 && b == 0
+  test (pure bool1) (M.fromList [(("a",TF),1), (("b",TF),8)]) -- a /= 0 && b /= 0
 
-  test (pure bool2) (M.fromList [("inv",5)]) -- 7 * 5 == 1 (== True)
-  test (pure bool2) (M.fromList [("inv",7)]) -- 7 * 7 == 1 (== False)
+  test (pure bool2) (M.fromList [(("inv",TF),5)]) -- 7 * 5 == 1 (== True)
+  test (pure bool2) (M.fromList [(("inv",TF),7)]) -- 7 * 7 == 1 (== False)
 
-  test (pure bool3) (M.fromList [("addsTo5",2)]) -- 2 + 2 == 5 (== False)
-  test (pure bool3) (M.fromList [("addsTo5",3)]) -- 3 + 2 == 5 (== True)
+  test (pure bool3) (M.fromList [(("addsTo5",TF),2)]) -- 2 + 2 == 5 (== False)
+  test (pure bool3) (M.fromList [(("addsTo5",TF),3)]) -- 3 + 2 == 5 (== True)
 
 -- Loop programs ---------------------------------------------------------------
 -- -- start * (base)^5
@@ -330,7 +330,7 @@ vec7 = fromBinary $ PlinkLib.fromList TBool $ map boolFromIntegral [1,1,0,1]
 
 testVectors :: IO ()
 testVectors = do
-  test (pure vec1) (M.fromList [("a",1), ("b",2)]) -- [42,3,7]
+  test (pure vec1) (M.fromList [(("a",TF),1), (("b",TF),2)]) -- [42,3,7]
 
   test (pure vec2) M.empty -- [1,2,42,4]
   test (pure vec3) M.empty -- 4
@@ -368,14 +368,14 @@ rotate = do
 
 testMod :: IO ()
 testMod = do
-  test mod1 (M.fromList [("x",27), ("y",3)]) -- 27 + 3 (mod 32) = 30
-  test mod1 (M.fromList [("x",27), ("y",7)]) -- 27 + 7 (mod 32) = 2
-  test shift (M.fromList [("x",5)])          -- 5 >> 1 = 2
+  test mod1 (M.fromList [(("x",TF),27), (("y",TF),3)]) -- 27 + 3 (mod 32) = 30
+  test mod1 (M.fromList [(("x",TF),27), (("y",TF),7)]) -- 27 + 7 (mod 32) = 2
+  test shift (M.fromList [(("x",TF),5)])          -- 5 >> 1 = 2
 
-  test rotate (M.fromList [("x", 11)]) -- 11 = 010|11 -> 11|010 = 26
-  test rotate (M.fromList [("x", 15)]) -- 15 = 011|11 -> 11|011 = 27
-  test rotate (M.fromList [("x", 13)]) -- 13 = 011|01 -> 01|011 = 11
-  test rotate (M.fromList [("x",  6)]) --  6 = 001|10 -> 10|001 = 17
+  test rotate (M.fromList [(("x",TF), 11)]) -- 11 = 010|11 -> 11|010 = 26
+  test rotate (M.fromList [(("x",TF), 15)]) -- 15 = 011|11 -> 11|011 = 27
+  test rotate (M.fromList [(("x",TF), 13)]) -- 13 = 011|01 -> 01|011 = 11
+  test rotate (M.fromList [(("x",TF),  6)]) --  6 = 001|10 -> 10|001 = 17
 
 -- SHA256 examples -------------------------------------------------------------
 
@@ -439,6 +439,6 @@ opt3 = let p = ((CONST 3 `minus` CONST 1) `times` (VAR "x" TF)) `plus` (VAR "y" 
 
 testOpt :: IO ()
 testOpt = do
-  test opt1 (M.fromList [("x",7), ("y",2)])
-  test opt2 (M.fromList [("x",7), ("y",2)])
-  test opt3 (M.fromList [("x",7), ("y",2)])
+  test opt1 (M.fromList [(("x",TF),7), (("y",TF),2)])
+  test opt2 (M.fromList [(("x",TF),7), (("y",TF),2)])
+  test opt3 (M.fromList [(("x",TF),7), (("y",TF),2)])

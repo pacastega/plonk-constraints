@@ -31,14 +31,14 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> p1:ScalarDSL p
                   -> p2:{ScalarDSL p | wellTyped (BIN DIV p1 p2)}
                   -> ρ:NameValuation p
-                  -> λ:LabelEnv p (Btwn 0 m0)
-                  -> λ1:LabelEnv p (Btwn 0 m1)
-                  -> λ2:LabelEnv p (Btwn 0 m2)
+                  -> λ:LabelEnv (Btwn 0 m0)
+                  -> λ1:LabelEnv (Btwn 0 m1)
+                  -> λ2:LabelEnv (Btwn 0 m2)
                   -> σ:M.Map (Btwn 0 m0) p
 
                   -> Composable ρ λ σ
 
-                  -> λ':LabelEnv p (Btwn 0 m)
+                  -> λ':LabelEnv (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ  = (m1, mkList1 p1', λ1)}
                   -> p2':{LDSL p (Btwn 0 m2) | label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
                   -> e':{LDSL p (Btwn 0 m) | label' (BIN DIV p1 p2) m0 λ = (m, mkList1 e', λ')}
@@ -65,21 +65,21 @@ import Language.Haskell.Liquid.ProofCombinators
 labelProofDIV :: (Fractional p, Ord p)
               => Int -> Int -> Int -> Int -> DSL p -> DSL p
               -> NameValuation p
-              -> LabelEnv p Int -> LabelEnv p Int -> LabelEnv p Int
+              -> LabelEnv Int -> LabelEnv Int -> LabelEnv Int
               -> M.Map Int p
 
-              -> (Var -> Proof)
+              -> ((Var,Ty) -> Proof)
 
-              -> LabelEnv p Int
+              -> LabelEnv Int
               -> LDSL p Int -> LDSL p Int -> LDSL p Int
               -> M.Map Int p -> M.Map Int p -> M.Map Int p
 
               -> p -> p -> p
 
-              -> Proof -> (Var -> Proof)
-              -> Proof -> (Var -> Proof)
+              -> Proof -> ((Var,Ty) -> Proof)
+              -> Proof -> ((Var,Ty) -> Proof)
 
-              -> (Proof, Var -> Proof)
+              -> (Proof, (Var,Ty) -> Proof)
 labelProofDIV _m0 _m1 _m2 _m _p1 _p2 _ρ _λ _λ1 λ2 _σ _π _λ' _p1' _p2' e' σ' _σ1 σ2 _v v1 v2 ih1 _π1 ih2 π2
   = (ih1 ? ih2,
            \x -> let j = M.lookup' x λ2

@@ -256,7 +256,7 @@ fromBinary vec = do
 
   val <- binaryValue vec
   assert $ val `EQA` x
-  define x' (\v -> case eval x v of Just (VF x'') -> Just x''; _ -> Nothing)
+  define (x',TF) (\v -> case eval x v of Just (VF x'') -> Just x''; _ -> Nothing)
   return x
 
 
@@ -270,8 +270,8 @@ toBinary n x = do
 
   val <- binaryValue vec
   assert $ val `EQA` x
-  defineVec vec' (\v -> case eval x v of Just (VF x') -> Just (binaryRepr n x')
-                                         Nothing      -> Nothing)
+  defineVec vec' TBool (\v -> case eval x v of Just (VF x') -> Just (binaryRepr n x')
+                                               Nothing      -> Nothing)
   return vec
 
 
@@ -293,12 +293,12 @@ addMod e x y = do
   assert $ BOOL b
   assert $ (x `plus` y) `EQA` (z `plus` (b `times` CONST modulus))
 
-  define b' (\v -> (\x y -> if x + y < modulus then 0 else 1)
-                   <$> (case eval x v of Just (VF x') -> Just x'; Nothing -> Nothing)
-                   <*> (case eval y v of Just (VF y') -> Just y'; Nothing -> Nothing))
-  define z' (\v -> (\x y -> (x + y) `mod` modulus)
-                   <$> (case eval x v of Just (VF x') -> Just x'; Nothing -> Nothing)
-                   <*> (case eval y v of Just (VF y') -> Just y'; Nothing -> Nothing))
+  define (b',TF) (\v -> (\x y -> if x + y < modulus then 0 else 1)
+                        <$> (case eval x v of Just (VF x') -> Just x'; Nothing -> Nothing)
+                        <*> (case eval y v of Just (VF y') -> Just y'; Nothing -> Nothing))
+  define (z',TF) (\v -> (\x y -> (x + y) `mod` modulus)
+                        <$> (case eval x v of Just (VF x') -> Just x'; Nothing -> Nothing)
+                        <*> (case eval y v of Just (VF y') -> Just y'; Nothing -> Nothing))
 
   _evidence <- toBinary e z -- z can be encoded using ‘e’ bits
   return z

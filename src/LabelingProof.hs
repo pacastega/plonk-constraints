@@ -44,12 +44,12 @@ bar _        = 0
 {-@ labelProof' :: m0:Nat -> m:{Nat | m >= m0}
                 -> e:ScalarDSL p
                 -> ρ:NameValuation p
-                -> λ:LabelEnv p (Btwn 0 m0)
+                -> λ:LabelEnv (Btwn 0 m0)
                 -> σ:M.Map (Btwn 0 m0) p
 
                 -> Composable ρ λ σ
 
-                -> λ':LabelEnv p (Btwn 0 m)
+                -> λ':LabelEnv (Btwn 0 m)
                 -> e':{LDSL p (Btwn 0 m) | label' e m0 λ = (m, mkList1 e', λ')}
                 -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
 
@@ -62,18 +62,18 @@ bar _        = 0
 labelProof' :: (Fractional p, Eq p, Ord p)
             => Int -> Int -> DSL p
             -> NameValuation p
-            -> LabelEnv p Int
+            -> LabelEnv Int
             -> M.Map Int p
 
-            -> (Var -> Proof)
+            -> ((Var,Ty) -> Proof)
 
-            -> LabelEnv p Int
+            -> LabelEnv Int
             -> LDSL p Int
             -> M.Map Int p
 
             -> p
 
-            -> (Proof, Var -> Proof)
+            -> (Proof, (Var,Ty) -> Proof)
 labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
   VAR s τ -> labelVar m0 m s τ ρ λ σ π λ' e' σ' v
   CONST _ -> (trivial, \x -> π x ? notElemLemma' x (outputWire e') λ)
@@ -167,7 +167,7 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
                -> e:ScalarDSL p
                -> as:Store p
                -> ρ:NameValuation p
-               -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m)
+               -> λ:LabelEnv (Btwn 0 m) -> λ':LabelEnv (Btwn 0 m)
                -> {as':[LDSL p (Btwn 0 m)] |
                        labelStore as 0 M.MTip = (m', as', λ')}
                -> {es':[LDSL p (Btwn 0 m)] |
@@ -176,7 +176,7 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
                -> {assertionsHold ρ as <=> semanticsHold m σ as'} @-}
 labelProof :: (Fractional p, Eq p) => Int -> Int -> DSL p -> Store p
            -> NameValuation p
-           -> LabelEnv p Int -> LabelEnv p Int
+           -> LabelEnv Int -> LabelEnv Int
            -> [LDSL p Int] -> [LDSL p Int]
            -> Vec p
            -> Proof

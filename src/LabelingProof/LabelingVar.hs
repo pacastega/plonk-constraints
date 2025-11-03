@@ -32,12 +32,12 @@ import Language.Haskell.Liquid.ProofCombinators
                 -> s:Var
                 -> τ:ScalarTy
                 -> ρ:NameValuation p
-                -> λ:LabelEnv p (Btwn 0 m0)
+                -> λ:LabelEnv (Btwn 0 m0)
                 -> σ:M.Map (Btwn 0 m0) p
 
                 -> Composable ρ λ σ
 
-                -> λ':LabelEnv p (Btwn 0 m)
+                -> λ':LabelEnv (Btwn 0 m)
                 -> e':{LDSL p (Btwn 0 m) | label' (VAR s τ) m0 λ = (m, mkList1 e', λ')}
                 -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
 
@@ -50,28 +50,29 @@ import Language.Haskell.Liquid.ProofCombinators
 labelVar :: (Fractional p, Eq p, Ord p)
             => Int -> Int -> Var -> Ty
             -> NameValuation p
-            -> LabelEnv p Int
+            -> LabelEnv Int
             -> M.Map Int p
 
-            -> (Var -> Proof)
+            -> ((Var,Ty) -> Proof)
 
-            -> LabelEnv p Int
+            -> LabelEnv Int
             -> LDSL p Int
             -> M.Map Int p
 
             -> p
 
-            -> (Proof, Var -> Proof)
-labelVar _m0 _m s τ _ρ λ _σ π λ' e' _σ' _v = case M.lookup s λ of
+            -> (Proof, (Var,Ty) -> Proof)
+labelVar _m0 _m s τ _ρ λ _σ π λ' e' _σ' _v = case M.lookup (s,τ) λ of
     Nothing -> case τ of
       TF -> (trivial,
-             \x -> if x == s
+             \x -> if x == (s,τ)
                    then trivial
                    else elem' x (M.keys λ')
                      ?? freshLemma (outputWire e') λ ? π x ? M.lookup' x λ)
       TBool -> (trivial,
-               \x -> if x == s
+               \x -> if x == (s,τ)
                      then trivial
                      else elem' x (M.keys λ')
                        ?? freshLemma (outputWire e') λ ? π x ? M.lookup' x λ)
-    Just j  -> (elementLemma s j λ ? π s ? lookupLemma s λ, \x -> π x)
+    Just j  -> (elementLemma (s,τ) j λ ? π (s,τ) ? lookupLemma (s,τ) λ,
+               \x -> π x)

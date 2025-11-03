@@ -104,13 +104,13 @@ lookupLemma _ _ = ()
 --------------------------------------------------------------------------------
 
 
-{-@ label1Inc :: op:UnOp p -> e1:{DSL p | wellTyped (UN op e1)} -> m0:Nat -> λ:LabelEnv p Int
-              -> m1:Int -> e1':LDSL p Int -> λ1:{LabelEnv p Int | label' e1 m0 λ = (m1, mkList1 e1', λ1)}
-              ->  m:Int ->  e':LDSL p Int -> λ':{LabelEnv p Int | label' (UN op e1) m0 λ = (m, mkList1 e', λ')}
+{-@ label1Inc :: op:UnOp p -> e1:{DSL p | wellTyped (UN op e1)} -> m0:Nat -> λ:LabelEnv Int
+              -> m1:Int -> e1':LDSL p Int -> λ1:{LabelEnv Int | label' e1 m0 λ = (m1, mkList1 e1', λ1)}
+              ->  m:Int ->  e':LDSL p Int -> λ':{LabelEnv Int | label' (UN op e1) m0 λ = (m, mkList1 e', λ')}
               -> {m >= m1} @-}
-label1Inc :: Num p => UnOp p -> DSL p -> Int -> LabelEnv p Int
-          -> Int -> LDSL p Int -> LabelEnv p Int
-          -> Int -> LDSL p Int -> LabelEnv p Int
+label1Inc :: Num p => UnOp p -> DSL p -> Int -> LabelEnv Int
+          -> Int -> LDSL p Int -> LabelEnv Int
+          -> Int -> LDSL p Int -> LabelEnv Int
           -> Proof
 label1Inc op _ _ _ _ _ _ _ _ _ = case op of
   BoolToF -> ()
@@ -118,15 +118,15 @@ label1Inc op _ _ _ _ _ _ _ _ _ = case op of
   EQLC _  -> ()
   _       -> ()
 
-{-@ label2Inc :: op:{BinOp p | desugaredBinOp op || op == EQL || op == DIV } -> e1:DSL p -> e2:{DSL p | wellTyped (BIN op e1 e2)} -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
-              -> m1:Int -> e1':LDSL p (Btwn 0 m1) -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, mkList1 e1', λ1)}
-              -> m2:Int -> e2':LDSL p (Btwn 0 m2) -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, mkList1 e2', λ2)}
-              ->  m:Int ->  e':LDSL p Int -> λ':{LabelEnv p Int | label' (BIN op e1 e2) m0 λ = (m, mkList1 e', λ')}
+{-@ label2Inc :: op:{BinOp p | desugaredBinOp op || op == EQL || op == DIV } -> e1:DSL p -> e2:{DSL p | wellTyped (BIN op e1 e2)} -> m0:Nat -> λ:LabelEnv (Btwn 0 m0)
+              -> m1:Int -> e1':LDSL p (Btwn 0 m1) -> λ1:{LabelEnv (Btwn 0 m1) | label' e1 m0 λ  = (m1, mkList1 e1', λ1)}
+              -> m2:Int -> e2':LDSL p (Btwn 0 m2) -> λ2:{LabelEnv (Btwn 0 m2) | label' e2 m1 λ1 = (m2, mkList1 e2', λ2)}
+              ->  m:Int ->  e':LDSL p Int -> λ':{LabelEnv Int | label' (BIN op e1 e2) m0 λ = (m, mkList1 e', λ')}
               -> ({m2 >= m1}) @-}
-label2Inc :: (Num p, Ord p) => BinOp p -> DSL p -> DSL p -> Int -> LabelEnv p Int
-          -> Int -> LDSL p Int -> LabelEnv p Int
-          -> Int -> LDSL p Int -> LabelEnv p Int
-          -> Int -> LDSL p Int -> LabelEnv p Int
+label2Inc :: (Num p, Ord p) => BinOp p -> DSL p -> DSL p -> Int -> LabelEnv Int
+          -> Int -> LDSL p Int -> LabelEnv Int
+          -> Int -> LDSL p Int -> LabelEnv Int
+          -> Int -> LDSL p Int -> LabelEnv Int
           -> Proof
 label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
   = trivial ? case label' e1 m0 λ  of (m1,_,_) -> m1
@@ -134,7 +134,7 @@ label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
 
 
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
-{-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)}
+{-@ type Composable Ρ Λ Σ = var:{_ | elem' var (M.keys Λ)}
                          -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
 
 
@@ -142,13 +142,13 @@ label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
                   -> p1:ScalarDSL p
                   -> op:{UnOp' p | wellTyped (UN op p1)}
                   -> ρ:NameValuation p
-                  -> λ:LabelEnv p (Btwn 0 m0)
-                  -> λ1:LabelEnv p (Btwn 0 m1)
+                  -> λ:LabelEnv (Btwn 0 m0)
+                  -> λ1:LabelEnv (Btwn 0 m1)
                   -> σ:M.Map (Btwn 0 m0) p
 
                   -> Composable ρ λ σ
 
-                  -> λ':LabelEnv p (Btwn 0 m)
+                  -> λ':LabelEnv (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
                   -> e':{LDSL p (Btwn 0 m) | label' (UN op p1) m0 λ = (m, mkList1 e', λ')}
                   -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
@@ -165,22 +165,22 @@ label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
 labelProofUn :: (Fractional p, Eq p, Ord p)
               => Int -> Int -> Int -> DSL p -> UnOp p
               -> NameValuation p
-              -> LabelEnv p Int
-              -> LabelEnv p Int
+              -> LabelEnv Int
+              -> LabelEnv Int
               -> M.Map Int p
 
-              -> (String -> Proof)
+              -> ((Var,Ty) -> Proof)
 
-              -> LabelEnv p Int
+              -> LabelEnv Int
               -> LDSL p Int
               -> LDSL p Int
               -> M.Map Int p
               -> M.Map Int p
 
               -> p -> p
-              -> Proof -> (String -> Proof)
+              -> Proof -> ((Var,Ty) -> Proof)
 
-              -> (Proof, String -> Proof)
+              -> (Proof, (Var,Ty) -> Proof)
 labelProofUn m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1 = case op of
   ADDC k -> ((), \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
   MULC k -> ((), \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
@@ -194,14 +194,14 @@ labelProofUn m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1 = cas
                   -> p2:ScalarDSL p
                   -> op:{BinOp' p | wellTyped (BIN op p1 p2)}
                   -> ρ:NameValuation p
-                  -> λ:LabelEnv p (Btwn 0 m0)
-                  -> λ1:LabelEnv p (Btwn 0 m1)
-                  -> λ2:LabelEnv p (Btwn 0 m2)
+                  -> λ:LabelEnv (Btwn 0 m0)
+                  -> λ1:LabelEnv (Btwn 0 m1)
+                  -> λ2:LabelEnv (Btwn 0 m2)
                   -> σ:M.Map (Btwn 0 m0) p
 
                   -> Composable ρ λ σ
 
-                  -> λ':LabelEnv p (Btwn 0 m)
+                  -> λ':LabelEnv (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ  = (m1, mkList1 p1', λ1)}
                   -> p2':{LDSL p (Btwn 0 m2) | label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
 
@@ -226,21 +226,21 @@ labelProofUn m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1 = cas
 labelProofBin :: (Fractional p, Eq p, Ord p)
               => Int -> Int -> Int -> Int -> DSL p -> DSL p -> BinOp p
               -> NameValuation p
-              -> LabelEnv p Int -> LabelEnv p Int -> LabelEnv p Int
+              -> LabelEnv Int -> LabelEnv Int -> LabelEnv Int
               -> M.Map Int p
 
-              -> (String -> Proof)
+              -> ((Var,Ty) -> Proof)
 
-              -> LabelEnv p Int
+              -> LabelEnv Int
               -> LDSL p Int -> LDSL p Int -> LDSL p Int
               -> M.Map Int p -> M.Map Int p -> M.Map Int p
 
               -> p -> p -> p
 
-              -> Proof -> (String -> Proof)
-              -> Proof -> (String -> Proof)
+              -> Proof -> ((Var,Ty) -> Proof)
+              -> Proof -> ((Var,Ty) -> Proof)
 
-              -> (Proof, String -> Proof)
+              -> (Proof, (Var,Ty) -> Proof)
 labelProofBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 v v1 v2 ih1 π1 ih2 π2 = case op of
   ADD           -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
   SUB           -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)

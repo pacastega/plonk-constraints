@@ -49,7 +49,7 @@ update m _  (LWIRE τ i) valuation = case M.lookup i valuation of
   Just value -> case τ of
     TF -> Just valuation -- no restrictions
     TBool -> if boolean value then Just valuation else Nothing
-update m sv (LVAR s τ i) valuation = case M.lookup s sv of
+update m sv (LVAR s τ i) valuation = case M.lookup (s,τ) sv of
   Nothing -> Nothing -- variable is not defined in environment
   Just value -> case τ of
     TF -> Just (M.insert i value valuation)

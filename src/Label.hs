@@ -15,7 +15,7 @@ import qualified Liquid.Data.Map as M
 import qualified Data.Map as M
 #endif
 
-type LabelEnv p i = M.Map String i
+type LabelEnv i = M.Map (Var,Ty) i
 
 
 {-@ measure size @-}
@@ -49,12 +49,12 @@ label program store = (m, labeledPrograms, labeledStore) where
   (m, labeledPrograms, _) = label' program m' env'
 
 {-@ reflect labelStore @-}
-{-@ labelStore :: Store p -> m0:Nat -> LabelEnv p (Btwn 0 m0)
-               -> (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
+{-@ labelStore :: Store p -> m0:Nat -> LabelEnv (Btwn 0 m0)
+               -> (m:{Int | m >= m0}, [LDSL p Int], LabelEnv Int)
                       <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
-                       \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}> @-}
+                       \_ m -> {v:LabelEnv (Btwn 0 m) | true}> @-}
 labelStore :: (Num p, Ord p) =>
-              Store p -> Int -> LabelEnv p Int -> (Int, [LDSL p Int], LabelEnv p Int)
+              Store p -> Int -> LabelEnv Int -> (Int, [LDSL p Int], LabelEnv Int)
 labelStore [] nextIndex env = (nextIndex, [], env)
 labelStore (def:ss) nextIndex env =
   let i = nextIndex
@@ -65,16 +65,16 @@ labelStore (def:ss) nextIndex env =
 
 {-@ reflect label' @-}
 {-@ label' :: program:TypedDSL p ->
-              m0:Nat -> LabelEnv p (Btwn 0 m0) ->
-              (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
+              m0:Nat -> LabelEnv (Btwn 0 m0) ->
+              (m:{Int | m >= m0}, [LDSL p Int], LabelEnv Int)
            <\m   -> {l:[LDSL p (Btwn 0 m)] | scalar program => len l = 1},
-            \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}>
+            \_ m -> {v:LabelEnv (Btwn 0 m) | true}>
            / [size program] @-}
-label' :: (Num p, Ord p) => DSL p -> Int -> LabelEnv p Int
-       -> (Int, [LDSL p Int], LabelEnv p Int)
+label' :: (Num p, Ord p) => DSL p -> Int -> LabelEnv Int
+       -> (Int, [LDSL p Int], LabelEnv Int)
 label' p nextIndex env = let i = nextIndex in case p of
-    VAR s τ -> case M.lookup s env of
-      Nothing -> (i+1, [LVAR s τ i], M.insert s i env)
+    VAR s τ -> case M.lookup (s,τ) env of
+      Nothing -> (i+1, [LVAR s τ i], M.insert (s,τ) i env)
       Just j -> (nextIndex, [LWIRE τ j], env)
 
     CONST x -> (i+1, [LCONST x i], env)
@@ -107,14 +107,14 @@ label' p nextIndex env = let i = nextIndex in case p of
 
 {-@ reflect labelStore' @-}
 {-@ labelStore' :: assertion:(Assertion p) ->
-                   m0:Nat -> LabelEnv p (Btwn 0 m0) ->
-                   (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
+                   m0:Nat -> LabelEnv (Btwn 0 m0) ->
+                   (m:{Int | m >= m0}, [LDSL p Int], LabelEnv Int)
              <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
-              \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}> @-}
-labelStore' :: (Num p, Ord p) => Assertion p -> Int -> LabelEnv p Int
-            -> (Int, [LDSL p Int], LabelEnv p Int)
+              \_ m -> {v:LabelEnv (Btwn 0 m) | true}> @-}
+labelStore' :: (Num p, Ord p) => Assertion p -> Int -> LabelEnv Int
+            -> (Int, [LDSL p Int], LabelEnv Int)
 labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
-    DEF s d τ -> (i', [d'], M.insert s (outputWire d') env')
+    DEF s d τ -> (i', [d'], M.insert (s,τ) (outputWire d') env')
       where (i', [d'], env') = label' d i env
     NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
       where (w', [p1'], env') = label' p1 i env

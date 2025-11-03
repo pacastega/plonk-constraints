@@ -19,7 +19,7 @@ import Language.Haskell.Liquid.ProofCombinators (withProof)
 data DSLValue p = VF p | VNil | VCons (DSLValue p) (DSLValue p)
   deriving Eq
 
-type NameValuation p = M.Map String p
+type NameValuation p = M.Map (Var,Ty) p
 
 {-@ measure valSize @-}
 valSize :: DSLValue p -> Int
@@ -68,7 +68,7 @@ assertFValue = id
          -> Maybe ({v:DSLValue p | agreesWith program v}) @-}
 eval :: (Fractional p, Eq p) => DSL p -> NameValuation p -> Maybe (DSLValue p)
 eval program v = case program of
-  VAR name τ -> case M.lookup name v of
+  VAR name τ -> case M.lookup (name,τ) v of
     Nothing -> Nothing
     Just value -> case τ of
       TBool -> if boolean value then Just (VF value) else Nothing

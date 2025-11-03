@@ -51,20 +51,18 @@ combine hints1 hints2 ρ =
 assert :: Assertion p -> GlobalStore p ()
 assert x = GStore () [x] (const M.empty)
 
--- Introduce a hint for witness generation --
--- CAREFUL! This bypasses the type system because the variable 'name' could have
--- been defined with an incompatible type.
-define :: String -> (NameValuation p -> Maybe p) -> GlobalStore p ()
-define name f = GStore () [] hint where
+define :: (Var,Ty) -> (NameValuation p -> Maybe p) -> GlobalStore p ()
+define var f = GStore () [] hint where
   hint ρ = case f ρ of
     Nothing    -> M.empty
-    Just value -> M.singleton name value
+    Just value -> M.singleton var value
 
-{-@ defineVec :: strs:[String]
+{-@ defineVec :: strs:[Var] -> Ty
               -> (NameValuation p -> Maybe (ListN p (len strs)))
               -> GlobalStore p () @-}
-defineVec :: [String] -> (NameValuation p -> Maybe [p]) -> GlobalStore p ()
-defineVec names f = GStore () [] hints where
+defineVec :: [Var] -> Ty -> (NameValuation p -> Maybe [p]) -> GlobalStore p ()
+defineVec names τ f = GStore () [] hints where
+  vars = zip names (repeat τ)
   hints ρ = case f ρ of
-    Nothing   -> M.empty
-    Just bits -> M.fromList (zip names bits)
+    Nothing     -> M.empty
+    Just values -> M.fromList (zip vars values)

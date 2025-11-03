@@ -33,13 +33,13 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> k:p
                   -> p1:{ScalarDSL p | wellTyped (UN (EQLC k) p1)}
                   -> ρ:NameValuation p
-                  -> λ:LabelEnv p (Btwn 0 m0)
-                  -> λ1:LabelEnv p (Btwn 0 m1)
+                  -> λ:LabelEnv (Btwn 0 m0)
+                  -> λ1:LabelEnv (Btwn 0 m1)
                   -> σ:M.Map (Btwn 0 m0) p
 
                   -> Composable ρ λ σ
 
-                  -> λ':LabelEnv p (Btwn 0 m)
+                  -> λ':LabelEnv (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
                   -> e':{LDSL p (Btwn 0 m) | label' (UN (EQLC k) p1) m0 λ = (m, mkList1 e', λ')}
                   -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
@@ -56,22 +56,22 @@ import Language.Haskell.Liquid.ProofCombinators
 labelProofEQLC :: (Fractional p, Eq p, Ord p)
               =>  Int -> Int -> Int -> p -> DSL p
               -> NameValuation p
-              -> LabelEnv p Int
-              -> LabelEnv p Int
+              -> LabelEnv Int
+              -> LabelEnv Int
               -> M.Map Int p
 
-              -> (Var -> Proof)
+              -> ((Var,Ty) -> Proof)
 
-              -> LabelEnv p Int
+              -> LabelEnv Int
               -> LDSL p Int
               -> LDSL p Int
               -> M.Map Int p
               -> M.Map Int p
 
               -> p -> p
-              -> Proof -> (Var -> Proof)
+              -> Proof -> ((Var,Ty) -> Proof)
 
-              -> (Proof, Var -> Proof)
+              -> (Proof, (Var,Ty) -> Proof)
 labelProofEQLC _m0 _m1 _m k p1 ρ _λ λ1 _σ _π _λ' _p1' e' σ' σ1 _v v1 ih1 π1
  = if v1 == k
               then (ih1 ? (eval (UN (EQLC k) p1) ρ === fmap' (eqlFn (VF k)) (eval p1 ρ)
