@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-@ LIQUID "--reflection" @-}
+{- LIQUID "--eliminate=none" @-}
 {-@ LIQUID "--ple" @-}
 module Poseidon2.Poseidon2 where
 
@@ -107,16 +108,48 @@ partialRound ins state@(CONS h ts) rc = matMulInternal ins
      (CONS (sbox_p ins (h `plus` rc)) ts)
 partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 
-{-@ qualif MyEqLen( v : DSL @(0), x : int): ((x = (vlength v))) @-}
-{-@ qualif MyTyped( v : DSL @(0), t : Ty): ((typed v t)) @-}
 
 -- poseidon2^π permutation
-{-@ permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
+{- permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
                 -> VecDSL' F_BLS12 (t ins) @-}
+{-@ permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
+                -> {v:DSL F_BLS12 | vlength v = t ins} @-}
 permutation :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
 permutation ins@(Ins {..}) xs = step4
   where
     step1 = matMulExternal ins xs
-    step2 = foldl (fullRound ins)    step1 roundConstants_f1
-    step3 = foldl (partialRound ins) step2 roundConstants_p
-    step4 = foldl (fullRound ins)    step3 roundConstants_f2
+    step2 = fold'  ins (fullRound ins)    step1 roundConstants_f1
+    step3 = fold'' ins (partialRound ins) step2 roundConstants_p
+    step4 = fold'  ins (fullRound ins)    step3 roundConstants_f2
+
+
+-- Type annocated folds (TODO: check if these types can be inferred automatically)
+-- maybe with the proper qualifiers
+
+{- qualif MyEqLen( v : DSL @(0), x : int): ((x = (vlength v))) @-}
+{- qualif MyEqLen2( v : DSL @(0), ins:Instance @(0)): ((t ins = (vlength v))) @-}
+{- qualif MyTyped( v : DSL @(0)): ((DSL.typed v (DSL.TVec DSL.TF))) @-}
+{- qualif MyTyped( v : DSL @(0)): ((DSL.typed v DSL.TF)) @-}
+
+
+{-@ fold' :: ins:Instance F_BLS12
+          -> (VecDSL' F_BLS12 (t ins) -> VecDSL' F_BLS12 (t ins) -> VecDSL' F_BLS12 (t ins))
+          -> z:VecDSL' F_BLS12 (t ins)
+          -> [VecDSL' F_BLS12 (t ins)]
+          -> VecDSL' F_BLS12 (t ins)
+ @-}
+fold' :: Instance F_BLS12 -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12) -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
+fold' _ _ z []     = z
+fold' ins f z (x:xs) = fold' ins f (f z x) xs
+
+
+
+{-@ fold'' :: ins:Instance F_BLS12
+          -> (VecDSL' F_BLS12 (t ins) -> FieldDSL F_BLS12 -> VecDSL' F_BLS12 (t ins))
+          -> z:VecDSL' F_BLS12 (t ins)
+          -> [FieldDSL F_BLS12]
+          -> VecDSL' F_BLS12 (t ins)
+ @-}
+fold'' :: Instance F_BLS12 -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12) -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
+fold'' _ _ z []     = z
+fold'' ins f z (x:xs) = fold'' ins f (f z x) xs
