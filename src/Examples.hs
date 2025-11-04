@@ -79,6 +79,15 @@ wrapper op x y = do
   fromInteger (x' `op` y')
 --------------------------------------------------------------------------------
 
+
+-- Workaround to fix "crash: unknown constant" ---------------------------------
+{-@ reflect barOp @-}
+barOp :: BinOp Int -> Int
+barOp ADD = 0
+barOp _   = 1
+--------------------------------------------------------------------------------
+
+
 -- Generic test function -------------------------------------------------------
 cyan :: String -> String
 cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
