@@ -37,6 +37,11 @@ size (NIL _) = 0
 size (CONS h ts) = 1 + size h + size ts
 
 
+-- disable CSE only when LH is on (for the proof of correctness) ---------------
+
+#if LiquidOn
+
+-- version WITHOUT CSE
 {-@ reflect label @-}
 {-@ label :: TypedDSL p
           -> Store p
@@ -47,6 +52,81 @@ label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
 label program store = (m, labeledPrograms, labeledStore) where
   (m', labeledStore, env') = labelStore store 0 M.empty
   (m, labeledPrograms, _) = label' program m' env'
+
+#else
+
+-- version WITH CSE
+
+type ExtLabelEnv p i = M.Map (DSL p) i
+
+label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
+label program store = (m, labeledPrograms, labeledStore) where
+  (m', labeledStore, env') = labelStoreCSE store 0 M.empty
+  (m, labeledPrograms, _) = labelCSE' program m' env'
+
+labelStoreCSE :: (Num p, Ord p)
+              => Store p -> Int -> ExtLabelEnv p Int
+              -> (Int, [LDSL p Int], ExtLabelEnv p Int)
+labelStoreCSE [] nextIndex env = (nextIndex, [], env)
+labelStoreCSE (def:ss) nextIndex env =
+  let i = nextIndex
+      (i', def', env') = labelStoreCSE' def i env
+      (i'', s'', env'') = labelStoreCSE ss i' env'
+  in (i'', def' ++ s'', env'')
+
+labelStoreCSE' :: (Num p, Ord p) => Assertion p -> Int -> ExtLabelEnv p Int
+            -> (Int, [LDSL p Int], ExtLabelEnv p Int)
+labelStoreCSE' assertion nextIndex env = let i = nextIndex in case assertion of
+    DEF s d τ -> (i', [d'], M.insert (VAR s τ) (outputWire d') env')
+      where (i', [d'], env') = labelCSE' d i env
+    NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
+      where (w', [p1'], env') = labelCSE' p1 i env
+    BOOL p1  -> (i', [LBOOL p1'], env')
+      where (i', [p1'], env') = labelCSE' p1 i env
+    EQA p1 p2 -> (i', [LEQA p1' p2'], env')
+      where (i'', [p1'], env'') = labelCSE' p1 i   env
+            (i' , [p2'], env')  = labelCSE' p2 i'' env''
+
+
+labelCSE' :: (Num p, Ord p) => DSL p -> Int -> ExtLabelEnv p Int
+          -> (Int, [LDSL p Int], ExtLabelEnv p Int)
+labelCSE' p nextIndex env = case M.lookup p env of
+  Just i  -> let Just τ = inferType p in (nextIndex, [LWIRE τ i], env)
+  Nothing -> let i = nextIndex in case p of
+
+    VAR s τ -> (i+1, [LVAR s τ i], M.insert p i env)
+    CONST x -> (i+1, [LCONST x i], M.insert p i env)
+    BOOLEAN False  -> labelCSE' (CONST zero) nextIndex env
+    BOOLEAN True   -> labelCSE' (CONST one) nextIndex env
+
+    UN op p1 -> case op of
+      BoolToF -> labelCSE' p1 i env -- noop
+      ISZERO -> labelCSE' (UN (EQLC zero) p1) nextIndex env
+      EQLC k -> (w'+1, [LEQLC p1' k w' i'], M.insert p i' env')
+        where (i', [p1'], env') = labelCSE' p1 i env; w' = i'+1
+      _ -> (i'+1, [LUN op p1' i'], M.insert p i' env')
+        where (i', [p1'], env') = labelCSE' p1 i env
+
+    BIN op p1 p2 -> case op of
+      DIV -> (w'+1, [LDIV p1' p2' w' i'], M.insert p i' env')
+        where (i'', [p1'], env'') = labelCSE' p1 i   env
+              (i' , [p2'], env')  = labelCSE' p2 i'' env''
+              w' = i'+1
+      EQL -> labelCSE' (UN ISZERO (BIN SUB p1 p2)) nextIndex env
+      _ -> (i'+1, [LBIN op p1' p2' i'], M.insert p i' env')
+        where (i'', [p1'], env'') = labelCSE' p1 i   env
+              (i' , [p2'], env')  = labelCSE' p2 i'' env''
+
+    NIL _ -> (i, [], env)
+    CONS h ts -> (i'', h' ++ ts', env'')
+      where (i',  h',  env')  = labelCSE' h  i  env
+            (i'', ts', env'') = labelCSE' ts i' env'
+
+#endif
+
+-- even if we're not using LH, we still need the below functions because
+-- they appear in proofs
+--------------------------------------------------------------------------------
 
 {-@ reflect labelStore @-}
 {-@ labelStore :: Store p -> m0:Nat -> LabelEnv p (Btwn 0 m0)
