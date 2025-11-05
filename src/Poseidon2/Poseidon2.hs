@@ -78,11 +78,11 @@ sbox ins = vMap TF TF (sbox_p ins)
 
 {-@ sbox_p :: Instance F_BLS12 -> FieldDSL F_BLS12 -> FieldDSL F_BLS12 @-}
 sbox_p :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
-sbox_p (Ins {..}) x = let x2 = (x `plus` x) in case d of
+sbox_p (Ins {..}) x = let x2 = (x `times` x) in case d of
   -- this parenthesization allows CSE to reuse some subexpressions
-  3 -> x2 `plus` x
-  5 -> x2 `plus` x2 `plus` x
-  7 -> x2 `plus` x2 `plus` x2 `plus` x
+  3 -> x2 `times` x
+  5 -> x2 `times` x2 `times` x
+  7 -> x2 `times` x2 `times` x2 `times` x
 
 {-@ addRC :: xs: VecDSL F_BLS12 TF
           -> {ys:VecDSL F_BLS12 TF | vlength ys = vlength xs}

@@ -25,7 +25,7 @@ minus = BIN SUB
 
 {-@ times :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
 times :: Num p => DSL p -> DSL p -> DSL p
-times = BIN ADD
+times = BIN MUL
 
 {-@ over :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
 over :: Num p => DSL p -> DSL p -> DSL p
