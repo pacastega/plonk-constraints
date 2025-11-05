@@ -83,9 +83,42 @@ labelStoreCSE' assertion nextIndex env = let i = nextIndex in case assertion of
       where (w', [p1'], env') = labelCSE' p1 i env
     BOOL p1  -> (i', [LBOOL p1'], env')
       where (i', [p1'], env') = labelCSE' p1 i env
-    EQA p1 p2 -> (i', [LEQA p1' p2'], env')
-      where (i'', [p1'], env'') = labelCSE' p1 i   env
-            (i' , [p2'], env')  = labelCSE' p2 i'' env''
+    EQA p1 p2 -> case M.lookup p1 env of
+      Just i1 -> case M.lookup p2 env of
+        Just i2 -> (i, [LEQA (LWIRE τ1 i1) (LWIRE τ2 i2)], env) -- both are labeled: can't relabel them
+          where Just τ1 = inferType p1; Just τ2 = inferType p2
+        Nothing -> (i', [withOutputWire i' i1 p2'], env'') -- use i1 for p2
+          where (i', [p2'], env') = labelCSE' p2 i env
+                env'' = M.insert p2 i1 env'
+      Nothing -> case M.lookup p2 env of
+        Just i2 -> (i', [withOutputWire i' i2 p1'], env'') -- use i2 for p1
+          where (i', [p1'], env') = labelCSE' p1 i env
+                env'' = M.insert p1 i2 env'
+        Nothing -> (i'', [p1', withOutputWire i'' i1 p2'], env''')
+          where (i' , [p1'], env')  = labelCSE' p1 i  env
+                (i'', [p2'], env'') = labelCSE' p2 i' env'
+                i1 = outputWire p1'
+                env''' = M.insert p2 i1 env'' -- arbitrarily choose i1 for both
+
+
+{-@ withOutputWire :: m:Nat -> Btwn 0 m -> LDSL p (Btwn 0 m)
+                   -> LDSL p (Btwn 0 m) @-}
+withOutputWire :: Int -> Int -> LDSL p Int -> LDSL p Int
+withOutputWire _ i program = case program of
+  LWIRE  τ _ -> LWIRE τ i
+  LVAR s τ _ -> LVAR s τ i
+  LCONST p _ -> LCONST p i
+
+  LDIV p1 p2 w _ -> LDIV p1 p2 w i
+
+  LUN  op p1    _ -> LUN  op p1    i
+  LBIN op p1 p2 _ -> LBIN op p1 p2 i
+
+  LEQLC   p1 k w _ -> LEQLC p1 k w i
+
+  LNZERO p1 w  -> LNZERO p1 w
+  LBOOL  p1    -> LBOOL p1
+  LEQA   p1 p2 -> LEQA p1 p2
 
 
 labelCSE' :: (Num p, Ord p) => DSL p -> Int -> ExtLabelEnv p Int
