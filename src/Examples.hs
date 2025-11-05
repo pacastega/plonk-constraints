@@ -10,6 +10,7 @@ module Examples ( testArithmetic
                 , testVectors
                 , testMod
                 , testSha
+                , testPoseidon
                 , testOpt
                 )
 where
@@ -44,6 +45,8 @@ import Semantics (NameValuation)
 
 import Treekz
 import SHA256
+import Poseidon2.Poseidon2Cnst
+import Poseidon2.Poseidon2
 
 import GlobalStore
 
@@ -416,6 +419,22 @@ testSha = do
   -- test sha256_5 M.empty
   -- test sha256_6 M.empty
   -- test sha256_7 M.empty
+
+-- Poseidon2 examples ----------------------------------------------------------
+
+poseidon2_1 :: GlobalStore F_BLS12 (DSL F_BLS12)
+poseidon2_1 = pure $ sbox_p bls12_3 (VAR "x" TF)
+
+{-@ poseidon2_2 :: VecDSL' F_BLS12 3 @-}
+poseidon2_2 :: GlobalStore F_BLS12 (DSL F_BLS12)
+poseidon2_2 = pure $ permutation bls12_3 (fromList TF (map CONST [0,1,2]))
+
+testPoseidon :: IO ()
+testPoseidon = do
+  test poseidon2_1 (M.fromList [("x",2)])
+  test poseidon2_1 (M.fromList [("x",3)])
+
+  test poseidon2_2 M.empty
 
 -- Optimizations ---------------------------------------------------------------
 

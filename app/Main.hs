@@ -11,5 +11,6 @@ main = do
   -- testLoops
   -- testVectors
   -- testMod
-  testSha
+  -- testSha
+  testPoseidon
   -- testOpt
