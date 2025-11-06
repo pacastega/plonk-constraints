@@ -116,16 +116,18 @@ test programStore valuation = do
 
   let circuit = concatMap (compile m) labeledPrograms
 
+  -- putStrLn $ "Program (after optimizations):   " ++ show program' ++ ", " ++ show store'
+  -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
+  -- putStrLn $ "Compiled circuit: " ++ show circuit
+  putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
+
   case witnessGen m labeledPrograms valuation' of
-    Nothing -> putStrLn "Witness generation failed"
+    Nothing -> do putStrLn "Witness generation failed"
+                  putStrLn $ replicate 80 '='
     Just input -> do
       let output = map (\p -> input ! outputWire p) labeledBodies
       let output' = map (\p -> input ! outputWire p) labeledStore
 
-      -- putStrLn $ "Program (after optimizations):   " ++ show program' ++ ", " ++ show store'
-      -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
-      -- putStrLn $ "Compiled circuit: " ++ show circuit
-      putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
       -- putStrLn $ "Input:                " ++ show input
       -- putStrLn $ "Auxiliary values:     " ++ cyan (show output')
       putStrLn $ "Final result: " ++ cyan (show output)
