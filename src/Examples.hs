@@ -427,16 +427,27 @@ testSha = do
 poseidon2_1 :: GlobalStore F_BLS12 (DSL F_BLS12)
 poseidon2_1 = pure $ sbox_p bls12_3 (VAR "x" TF)
 
-{-@ poseidon2_2 :: VecDSL' F_BLS12 3 @-}
 poseidon2_2 :: GlobalStore F_BLS12 (DSL F_BLS12)
-poseidon2_2 = pure $ permutation bls12_3 (fromList TF (map CONST [0,1,2]))
+poseidon2_2 = pure $ matMulInternal bls12_3
+    (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
+
+poseidon2_3 :: GlobalStore F_BLS12 (DSL F_BLS12)
+poseidon2_3 = pure $ matMulExternal bls12_3
+    (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
+
+poseidon2_permutation :: GlobalStore F_BLS12 (DSL F_BLS12)
+poseidon2_permutation = pure $ permutation bls12_3
+    (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
 
 testPoseidon :: IO ()
 testPoseidon = do
   test poseidon2_1 (M.fromList [("x",2)])
   test poseidon2_1 (M.fromList [("x",3)])
 
-  test poseidon2_2 M.empty
+  test poseidon2_2 (M.fromList [("x2",0), ("x1",1), ("x0",2)])
+  test poseidon2_3 (M.fromList [("x2",0), ("x1",1), ("x0",2)])
+
+  test poseidon2_permutation M.empty
 
 -- Optimizations ---------------------------------------------------------------
 
