@@ -48,28 +48,31 @@ matMulExternal (Ins {..}) xs = case t of
     CONS x0 (CONS x1 (CONS x2 (NIL TF))) ->
       fromList TF [sum `plus` x0, sum `plus` x1, sum `plus` x2]
       where sum = x0 `plus` x1 `plus` x2
-  4 -> case xs of
-    CONS x0 (CONS x1 (CONS x2 (CONS x3 (NIL TF)))) ->
-     fromList TF [t6, t5, t7, t4]
-      -- let CSE take care of the repetitions
-      where t0 = x0 `plus` x1 --; t0 :: F_BLS12
-            t1 = x2 `plus` x3 --; t1 :: F_BLS12
-            t2 = BIN (LINCOMB 2 1) x1 t1 --; t2 :: F_BLS12
-            t3 = BIN (LINCOMB 2 1) x3 t0 --; t3 :: F_BLS12
-            t4 = BIN (LINCOMB 4 1) t1 t3 --; t4 :: F_BLS12
-            t5 = BIN (LINCOMB 4 1) t0 t2 --; t5 :: F_BLS12
-            t6 = t3 `plus` t5 --; t6 :: F_BLS12
-            t7 = t2 `plus` t4 --; t7 :: F_BLS12
-            {-@ t0 :: FieldDSL F_BLS12 @-}
-            {-@ t1 :: FieldDSL F_BLS12 @-}
-            {-@ t2 :: FieldDSL F_BLS12 @-}
-            {-@ t3 :: FieldDSL F_BLS12 @-}
-            {-@ t4 :: FieldDSL F_BLS12 @-}
-            {-@ t5 :: FieldDSL F_BLS12 @-}
-            {-@ t6 :: FieldDSL F_BLS12 @-}
-            {-@ t7 :: FieldDSL F_BLS12 @-}
-
+  4 -> matMulM4 xs
   _ -> error "this value for t is not supported"
+
+{-@ matMulM4 :: VecDSL' F_BLS12 4 -> VecDSL' F_BLS12 4 @-}
+matMulM4 :: DSL F_BLS12 -> DSL F_BLS12
+matMulM4 (CONS x0 (CONS x1 (CONS x2 (CONS x3 (NIL TF))))) =
+   fromList TF [t6, t5, t7, t4]
+    -- let CSE take care of the repetitions
+    where t0 = x0 `plus` x1
+          t1 = x2 `plus` x3
+          t2 = BIN (LINCOMB 2 1) x1 t1
+          t3 = BIN (LINCOMB 2 1) x3 t0
+          t4 = BIN (LINCOMB 4 1) t1 t3
+          t5 = BIN (LINCOMB 4 1) t0 t2
+          t6 = t3 `plus` t5
+          t7 = t2 `plus` t4
+          {-@ t0 :: FieldDSL F_BLS12 @-}
+          {-@ t1 :: FieldDSL F_BLS12 @-}
+          {-@ t2 :: FieldDSL F_BLS12 @-}
+          {-@ t3 :: FieldDSL F_BLS12 @-}
+          {-@ t4 :: FieldDSL F_BLS12 @-}
+          {-@ t5 :: FieldDSL F_BLS12 @-}
+          {-@ t6 :: FieldDSL F_BLS12 @-}
+          {-@ t7 :: FieldDSL F_BLS12 @-}
+
 
 {-@ sbox :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
          -> VecDSL' F_BLS12 (t ins) @-}
