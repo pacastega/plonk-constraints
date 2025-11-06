@@ -39,7 +39,7 @@ import Language.Haskell.Liquid.ProofCombinators
 
                 -> λ':LabelEnv p (Btwn 0 m)
                 -> e':{LDSL p (Btwn 0 m) | label' (VAR s τ) m0 λ = (m, mkList1 e', λ')}
-                -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
+                -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ σ e'}
 
                 -> v:p
 

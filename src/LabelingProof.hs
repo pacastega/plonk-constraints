@@ -51,7 +51,7 @@ bar _        = 0
 
                 -> λ':LabelEnv p (Btwn 0 m)
                 -> e':{LDSL p (Btwn 0 m) | label' e m0 λ = (m, mkList1 e', λ')}
-                -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
+                -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ σ e'}
 
                 -> v:p
 
@@ -88,7 +88,7 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
       ?? labelProofISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1
       where (m1, ps1, λ1) = label' p1 m0 λ
             p1' = case ps1 of [x] -> x
-            σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
+            σ1 = case update m1 ρ σ p1' ? updateLemma m1 m ρ p1' σ of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
             (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
 
@@ -96,7 +96,7 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
       ?? labelProofEQLC m0 m1 m k p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1
       where (m1, ps1, λ1) = label' p1 m0 λ
             p1' = case ps1 of [x] -> x
-            σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
+            σ1 = case update m1 ρ σ p1' ? updateLemma m1 m ρ p1' σ of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
             (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
     BoolToF -> case M.lookup (outputWire p1') σ1 of
@@ -106,7 +106,7 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
           Nothing -> labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 0
       where (m1, ps1, λ1) = label' p1 m0 λ
             p1' = case ps1 of [x] -> x
-            σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
+            σ1 = case update m1 ρ σ p1' ? updateLemma m1 m ρ p1' σ of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
             (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
 
@@ -114,7 +114,7 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
       ?? labelProofUn  m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1
       where (m1, ps1, λ1) = label' p1 m0 λ
             p1' = case ps1 of [x] -> x
-            σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
+            σ1 = case update m1 ρ σ p1' ? updateLemma m1 m ρ p1' σ of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
             (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
 
@@ -127,8 +127,8 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
             (m2, ps2, λ2) = label' p2 m1 λ1
             p1' = case ps1 of [x] -> x
             p2' = case ps2 of [x] -> x
-            σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-            σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
+            σ1 = case update m1 ρ σ  p1' ? updateLemma m1 m ρ p1' σ  of Just s -> s
+            σ2 = case update m2 ρ σ1 p2' ? updateLemma m2 m ρ p2' σ1 of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
             v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
             (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
@@ -140,8 +140,8 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
             (m2, ps2, λ2) = label' p2 m1 λ1
             p1' = case ps1 of [x] -> x
             p2' = case ps2 of [x] -> x
-            σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-            σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
+            σ1 = case update m1 ρ σ  p1' ? updateLemma m1 m ρ p1' σ  of Just s -> s
+            σ2 = case update m2 ρ σ1 p2' ? updateLemma m2 m ρ p2' σ1 of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
             v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
             (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1
@@ -152,8 +152,8 @@ labelProof' m0 m e ρ λ σ π λ' e' σ' v = case e of
             (m2, ps2, λ2) = label' p2 m1 λ1
             p1' = case ps1 of [x] -> x
             p2' = case ps2 of [x] -> x
-            σ1 = case update m1 ρ p1' σ  ? updateLemma m1 m ρ p1' σ  of Just s -> s
-            σ2 = case update m2 ρ p2' σ1 ? updateLemma m2 m ρ p2' σ1 of Just s -> s
+            σ1 = case update m1 ρ σ  p1' ? updateLemma m1 m ρ p1' σ  of Just s -> s
+            σ2 = case update m2 ρ σ1 p2' ? updateLemma m2 m ρ p2' σ1 of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
             v2 = case M.lookup (outputWire p2') σ2 of Just v -> v
             (ih1, π1) = labelProof' m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 v1

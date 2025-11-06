@@ -5,7 +5,7 @@ module WitnessGeneration (extend, witnessGen, update) where
 
 import Prelude hiding (flip)
 
-import Data.Foldable (foldrM)
+import Data.Foldable (foldlM)
 import Utils (boolean, zero, one)
 import Vec
 import DSL
@@ -36,29 +36,29 @@ extend valuation hints = M.union valuation (hints valuation)
 witnessGen :: (Eq p, Fractional p) =>
               Int -> [LDSL p Int] -> NameValuation p -> Maybe (Vec p)
 witnessGen m programs strNameValuation = toVector m <$> valuation' where
-  valuation' = foldrM (update m strNameValuation) M.empty programs
+  valuation' = foldlM (update m strNameValuation) M.empty programs
 
 {-@ reflect update @-}
 {-@ update :: m:Nat
-           -> NameValuation p -> LDSL p (Btwn 0 m) -> M.Map (Btwn 0 m) p
+           -> NameValuation p -> M.Map (Btwn 0 m) p -> LDSL p (Btwn 0 m)
            -> Maybe (M.Map (Btwn 0 m) p) @-}
 update :: (Eq p, Fractional p) => Int
-       -> NameValuation p -> LDSL p Int -> M.Map Int p -> Maybe (M.Map Int p)
-update m _  (LWIRE τ i) valuation = case M.lookup i valuation of
+       -> NameValuation p -> M.Map Int p -> LDSL p Int -> Maybe (M.Map Int p)
+update m _  valuation (LWIRE τ i) = case M.lookup i valuation of
   Nothing -> Nothing -- wire is not defined; TODO: should not happen
   Just value -> case τ of
     TF -> Just valuation -- no restrictions
     TBool -> if boolean value then Just valuation else Nothing
-update m sv (LVAR s τ i) valuation = case M.lookup s sv of
+update m sv valuation (LVAR s τ i) = case M.lookup s sv of
   Nothing -> Nothing -- variable is not defined in environment
   Just value -> case τ of
     TF -> Just (M.insert i value valuation)
     TBool -> if boolean value then Just (M.insert i value valuation) else Nothing
-update m _  (LCONST x i) valuation = Just (M.insert i x valuation)
-update m sv (LDIV p1 p2 w i) valuation =
-  case update m sv p1 valuation of
+update m _  valuation (LCONST x i) = Just (M.insert i x valuation)
+update m sv valuation (LDIV p1 p2 w i) =
+  case update m sv valuation p1 of
     Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
+    Just valuation1 -> case update m sv valuation1 p2 of
       Nothing -> Nothing
       Just valuation2 ->
         let i1 = outputWire p1; i2 = outputWire p2
@@ -68,8 +68,8 @@ update m sv (LDIV p1 p2 w i) valuation =
                let valuation3 = M.insert i (x1 / x2) valuation2
                in Just (M.insert w (1 / x2) valuation3)
            _                  -> Nothing
-update m sv (LUN op p1 i) valuation =
-  case update m sv p1 valuation of
+update m sv valuation (LUN op p1 i) =
+  case update m sv valuation p1 of
     Nothing -> Nothing
     Just valuation1 ->
       let i1 = outputWire p1
@@ -82,10 +82,10 @@ update m sv (LUN op p1 i) valuation =
                  UnsafeNOT -> 1 - x1
            in Just (M.insert i value valuation1)
          _       -> Nothing
-update m sv (LBIN op p1 p2 i) valuation =
-  case update m sv p1 valuation of
+update m sv valuation (LBIN op p1 p2 i) =
+  case update m sv valuation p1 of
     Nothing -> Nothing
-    Just valuation1 -> case update m sv p2 valuation1 of
+    Just valuation1 -> case update m sv valuation1 p2 of
       Nothing -> Nothing
       Just valuation2 ->
         let i1 = outputWire p1; i2 = outputWire p2
@@ -105,8 +105,8 @@ update m sv (LBIN op p1 p2 i) valuation =
              in Just (M.insert i value valuation2)
            _                  -> Nothing
 
-update m sv (LEQLC p1 k w i) valuation =
-  case update m sv p1 valuation of
+update m sv valuation (LEQLC p1 k w i) =
+  case update m sv valuation p1 of
     Nothing -> Nothing
     Just valuation1 ->
       let i1 = outputWire p1
@@ -118,8 +118,8 @@ update m sv (LEQLC p1 k w i) valuation =
                 in Just (M.insert i zero valuation2)
          _       -> Nothing
 
-update m sv (LNZERO p1 w) valuation =
-  case update m sv p1 valuation of
+update m sv valuation (LNZERO p1 w) =
+  case update m sv valuation p1 of
     Nothing -> Nothing
     Just valuation1 ->
       let i1 = outputWire p1
@@ -127,11 +127,11 @@ update m sv (LNZERO p1 w) valuation =
       of Just x1 -> if x1 /= 0 then Just (M.insert w (1/x1) valuation1)
                     else Nothing
          _       -> Nothing
-update m sv (LBOOL p1) valuation = update m sv p1 valuation
-update m sv (LEQA p1 p2) valuation =
-  case update m sv p1 valuation of
+update m sv valuation (LBOOL p1) = update m sv valuation p1
+update m sv valuation (LEQA p1 p2) =
+  case update m sv valuation p1 of
     Nothing -> Nothing
-    Just valuation1 -> update m sv p2 valuation1
+    Just valuation1 -> update m sv valuation1 p2
 
 
 {-@ reflect toVector @-}

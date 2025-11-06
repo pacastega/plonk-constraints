@@ -41,8 +41,8 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
                   -> e':{LDSL p (Btwn 0 m) | label' (UN ISZERO p1) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ e' σ}
-                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = update m ρ p1' σ}
+                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ σ e'}
+                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = update m ρ σ p1'}
 
                   -> v:p -> v1:{p | M.lookup (outputWire p1') σ1 == Just v1}
 
@@ -90,5 +90,5 @@ labelProofISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1
       where (LEQLC _ _ w i) = e'
             (m1, ps1, λ1) = label' p1 m0 λ
             p1' = case ps1 of [x] -> x
-            σ1 = case update m1 ρ p1' σ ? updateLemma m1 m ρ p1' σ of Just s -> s
+            σ1 = case update m1 ρ σ p1' ? updateLemma m1 m ρ p1' σ of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
