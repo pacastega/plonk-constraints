@@ -113,7 +113,7 @@ partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 {- permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
                 -> VecDSL' F_BLS12 (t ins) @-}
 {-@ permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
-                -> {v:DSL F_BLS12 | vlength v = t ins} @-}
+                -> VecDSL' F_BLS12 (t ins) @-}
 permutation :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
 permutation ins@(Ins {..}) xs = step4
   where
@@ -134,10 +134,9 @@ permutation ins@(Ins {..}) xs = step4
 
 {-@ fold' :: ins:Instance F_BLS12
           -> (VecDSL' F_BLS12 (t ins) -> VecDSL' F_BLS12 (t ins) -> VecDSL' F_BLS12 (t ins))
-          -> z:VecDSL' F_BLS12 (t ins)
+          ->  VecDSL' F_BLS12 (t ins)
           -> [VecDSL' F_BLS12 (t ins)]
-          -> VecDSL' F_BLS12 (t ins)
- @-}
+          ->  VecDSL' F_BLS12 (t ins) @-}
 fold' :: Instance F_BLS12 -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12) -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
 fold' _ _ z []     = z
 fold' ins f z (x:xs) = fold' ins f (f z x) xs
@@ -146,10 +145,9 @@ fold' ins f z (x:xs) = fold' ins f (f z x) xs
 
 {-@ fold'' :: ins:Instance F_BLS12
           -> (VecDSL' F_BLS12 (t ins) -> FieldDSL F_BLS12 -> VecDSL' F_BLS12 (t ins))
-          -> z:VecDSL' F_BLS12 (t ins)
+          ->  VecDSL' F_BLS12 (t ins)
           -> [FieldDSL F_BLS12]
-          -> VecDSL' F_BLS12 (t ins)
- @-}
+          ->  VecDSL' F_BLS12 (t ins) @-}
 fold'' :: Instance F_BLS12 -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12) -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
 fold'' _ _ z []     = z
 fold'' ins f z (x:xs) = fold'' ins f (f z x) xs
