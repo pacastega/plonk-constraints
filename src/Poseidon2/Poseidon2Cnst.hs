@@ -2,7 +2,8 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 {-# LANGUAGE DataKinds #-}
-module Poseidon2.Poseidon2Cnst where
+module Poseidon2.Poseidon2Cnst ( F_BLS12, Instance (..)
+                               , bls12_2, bls12_3, bls12_4) where
 
 import Data.FiniteField.PrimeField
 import GHC.Prim
