@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, OrPatterns #-}
 {-@ LIQUID "--reflection" @-}
 {- LIQUID "--eliminate=none" @-}
 {-@ LIQUID "--ple" @-}
@@ -32,7 +32,7 @@ matMulInternal (Ins {..}) xs = case t of
     -- [2 1 1]
     -- [1 2 1]
     -- [1 1 3]
-  4 -> vZipWith TF TF TF (\x μ -> sum `plus` (μ `times` x)) xs matInternalDiag
+  (4;8;12;16;20;24) -> vZipWith TF TF TF (\x μ -> sum `plus` (μ `times` x)) xs matInternalDiag
     where sum = vSum xs
   _ -> error "this value for t is not supported"
 
@@ -49,7 +49,29 @@ matMulExternal (Ins {..}) xs = case t of
       fromList TF [sum `plus` x0, sum `plus` x1, sum `plus` x2]
       where sum = x0 `plus` x1 `plus` x2
   4 -> matMulM4 xs
+  (8;12;16;20;24) -> matMulM4' xs
   _ -> error "this value for t is not supported"
+
+{-@ matMulM4' :: {v:VecDSL F_BLS12 TF | (vlength v) mod 4 = 0}
+              -> {res:VecDSL F_BLS12 TF | vlength res = vlength v} @-}
+matMulM4' :: DSL F_BLS12 -> DSL F_BLS12
+matMulM4' xs = vConcat TF step2 ? lengthsLemma 4 step2 where
+
+  -- apply matMulM4 separately to each 4-element chunk:
+  step1  = map matMulM4 (vChunk TF 4 xs)
+  step1 :: [DSL F_BLS12]
+  {-@ step1 :: {l:[VecDSL' F_BLS12 4] | 4 * len l = vlength xs} @-}
+
+  -- add components in four groups depending on their remainder modulo 4:
+  sums = fold' 4 (vZipWith TF TF TF plus) (vReplicate TF 4 (CONST 0)) step1
+  sums :: DSL F_BLS12
+  {-@ sums :: VecDSL' F_BLS12 4 @-}
+
+  -- add the sums to each 4-element chunk:
+  step2 = map (vZipWith TF TF TF plus sums) step1
+  step2 :: [DSL F_BLS12]
+  {-@ step2 :: {l:[VecDSL' F_BLS12 4] | 4 * len l = vlength xs} @-}
+
 
 {-@ matMulM4 :: VecDSL' F_BLS12 4 -> VecDSL' F_BLS12 4 @-}
 matMulM4 :: DSL F_BLS12 -> DSL F_BLS12
@@ -121,9 +143,9 @@ permutation :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
 permutation ins@(Ins {..}) xs = step4
   where
     step1 = matMulExternal ins xs
-    step2 = fold'  ins (fullRound ins)    step1 roundConstants_f1
-    step3 = fold'' ins (partialRound ins) step2 roundConstants_p
-    step4 = fold'  ins (fullRound ins)    step3 roundConstants_f2
+    step2 = fold'  t (fullRound ins)    step1 roundConstants_f1
+    step3 = fold'' t (partialRound ins) step2 roundConstants_p
+    step4 = fold'  t (fullRound ins)    step3 roundConstants_f2
 
 
 -- Type annocated folds (TODO: check if these types can be inferred automatically)
@@ -135,22 +157,18 @@ permutation ins@(Ins {..}) xs = step4
 {- qualif MyTyped( v : DSL @(0)): ((DSL.typed v DSL.TF)) @-}
 
 
-{-@ fold' :: ins:Instance F_BLS12
-          -> (VecDSL' F_BLS12 (t ins) -> VecDSL' F_BLS12 (t ins) -> VecDSL' F_BLS12 (t ins))
-          ->  VecDSL' F_BLS12 (t ins)
-          -> [VecDSL' F_BLS12 (t ins)]
-          ->  VecDSL' F_BLS12 (t ins) @-}
-fold' :: Instance F_BLS12 -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12) -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
+{-@ fold' :: n:Nat
+          -> (VecDSL' F_BLS12 n -> VecDSL' F_BLS12 n -> VecDSL' F_BLS12 n)
+          ->  VecDSL' F_BLS12 n -> [VecDSL' F_BLS12 n] ->  VecDSL' F_BLS12 n @-}
+fold' :: Int -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12)
+      -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
 fold' _ _ z []     = z
-fold' ins f z (x:xs) = fold' ins f (f z x) xs
+fold' n f z (x:xs) = fold' n f (f z x) xs
 
-
-
-{-@ fold'' :: ins:Instance F_BLS12
-          -> (VecDSL' F_BLS12 (t ins) -> FieldDSL F_BLS12 -> VecDSL' F_BLS12 (t ins))
-          ->  VecDSL' F_BLS12 (t ins)
-          -> [FieldDSL F_BLS12]
-          ->  VecDSL' F_BLS12 (t ins) @-}
-fold'' :: Instance F_BLS12 -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12) -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
+{-@ fold'' :: n:Nat
+          -> (VecDSL' F_BLS12 n -> FieldDSL F_BLS12 -> VecDSL' F_BLS12 n)
+          ->  VecDSL' F_BLS12 n -> [FieldDSL F_BLS12] ->  VecDSL' F_BLS12 n @-}
+fold'' :: Int -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12)
+       -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
 fold'' _ _ z []     = z
-fold'' ins f z (x:xs) = fold'' ins f (f z x) xs
+fold'' n f z (x:xs) = fold'' n f (f z x) xs

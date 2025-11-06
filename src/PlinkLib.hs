@@ -96,6 +96,12 @@ lengths :: [DSL p] -> Int
 lengths [] = 0
 lengths (p:ps) = vlength p + lengths ps
 
+{-@ lengthsLemma :: n:Nat -> xs:[{v:VecDSL p TF | vlength v = n}]
+                -> { lengths xs = n * len xs} @-}
+lengthsLemma :: Int -> [DSL p] -> Proof
+lengthsLemma n [] = trivial
+lengthsLemma n (x:xs) = lengthsLemma n xs
+
 {-@ reflect vTakeDrop @-}
 {-@ vTakeDrop :: τ:Ty -> n:Nat -> u:{VecDSL p τ | vlength u >= n}
               -> res:{({v:VecDSL p τ | vlength v = n},

@@ -19,7 +19,7 @@ type F_BLS12 = PrimeField 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffff
 
 -- general instances -----------------------------------------------------------
 
-{-@ type ValidT = {t:Int | t = 2 || t = 3 || t = 4} @-}
+{-@ type ValidT = {t:Int | t = 2 || t = 3 || (t >= 4 && t <= 24 && t mod 4 = 0)} @-}
 {-@ type ValidD = {d:Int | d = 3 || d = 5 || d = 7} @-}
 {-@ type VecDSL' p N = {v:DSL p | typed v (TVec TF) && vlength v = N} @-}
 
@@ -40,7 +40,7 @@ data Instance fp = Ins { t :: Int
                        , roundConstants_f2 :: [DSL fp]
                        }
 
--- t = 2 -----------------------------------------------------------------------
+-- t = 2 (BLS12) ---------------------------------------------------------------
 
 -- Included here for completeness, but the use of these constants is inlined in
 -- the implementation for efficiency
@@ -149,7 +149,7 @@ rc2_f2 = map (fromList TF)
 bls12_2 :: Instance F_BLS12
 bls12_2 = Ins 2 5 matDiag2_M1 rc2_f1 rc2_p rc2_f2
 
--- -- t = 3 -----------------------------------------------------------------------
+-- t = 3 (BLS12) ---------------------------------------------------------------
 
 -- Included here for completeness, but the use of these constants is inlined in
 -- the implementation for efficiency
@@ -271,7 +271,7 @@ rc3_f2 = map (fromList TF)
 bls12_3 :: Instance F_BLS12
 bls12_3 = Ins 3 5 matDiag3_M1 rc3_f1 rc3_p rc3_f2
 
--- -- t = 4 -----------------------------------------------------------------------
+-- t = 4 (BLS12) ---------------------------------------------------------------
 
 {-@ matDiag4_M1 :: VecDSL' F_BLS12 4 @-}
 matDiag4_M1 :: DSL F_BLS12
