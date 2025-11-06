@@ -145,6 +145,7 @@ rc2_f2 = map (fromList TF)
          , [ CONST 0x62b1a6c06ab26881a1fe57eceac56b5aec0b96da7211557f4e27ec24296d7db6
            , CONST 0x0dfc474151e5c605a693a51ae8227cc0a99fdc4524fc2810c6eda9035d04334d ] ]
 
+{-@ reflect bls12_2 @-}
 bls12_2 :: Instance F_BLS12
 bls12_2 = Ins 2 5 matDiag2_M1 rc2_f1 rc2_p rc2_f2
 
@@ -266,6 +267,7 @@ rc3_f2 = map (fromList TF)
            , CONST 0x39d00994a8a5046a1bc749363e98a768e34dea56439fe1954bef429bc5331608
            , CONST 0x4d7f5dcd78ece9a933984de32c0b48fac2bba91f261996b8e9d1021773bd07cc ] ]
 
+{-@ reflect bls12_3 @-}
 bls12_3 :: Instance F_BLS12
 bls12_3 = Ins 3 5 matDiag3_M1 rc3_f1 rc3_p rc3_f2
 
@@ -400,6 +402,7 @@ rc4_f2 = map (fromList TF)
            , CONST 0x6bbd2d3a643d301d25a8cf156542165abee3039068fecf501e9d39f313ca2a87
            , CONST 0x04690fe1be7c7b8c10c81e63f5e508fe93853c61f0435f81eabc9997fa3b99f3 ] ]
 
+{-@ reflect bls12_4 @-}
 bls12_4 :: Instance F_BLS12
 bls12_4 = Ins 4 5 matDiag4_M1 rc4_f1 rc4_p rc4_f2
 

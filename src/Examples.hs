@@ -424,17 +424,21 @@ testSha = do
 
 -- Poseidon2 examples ----------------------------------------------------------
 
+{-@ poseidon2_1 :: GlobalStore F_BLS12 (FieldDSL F_BLS12) @-}
 poseidon2_1 :: GlobalStore F_BLS12 (DSL F_BLS12)
 poseidon2_1 = pure $ sbox_p bls12_3 (VAR "x" TF)
 
+{-@ poseidon2_2 :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
 poseidon2_2 :: GlobalStore F_BLS12 (DSL F_BLS12)
 poseidon2_2 = pure $ matMulInternal bls12_3
     (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
 
+{-@ poseidon2_3 :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
 poseidon2_3 :: GlobalStore F_BLS12 (DSL F_BLS12)
 poseidon2_3 = pure $ matMulExternal bls12_3
     (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
 
+{-@ poseidon2_permutation :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
 poseidon2_permutation :: GlobalStore F_BLS12 (DSL F_BLS12)
 poseidon2_permutation = pure $ permutation bls12_3
     (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
