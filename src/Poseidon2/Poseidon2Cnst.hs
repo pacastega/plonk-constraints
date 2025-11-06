@@ -2,8 +2,9 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 {-# LANGUAGE DataKinds #-}
-module Poseidon2.Poseidon2Cnst ( F_BLS12, Instance (..)
-                               , bls12_2, bls12_3, bls12_4) where
+module Poseidon2.Poseidon2Cnst ( F_BLS12, F_G, Instance (..)
+                               , bls12_2, bls12_3, bls12_4
+                               , goldilocks_8) where
 
 import Data.FiniteField.PrimeField
 import GHC.Prim
@@ -12,10 +13,11 @@ import PlinkLib
 
 {-@ embed GHC.Prim.ByteArray# as int @-}
 
--- this is an implementation specifically for the BLS12 prime.
 -- Some details of the implementation (e.g. the degree of the non-linear part of
--- the permutation) change depending on the size of this field.
+-- the permutation) change depending on the size of the field.
+-- For this reason, only some fields are sypported.
 type F_BLS12 = PrimeField 0x73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001
+type F_G = PrimeField 0xffffffff00000001 -- Goldilocks prime
 
 -- general instances -----------------------------------------------------------
 
@@ -405,6 +407,121 @@ rc4_f2 = map (fromList TF)
 {-@ reflect bls12_4 @-}
 bls12_4 :: Instance F_BLS12
 bls12_4 = Ins 4 5 matDiag4_M1 rc4_f1 rc4_p rc4_f2
+
+-- t = 8 (Goldilocks) ----------------------------------------------------------
+
+{-@ matDiag8_M1 :: VecDSL' F_G 8 @-}
+matDiag8_M1 :: DSL F_G
+matDiag8_M1 = fromList TF
+              [ CONST 0xa98811a1fed4e3a5
+              , CONST 0x1cc48b54f377e2a0
+              , CONST 0xe40cd4f6c5609a26
+              , CONST 0x11de79ebca97a4a3
+              , CONST 0x9177c73d8b7e929c
+              , CONST 0x2a6fe8085797e791
+              , CONST 0x3de6e93329f8d5ad
+              , CONST 0x3f7af9125da962fe ]
+
+{-@ rc8_f1 :: [VecDSL' F_G 8] @-}
+rc8_f1 :: [DSL F_G]
+rc8_f1 = map (fromList TF)
+         [ [ CONST 0xdd5743e7f2a5a5d9
+           , CONST 0xcb3a864e58ada44b
+           , CONST 0xffa2449ed32f8cdc
+           , CONST 0x42025f65d6bd13ee
+           , CONST 0x7889175e25506323
+           , CONST 0x34b98bb03d24b737
+           , CONST 0xbdcc535ecc4faa2a
+           , CONST 0x5b20ad869fc0d033 ]
+         , [ CONST 0xf1dda5b9259dfcb4
+           , CONST 0x27515210be112d59
+           , CONST 0x4227d1718c766c3f
+           , CONST 0x26d333161a5bd794
+           , CONST 0x49b938957bf4b026
+           , CONST 0x4a56b5938b213669
+           , CONST 0x1120426b48c8353d
+           , CONST 0x6b323c3f10a56cad ]
+         , [ CONST 0xce57d6245ddca6b2
+           , CONST 0xb1fc8d402bba1eb1
+           , CONST 0xb5c5096ca959bd04
+           , CONST 0x6db55cd306d31f7f
+           , CONST 0xc49d293a81cb9641
+           , CONST 0x1ce55a4fe979719f
+           , CONST 0xa92e60a9d178a4d1
+           , CONST 0x002cc64973bcfd8c ]
+         , [ CONST 0xcea721cce82fb11b
+           , CONST 0xe5b55eb8098ece81
+           , CONST 0x4e30525c6f1ddd66
+           , CONST 0x43c6702827070987
+           , CONST 0xaca68430a7b5762a
+           , CONST 0x3674238634df9c93
+           , CONST 0x88cee1c825e33433
+           , CONST 0xde99ae8d74b57176 ] ]
+
+{-@ rc8_p :: [FieldDSL F_G] @-}
+rc8_p :: [DSL F_G]
+rc8_p = [ CONST 0x488897d85ff51f56
+        , CONST 0x1140737ccb162218
+        , CONST 0xa7eeb9215866ed35
+        , CONST 0x9bd2976fee49fcc9
+        , CONST 0xc0c8f0de580a3fcc
+        , CONST 0x4fb2dae6ee8fc793
+        , CONST 0x343a89f35f37395b
+        , CONST 0x223b525a77ca72c8
+        , CONST 0x56ccb62574aaa918
+        , CONST 0xc4d507d8027af9ed
+        , CONST 0xa080673cf0b7e95c
+        , CONST 0xf0184884eb70dcf8
+        , CONST 0x044f10b0cb3d5c69
+        , CONST 0xe9e3f7993938f186
+        , CONST 0x1b761c80e772f459
+        , CONST 0x606cec607a1b5fac
+        , CONST 0x14a0c2e1d45f03cd
+        , CONST 0x4eace8855398574f
+        , CONST 0xf905ca7103eff3e6
+        , CONST 0xf8c8f8d20862c059
+        , CONST 0xb524fe8bdd678e5a
+        , CONST 0xfbb7865901a1ec41 ]
+
+{-@ rc8_f2 :: [VecDSL' F_G 8] @-}
+rc8_f2 :: [DSL F_G]
+rc8_f2 = map (fromList TF)
+         [ [ CONST 0x014ef1197d341346
+           , CONST 0x9725e20825d07394
+           , CONST 0xfdb25aef2c5bae3b
+           , CONST 0xbe5402dc598c971e
+           , CONST 0x93a5711f04cdca3d
+           , CONST 0xc45a9a5b2f8fb97b
+           , CONST 0xfe8946a924933545
+           , CONST 0x2af997a27369091c ]
+         , [ CONST 0xaa62c88e0b294011
+           , CONST 0x058eb9d810ce9f74
+           , CONST 0xb3cb23eced349ae4
+           , CONST 0xa3648177a77b4a84
+           , CONST 0x43153d905992d95d
+           , CONST 0xf4e2a97cda44aa4b
+           , CONST 0x5baa2702b908682f
+           , CONST 0x082923bdf4f750d1 ]
+         , [ CONST 0x98ae09a325893803
+           , CONST 0xf8a6475077968838
+           , CONST 0xceb0735bf00b2c5f
+           , CONST 0x0a1a5d953888e072
+           , CONST 0x2fcb190489f94475
+           , CONST 0xb5be06270dec69fc
+           , CONST 0x739cb934b09acf8b
+           , CONST 0x537750b75ec7f25b ]
+         , [ CONST 0xe9dd318bae1f3961
+           , CONST 0xf7462137299efe1a
+           , CONST 0xb1f6b8eee9adb940
+           , CONST 0xbdebcc8a809dfe6b
+           , CONST 0x40fc1f791b178113
+           , CONST 0x3ac1c3362d014864
+           , CONST 0x9a016184bdb8aeba
+           , CONST 0x95f2394459fbc25e ] ]
+
+{-@ reflect goldilocks_8 @-}
+goldilocks_8 :: Instance F_G
+goldilocks_8 = Ins 8 7 matDiag8_M1 rc8_f1 rc8_p rc8_f2
 
 -- workarounds to fix "crash: unknown constant" --------------------------------
 
