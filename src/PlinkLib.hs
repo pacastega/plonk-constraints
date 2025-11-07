@@ -262,7 +262,7 @@ fromBinary vec = do
 
   val <- binaryValue vec
   assert $ val `EQA` x
-  define x' (\v -> case eval x v of Just (VF x'') -> Just x''; _ -> Nothing)
+  define x' (\v -> case eval val v of Just (VF x'') -> Just x''; _ -> Nothing)
   return x
 
 
