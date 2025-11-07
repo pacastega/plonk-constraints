@@ -449,4 +449,5 @@ var name = name ++ "_" ++ show (unsafePerformIO $ fresh ())
 
 {-@ vars :: n:Nat -> Var -> ListN Var n @-}
 vars :: Int -> Var -> [Var]
-vars n name = map' (\i -> var name ++ "_" ++ show i) (firstNats n)
+vars n name = map' (\i -> name' ++ "_" ++ show i) (firstNats n)
+  where name' = var name
