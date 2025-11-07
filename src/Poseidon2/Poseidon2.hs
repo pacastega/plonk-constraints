@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, OrPatterns #-}
+{-# LANGUAGE RecordWildCards, OrPatterns, ScopedTypeVariables #-}
 {-@ LIQUID "--reflection" @-}
 {- LIQUID "--eliminate=none" @-}
 {-@ LIQUID "--ple" @-}
@@ -11,9 +11,9 @@ import Poseidon2.Poseidon2Cnst
 
 import Language.Haskell.Liquid.ProofCombinators
 
-{-@ matMulInternal :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
-                   -> VecDSL' F_BLS12 (t ins) @-}
-matMulInternal :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
+{-@ matMulInternal :: ins:Instance p -> VecDSL' p (t ins)
+                   -> VecDSL' p (t ins) @-}
+matMulInternal :: Num p => Instance p -> DSL p -> DSL p
 matMulInternal (Ins {..}) xs = case t of
   2 -> case xs of
     CONS x0 (CONS x1 (NIL TF)) ->
@@ -36,9 +36,9 @@ matMulInternal (Ins {..}) xs = case t of
     where sum = vSum xs
   _ -> error "this value for t is not supported"
 
-{-@ matMulExternal :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
-                   -> VecDSL' F_BLS12 (t ins) @-}
-matMulExternal :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
+{-@ matMulExternal :: ins:Instance p -> VecDSL' p (t ins)
+                   -> VecDSL' p (t ins) @-}
+matMulExternal :: Num p => Instance p -> DSL p -> DSL p
 matMulExternal (Ins {..}) xs = case t of
   2 -> case xs of
     CONS x0 (CONS x1 (NIL TF)) ->
@@ -52,29 +52,29 @@ matMulExternal (Ins {..}) xs = case t of
   (8;12;16;20;24) -> matMulM4' xs
   _ -> error "this value for t is not supported"
 
-{-@ matMulM4' :: {v:VecDSL F_BLS12 TF | (vlength v) mod 4 = 0}
-              -> {res:VecDSL F_BLS12 TF | vlength res = vlength v} @-}
-matMulM4' :: DSL F_BLS12 -> DSL F_BLS12
+{-@ matMulM4' :: {v:VecDSL p TF | (vlength v) mod 4 = 0}
+              -> {res:VecDSL p TF | vlength res = vlength v} @-}
+matMulM4' :: forall p. Num p => DSL p -> DSL p
 matMulM4' xs = vConcat TF step2 ? lengthsLemma 4 step2 where
 
   -- apply matMulM4 separately to each 4-element chunk:
-  step1  = map matMulM4 (vChunk TF 4 xs)
-  step1 :: [DSL F_BLS12]
-  {-@ step1 :: {l:[VecDSL' F_BLS12 4] | 4 * len l = vlength xs} @-}
+  step1 = map matMulM4 (vChunk TF 4 xs)
+  step1 :: Num p => [DSL p]
+  {-@ step1 :: {l:[VecDSL' p 4] | 4 * len l = vlength xs} @-}
 
   -- add components in four groups depending on their remainder modulo 4:
   sums = fold' 4 (vZipWith TF TF TF plus) (vReplicate TF 4 (CONST 0)) step1
-  sums :: DSL F_BLS12
-  {-@ sums :: VecDSL' F_BLS12 4 @-}
+  sums :: Num p => DSL p
+  {-@ sums :: VecDSL' p 4 @-}
 
   -- add the sums to each 4-element chunk:
   step2 = map (vZipWith TF TF TF plus sums) step1
-  step2 :: [DSL F_BLS12]
-  {-@ step2 :: {l:[VecDSL' F_BLS12 4] | 4 * len l = vlength xs} @-}
+  step2 :: Num p => [DSL p]
+  {-@ step2 :: {l:[VecDSL' p 4] | 4 * len l = vlength xs} @-}
 
 
-{-@ matMulM4 :: VecDSL' F_BLS12 4 -> VecDSL' F_BLS12 4 @-}
-matMulM4 :: DSL F_BLS12 -> DSL F_BLS12
+{-@ matMulM4 :: VecDSL' p 4 -> VecDSL' p 4 @-}
+matMulM4 :: Num p => DSL p -> DSL p
 matMulM4 (CONS x0 (CONS x1 (CONS x2 (CONS x3 (NIL TF))))) =
    fromList TF [t6, t5, t7, t4]
     -- let CSE take care of the repetitions
@@ -86,60 +86,60 @@ matMulM4 (CONS x0 (CONS x1 (CONS x2 (CONS x3 (NIL TF))))) =
           t5 = BIN (LINCOMB 4 1) t0 t2
           t6 = t3 `plus` t5
           t7 = t2 `plus` t4
-          {-@ t0 :: FieldDSL F_BLS12 @-}
-          {-@ t1 :: FieldDSL F_BLS12 @-}
-          {-@ t2 :: FieldDSL F_BLS12 @-}
-          {-@ t3 :: FieldDSL F_BLS12 @-}
-          {-@ t4 :: FieldDSL F_BLS12 @-}
-          {-@ t5 :: FieldDSL F_BLS12 @-}
-          {-@ t6 :: FieldDSL F_BLS12 @-}
-          {-@ t7 :: FieldDSL F_BLS12 @-}
+          {-@ t0 :: FieldDSL p @-}
+          {-@ t1 :: FieldDSL p @-}
+          {-@ t2 :: FieldDSL p @-}
+          {-@ t3 :: FieldDSL p @-}
+          {-@ t4 :: FieldDSL p @-}
+          {-@ t5 :: FieldDSL p @-}
+          {-@ t6 :: FieldDSL p @-}
+          {-@ t7 :: FieldDSL p @-}
 
 
-{-@ sbox :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
-         -> VecDSL' F_BLS12 (t ins) @-}
-sbox :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
+{-@ sbox :: ins:Instance p -> VecDSL' p (t ins)
+         -> VecDSL' p (t ins) @-}
+sbox :: Num p => Instance p -> DSL p -> DSL p
 sbox ins = vMap TF TF (sbox_p ins)
 
-{-@ sbox_p :: Instance F_BLS12 -> FieldDSL F_BLS12 -> FieldDSL F_BLS12 @-}
-sbox_p :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
+{-@ sbox_p :: Instance p -> FieldDSL p -> FieldDSL p @-}
+sbox_p :: Num p => Instance p -> DSL p -> DSL p
 sbox_p (Ins {..}) x = let x2 = (x `times` x) in case d of
   -- this parenthesization allows CSE to reuse some subexpressions
   3 -> x2 `times` x
   5 -> x2 `times` x2 `times` x
   7 -> x2 `times` x2 `times` x2 `times` x
 
-{-@ addRC :: xs: VecDSL F_BLS12 TF
-          -> {ys:VecDSL F_BLS12 TF | vlength ys = vlength xs}
-          -> {zs:VecDSL F_BLS12 TF | vlength zs = vlength xs} @-}
-addRC :: DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
+{-@ addRC :: xs: VecDSL p TF
+          -> {ys:VecDSL p TF | vlength ys = vlength xs}
+          -> {zs:VecDSL p TF | vlength zs = vlength xs} @-}
+addRC :: Num p => DSL p -> DSL p -> DSL p
 addRC = vZipWith TF TF TF plus
 
-{-@ fullRound :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
-              -> VecDSL' F_BLS12 (t ins)
-              -> VecDSL' F_BLS12 (t ins) @-}
-fullRound :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
+{-@ fullRound :: ins:Instance p -> VecDSL' p (t ins)
+              -> VecDSL' p (t ins)
+              -> VecDSL' p (t ins) @-}
+fullRound :: Num p => Instance p -> DSL p -> DSL p -> DSL p
 fullRound ins state rc = matMulExternal ins (sbox ins (addRC state rc))
 
-{-@ tGT0 :: ins:Instance F_BLS12 -> {t ins > 0} @-}
-tGT0 :: Instance F_BLS12 -> Proof
+{-@ tGT0 :: ins:Instance p -> {t ins > 0} @-}
+tGT0 :: Instance p -> Proof
 tGT0 Ins {} = ()
 
-{-@ partialRound :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
-                 -> FieldDSL F_BLS12
-                 -> VecDSL' F_BLS12 (t ins) @-}
-partialRound :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
+{-@ partialRound :: ins:Instance p -> VecDSL' p (t ins)
+                 -> FieldDSL p
+                 -> VecDSL' p (t ins) @-}
+partialRound :: Num p => Instance p -> DSL p -> DSL p -> DSL p
 partialRound ins state@(CONS h ts) rc = matMulInternal ins
      (CONS (sbox_p ins (h `plus` rc)) ts)
 partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 
 
 -- poseidon2^π permutation
-{- permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
-                -> VecDSL' F_BLS12 (t ins) @-}
-{-@ permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
-                -> VecDSL' F_BLS12 (t ins) @-}
-permutation :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
+{- permutation :: ins:Instance p -> VecDSL' p (t ins)
+                -> VecDSL' p (t ins) @-}
+{-@ permutation :: ins:Instance p -> VecDSL' p (t ins)
+                -> VecDSL' p (t ins) @-}
+permutation :: Num p => Instance p -> DSL p -> DSL p
 permutation ins@(Ins {..}) xs = step4
   where
     step1 = matMulExternal ins xs
@@ -158,17 +158,17 @@ permutation ins@(Ins {..}) xs = step4
 
 
 {-@ fold' :: n:Nat
-          -> (VecDSL' F_BLS12 n -> VecDSL' F_BLS12 n -> VecDSL' F_BLS12 n)
-          ->  VecDSL' F_BLS12 n -> [VecDSL' F_BLS12 n] ->  VecDSL' F_BLS12 n @-}
-fold' :: Int -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12)
-      -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
+          -> (VecDSL' p n -> VecDSL' p n -> VecDSL' p n)
+          ->  VecDSL' p n -> [VecDSL' p n] ->  VecDSL' p n @-}
+fold' :: Int -> (DSL p -> DSL p -> DSL p)
+      -> DSL p -> [DSL p] -> DSL p
 fold' _ _ z []     = z
 fold' n f z (x:xs) = fold' n f (f z x) xs
 
 {-@ fold'' :: n:Nat
-          -> (VecDSL' F_BLS12 n -> FieldDSL F_BLS12 -> VecDSL' F_BLS12 n)
-          ->  VecDSL' F_BLS12 n -> [FieldDSL F_BLS12] ->  VecDSL' F_BLS12 n @-}
-fold'' :: Int -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12)
-       -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
+          -> (VecDSL' p n -> FieldDSL p -> VecDSL' p n)
+          ->  VecDSL' p n -> [FieldDSL p] ->  VecDSL' p n @-}
+fold'' :: Int -> (DSL p -> DSL p -> DSL p)
+       -> DSL p -> [DSL p] -> DSL p
 fold'' _ _ z []     = z
 fold'' n f z (x:xs) = fold'' n f (f z x) xs
