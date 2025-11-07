@@ -438,7 +438,7 @@ poseidon2_3 :: GlobalStore F_BLS12 (DSL F_BLS12)
 poseidon2_3 = pure $ matMulExternal bls12_3
     (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
 
-{-@ poseidon2_permutation :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
+{-@ poseidon2_permutation :: GlobalStore F_G (VecDSL' F_G 8) @-}
 poseidon2_permutation :: GlobalStore F_G (DSL F_G)
 poseidon2_permutation = pure $ permutation goldilocks_8 (vecVar varNames TF)
   where varNames = map (\i -> "x" ++ show i) (firstNats 8)
