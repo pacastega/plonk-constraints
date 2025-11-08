@@ -426,7 +426,7 @@ testSha = do
 
 {-@ poseidon2_1 :: GlobalStore F_BLS12 (FieldDSL F_BLS12) @-}
 poseidon2_1 :: GlobalStore F_BLS12 (DSL F_BLS12)
-poseidon2_1 = pure $ sbox_p bls12_3 (VAR "x" TF)
+poseidon2_1 = sbox_p bls12_3 (VAR "x" TF)
 
 {-@ poseidon2_2 :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
 poseidon2_2 :: GlobalStore F_BLS12 (DSL F_BLS12)
@@ -438,10 +438,10 @@ poseidon2_3 :: GlobalStore F_BLS12 (DSL F_BLS12)
 poseidon2_3 = pure $ matMulExternal bls12_3
     (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
 
-{-@ poseidon2_permutation :: GlobalStore F_G (VecDSL' F_G 8) @-}
-poseidon2_permutation :: GlobalStore F_G (DSL F_G)
-poseidon2_permutation = pure $ permutation goldilocks_8 (vecVar varNames TF)
-  where varNames = map (\i -> "x" ++ show i) (firstNats 8)
+{-@ poseidon2_permutation :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
+poseidon2_permutation :: GlobalStore F_BLS12 (DSL F_BLS12)
+poseidon2_permutation = permutation bls12_3 (vecVar varNames TF)
+  where varNames = map (\i -> "x" ++ show i) (firstNats 3)
 
 testPoseidon :: IO ()
 testPoseidon = do
@@ -451,7 +451,7 @@ testPoseidon = do
   test poseidon2_2 (M.fromList [("x2",0), ("x1",1), ("x0",2)])
   test poseidon2_3 (M.fromList [("x2",0), ("x1",1), ("x0",2)])
 
-  test poseidon2_permutation (M.fromList (map (\i -> ("x" ++ show i, fromIntegral i)) (firstNats 8)))
+  test poseidon2_permutation (M.fromList (map (\i -> ("x" ++ show i, fromIntegral i)) (firstNats 3)))
 
 -- Optimizations ---------------------------------------------------------------
 
