@@ -7,6 +7,8 @@ module Poseidon2.Poseidon2 where
 import Utils
 import DSL
 import PlinkLib
+import Semantics
+import GlobalStore
 import Poseidon2.Poseidon2Cnst
 
 import Language.Haskell.Liquid.ProofCombinators
@@ -97,17 +99,22 @@ matMulM4 (CONS x0 (CONS x1 (CONS x2 (CONS x3 (NIL TF))))) =
 
 
 {-@ sbox :: ins:Instance p -> VecDSL' p (t ins)
-         -> VecDSL' p (t ins) @-}
-sbox :: Num p => Instance p -> DSL p -> DSL p
-sbox ins = vMap TF TF (sbox_p ins)
+         -> GlobalStore p (VecDSL' p (t ins)) @-}
+sbox :: (Fractional p, Eq p) => Instance p -> DSL p -> GlobalStore p (DSL p)
+sbox ins = vMapM TF TF (sbox_p ins)
 
-{-@ sbox_p :: Instance p -> FieldDSL p -> FieldDSL p @-}
-sbox_p :: Num p => Instance p -> DSL p -> DSL p
-sbox_p (Ins {..}) x = let x2 = (x `times` x) in case d of
-  -- this parenthesization allows CSE to reuse some subexpressions
-  3 -> x2 `times` x
-  5 -> x2 `times` x2 `times` x
-  7 -> x2 `times` x2 `times` x2 `times` x
+{-@ sbox_p :: Instance p -> FieldDSL p -> GlobalStore p (FieldDSL p) @-}
+sbox_p :: (Fractional p, Eq p) => Instance p -> DSL p -> GlobalStore p (DSL p)
+sbox_p (Ins {..}) x = yield res where
+  x2 = (x `times` x)
+
+  {-@ res :: FieldDSL p @-}
+  res = case d of
+    -- this parenthesization allows CSE to reuse some subexpressions
+    3 -> x2 `times` x
+    5 -> x2 `times` x2 `times` x
+    7 -> x2 `times` x2 `times` x2 `times` x
+
 
 {-@ addRC :: xs: VecDSL p TF
           -> {ys:VecDSL p TF | vlength ys = vlength xs}
@@ -117,9 +124,13 @@ addRC = vZipWith TF TF TF plus
 
 {-@ fullRound :: ins:Instance p -> VecDSL' p (t ins)
               -> VecDSL' p (t ins)
-              -> VecDSL' p (t ins) @-}
-fullRound :: Num p => Instance p -> DSL p -> DSL p -> DSL p
-fullRound ins state rc = matMulExternal ins (sbox ins (addRC state rc))
+              -> GlobalStore p (VecDSL' p (t ins)) @-}
+fullRound :: (Fractional p, Eq p)
+          => Instance p -> DSL p -> DSL p -> GlobalStore p (DSL p)
+fullRound ins state rc = do
+  nonLinear <- sbox ins (addRC state rc)
+  let res = matMulExternal ins nonLinear
+  yield res ? typed res (TVec TF)
 
 {-@ tGT0 :: ins:Instance p -> {t ins > 0} @-}
 tGT0 :: Instance p -> Proof
@@ -127,10 +138,13 @@ tGT0 Ins {} = ()
 
 {-@ partialRound :: ins:Instance p -> VecDSL' p (t ins)
                  -> FieldDSL p
-                 -> VecDSL' p (t ins) @-}
-partialRound :: Num p => Instance p -> DSL p -> DSL p -> DSL p
-partialRound ins state@(CONS h ts) rc = matMulInternal ins
-     (CONS (sbox_p ins (h `plus` rc)) ts)
+                 -> GlobalStore p (VecDSL' p (t ins)) @-}
+partialRound :: (Fractional p, Eq p)
+             => Instance p -> DSL p -> DSL p -> GlobalStore p (DSL p)
+partialRound ins state@(CONS h ts) rc = do
+  h' <- sbox_p ins (h `plus` rc)
+  let res = matMulInternal ins (CONS h' ts)
+  yield res ? typed res (TVec TF)
 partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 
 
@@ -138,14 +152,15 @@ partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 {- permutation :: ins:Instance p -> VecDSL' p (t ins)
                 -> VecDSL' p (t ins) @-}
 {-@ permutation :: ins:Instance p -> VecDSL' p (t ins)
-                -> VecDSL' p (t ins) @-}
-permutation :: Num p => Instance p -> DSL p -> DSL p
-permutation ins@(Ins {..}) xs = step4
-  where
-    step1 = matMulExternal ins xs
-    step2 = fold'  t (fullRound ins)    step1 roundConstants_f1
-    step3 = fold'' t (partialRound ins) step2 roundConstants_p
-    step4 = fold'  t (fullRound ins)    step3 roundConstants_f2
+                -> GlobalStore p (VecDSL' p (t ins)) @-}
+permutation :: (Fractional p, Eq p) => Instance p -> DSL p -> GlobalStore p (DSL p)
+permutation ins@(Ins {..}) xs = do
+    let step1 = matMulExternal ins xs
+    step2 <- foldM'  t (fullRound ins)    step1 roundConstants_f1
+    step3 <- foldM'' t (partialRound ins) step2 roundConstants_p
+    step4 <- foldM'  t (fullRound ins)    step3 roundConstants_f2
+
+    return step4
 
 
 -- Type annocated folds (TODO: check if these types can be inferred automatically)
@@ -165,6 +180,16 @@ fold' :: Int -> (DSL p -> DSL p -> DSL p)
 fold' _ _ z []     = z
 fold' n f z (x:xs) = fold' n f (f z x) xs
 
+{-@ foldM' :: n:Nat
+           -> (VecDSL' p n -> VecDSL' p n -> GlobalStore p (VecDSL' p n))
+           ->  VecDSL' p n -> [VecDSL' p n] -> GlobalStore p (VecDSL' p n) @-}
+foldM' :: Int -> (DSL p -> DSL p -> GlobalStore p (DSL p))
+      -> DSL p -> [DSL p] -> GlobalStore p (DSL p)
+foldM' _ _ z []     = pure z
+foldM' n f z (x:xs) = do
+  z' <- f z x
+  foldM' n f z' xs
+
 {-@ fold'' :: n:Nat
           -> (VecDSL' p n -> FieldDSL p -> VecDSL' p n)
           ->  VecDSL' p n -> [FieldDSL p] ->  VecDSL' p n @-}
@@ -172,3 +197,13 @@ fold'' :: Int -> (DSL p -> DSL p -> DSL p)
        -> DSL p -> [DSL p] -> DSL p
 fold'' _ _ z []     = z
 fold'' n f z (x:xs) = fold'' n f (f z x) xs
+
+{-@ foldM'' :: n:Nat
+            -> (VecDSL' p n -> FieldDSL p -> GlobalStore p (VecDSL' p n))
+            ->  VecDSL' p n -> [FieldDSL p] -> GlobalStore p (VecDSL' p n) @-}
+foldM'' :: Int -> (DSL p -> DSL p -> GlobalStore p (DSL p))
+       -> DSL p -> [DSL p] -> GlobalStore p (DSL p)
+foldM'' _ _ z []     = pure z
+foldM'' n f z (x:xs) = do
+  z' <- f z x
+  foldM'' n f z' xs
