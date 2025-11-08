@@ -1,3 +1,4 @@
+{-# LANGUAGE OrPatterns #-}
 {-# OPTIONS_GHC -Wno-missing-signatures -Wno-name-shadowing
                 -fno-cse -fno-full-laziness #-}
 {-@ LIQUID "--reflection" @-}
@@ -49,6 +50,27 @@ over = BIN DIV
            -> {v:VecDSL p τ | vlength v = len strs} @-}
 vecVar :: [String] -> Ty -> DSL p
 vecVar strs τ = fromList τ (map' (\s -> VAR s τ) strs)
+
+{-@ yield :: e:TypedDSL p
+          -> GlobalStore p ({v:TypedDSL p | inferType v = inferType e
+                                         && vlength v = vlength e}) @-}
+yield :: (Fractional p, Eq p) => DSL p -> GlobalStore p (DSL p)
+yield e@(UN {}; BIN {}) = do
+  let Just τ = inferType e
+  -- introduce a new variable to avoid exponential growth of the AST
+  let x' = var "##"
+  let x  = VAR x' τ
+
+  assert $ e `EQA` x
+  define x' (\ρ -> case eval e ρ of Just (VF v) -> Just v; Nothing -> Nothing)
+  return x
+
+yield (CONS x xs) = do
+  x'  <- yield x
+  xs' <- yield xs
+  return (CONS x' xs')
+
+yield e = return e
 
 
 -- List-like functions ---------------------------------------------------------
@@ -147,8 +169,21 @@ vZipWith τ1 τ2 τ3 op (CONS x xs) (CONS y ys) =
          -> u:VecDSL p τ1
          -> v:{VecDSL p τ2 | vlength v = vlength u} @-}
 vMap :: Ty -> Ty -> (DSL p -> DSL p) -> DSL p -> DSL p
-vMap _  τ2 _  (NIL _)       = NIL τ2
+vMap _  τ2 _  (NIL _)     = NIL τ2
 vMap τ1 τ2 op (CONS x xs) = op x `CONS` vMap τ1 τ2 op xs
+
+{-@ vMapM :: τ1:Ty -> τ2:Ty
+          -> op:({a:DSL p | typed a τ1} -> GlobalStore p ({b:DSL p | typed b τ2}))
+          -> u:VecDSL p τ1
+          -> GlobalStore p ({v:VecDSL p τ2 | vlength v = vlength u}) @-}
+vMapM :: Ty -> Ty -> (DSL p -> GlobalStore p (DSL p))
+      -> DSL p -> GlobalStore p (DSL p)
+vMapM _  τ2 _  (NIL _)     = pure $ NIL τ2
+vMapM τ1 τ2 op (CONS x xs) = do
+  x'  <- op x
+  xs' <- vMapM τ1 τ2 op xs
+  pure $ (CONS x' xs') ? (typed x' τ2) ? (typed xs' (TVec τ2))
+
 
 {-@ vSum :: VecDSL p TF -> FieldDSL p @-}
 vSum :: Num p => DSL p -> DSL p
