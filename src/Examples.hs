@@ -426,34 +426,68 @@ testSha = do
 
 -- Poseidon2 examples ----------------------------------------------------------
 
-{-@ poseidon2_1 :: GlobalStore F_BLS12 (FieldDSL F_BLS12) @-}
-poseidon2_1 :: GlobalStore F_BLS12 (DSL F_BLS12)
-poseidon2_1 = sbox_p bls12_3 (VAR "x" TF)
+{-@ poseidon2_sbox :: GlobalStore F_BLS12 (FieldDSL F_BLS12) @-}
+poseidon2_sbox :: GlobalStore F_BLS12 (DSL F_BLS12)
+poseidon2_sbox = sbox_p bls12_3 (VAR "x" TF)
 
-{-@ poseidon2_2 :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
-poseidon2_2 :: GlobalStore F_BLS12 (DSL F_BLS12)
-poseidon2_2 = pure $ matMulInternal bls12_3
+{-@ poseidon2_int3 :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
+poseidon2_int3 :: GlobalStore F_BLS12 (DSL F_BLS12)
+poseidon2_int3 = pure $ matMulInternal bls12_3
     (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
 
-{-@ poseidon2_3 :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
-poseidon2_3 :: GlobalStore F_BLS12 (DSL F_BLS12)
-poseidon2_3 = pure $ matMulExternal bls12_3
+{-@ poseidon2_ext3 :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
+poseidon2_ext3 :: GlobalStore F_BLS12 (DSL F_BLS12)
+poseidon2_ext3 = pure $ matMulExternal bls12_3
     (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
 
-{-@ poseidon2_permutation :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
-poseidon2_permutation :: GlobalStore F_BLS12 (DSL F_BLS12)
-poseidon2_permutation = permutation bls12_3 (vecVar varNames TF)
-  where varNames = map (\i -> "x" ++ show i) (firstNats 3)
+{-@ poseidon2_int8 :: GlobalStore F_G (VecDSL' F_G 8) @-}
+poseidon2_int8 :: GlobalStore F_G (DSL F_G)
+poseidon2_int8 = pure $ matMulInternal goldilocks_8 (vecVar varNames TF)
+  where varNames = map (\i -> "x" ++ show i) (firstNats 8)
+
+{-@ poseidon2_ext8 :: GlobalStore F_G (VecDSL' F_G 8) @-}
+poseidon2_ext8 :: GlobalStore F_G (DSL F_G)
+poseidon2_ext8 = pure $ matMulExternal goldilocks_8 (vecVar varNames TF)
+  where varNames = map (\i -> "x" ++ show i) (firstNats 8)
+
+{-@ poseidon2_m4 :: GlobalStore F_G (VecDSL' F_G 4) @-}
+poseidon2_m4 :: GlobalStore F_G (DSL F_G)
+poseidon2_m4 = pure $ matMulM4 (vecVar varNames TF)
+  where varNames = map (\i -> "x" ++ show i) (firstNats 4)
+
+{-@ poseidon2_m4' :: GlobalStore F_G (VecDSL' F_G 8) @-}
+poseidon2_m4' :: GlobalStore F_G (DSL F_G)
+poseidon2_m4' = pure $ matMulM4' (vecVar varNames TF)
+  where varNames = map (\i -> "x" ++ show i) (firstNats 8)
+
 
 testPoseidon :: IO ()
 testPoseidon = do
-  test poseidon2_1 (M.fromList [("x",2)])
-  test poseidon2_1 (M.fromList [("x",3)])
+  test poseidon2_sbox (M.fromList [("x",2)])
+  test poseidon2_sbox (M.fromList [("x",3)])
 
-  test poseidon2_2 (M.fromList [("x2",0), ("x1",1), ("x0",2)])
-  test poseidon2_3 (M.fromList [("x2",0), ("x1",1), ("x0",2)])
+  putStrLn "Internal matrix, t=3"
+  test poseidon2_int3 (M.fromList [("x2",0), ("x1",1), ("x0",2)])
 
-  test poseidon2_permutation (M.fromList (map (\i -> ("x" ++ show i, fromIntegral i)) (firstNats 3)))
+  putStrLn "External matrix, t=3"
+  test poseidon2_ext3 (M.fromList [("x2",0), ("x1",1), ("x0",2)])
+
+  putStrLn "Internal matrix, t=8"
+  test poseidon2_int8
+       (M.fromList (map (\i -> ("x" ++ show i, fromIntegral i)) (firstNats 8)))
+
+  putStrLn "External matrix, t=8"
+  test poseidon2_ext8
+       (M.fromList (map (\i -> ("x" ++ show i, fromIntegral i)) (firstNats 8)))
+
+  putStrLn "Multiplication by M4, t=4"
+  test poseidon2_m4
+       (M.fromList (map (\i -> ("x" ++ show i, fromIntegral i)) (firstNats 4)))
+
+  putStrLn "Multiplication by M4', t=8"
+  test poseidon2_m4'
+       (M.fromList (map (\i -> ("x" ++ show i, fromIntegral i)) (firstNats 8)))
+
 
 -- Optimizations ---------------------------------------------------------------
 
