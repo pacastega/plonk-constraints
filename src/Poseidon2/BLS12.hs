@@ -247,7 +247,7 @@ bls12_3 = Ins 3 5 matDiag3_M1 rc3_f1 rc3_p rc3_f2
 {-@ matDiag4_M1 :: VecDSL' F_BLS12 4 @-}
 matDiag4_M1 :: DSL F_BLS12
 matDiag4_M1 = fromList TF
-              [ CONST 0x07564ad691f01c8601d68757a561d224f00f313ada673ab83e6255fb4fd5b3d
+              [ CONST 0x07564ad691bf01c8601d68757a561d224f00f313ada673ab83e6255fb4fd5b3d
               , CONST 0x6184e3be38549f7c0850cd069b32f6decbfde312dd4b8c18349b1b3776a6eaa4
               , CONST 0x419289088178ad742be6f78425c0156b6546a18fd338f0169937dea46cfb64d2
               , CONST 0x3244cdec173b71a4659e2529b499362dac10cb2fd17562860c8bb9d0fd45b787 ]
