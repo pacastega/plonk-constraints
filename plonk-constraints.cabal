@@ -50,6 +50,8 @@ library
       PlinkLib
       Poseidon2.Poseidon2
       Poseidon2.Poseidon2Cnst
+      Poseidon2.BLS12
+      Poseidon2.Goldilocks
       Semantics
       SHA256
       TypeAliases

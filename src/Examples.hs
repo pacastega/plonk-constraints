@@ -46,6 +46,8 @@ import Semantics (NameValuation)
 import Treekz
 import SHA256
 import Poseidon2.Poseidon2Cnst
+import Poseidon2.BLS12
+import Poseidon2.Goldilocks
 import Poseidon2.Poseidon2
 
 import GlobalStore
