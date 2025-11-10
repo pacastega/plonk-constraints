@@ -162,16 +162,6 @@ permutation ins@(Ins {..}) xs = do
 
     return step4
 
-
--- Type annocated folds (TODO: check if these types can be inferred automatically)
--- maybe with the proper qualifiers
-
-{- qualif MyEqLen( v : DSL @(0), x : int): ((x = (vlength v))) @-}
-{- qualif MyEqLen2( v : DSL @(0), ins:Instance @(0)): ((t ins = (vlength v))) @-}
-{- qualif MyTyped( v : DSL @(0)): ((DSL.typed v (DSL.TVec DSL.TF))) @-}
-{- qualif MyTyped( v : DSL @(0)): ((DSL.typed v DSL.TF)) @-}
-
-
 {-@ fold' :: n:Nat
           -> (VecDSL' p n -> VecDSL' p n -> VecDSL' p n)
           ->  VecDSL' p n -> [VecDSL' p n] ->  VecDSL' p n @-}
@@ -189,14 +179,6 @@ foldM' _ _ z []     = pure z
 foldM' n f z (x:xs) = do
   z' <- f z x
   foldM' n f z' xs
-
-{-@ fold'' :: n:Nat
-          -> (VecDSL' p n -> FieldDSL p -> VecDSL' p n)
-          ->  VecDSL' p n -> [FieldDSL p] ->  VecDSL' p n @-}
-fold'' :: Int -> (DSL p -> DSL p -> DSL p)
-       -> DSL p -> [DSL p] -> DSL p
-fold'' _ _ z []     = z
-fold'' n f z (x:xs) = fold'' n f (f z x) xs
 
 {-@ foldM'' :: n:Nat
             -> (VecDSL' p n -> FieldDSL p -> GlobalStore p (VecDSL' p n))
