@@ -169,7 +169,7 @@ labelStore :: (Num p, Ord p) =>
 labelStore [] nextIndex env = (nextIndex, [], env)
 labelStore (def:ss) nextIndex env =
   let i = nextIndex
-      (i', def', env') = labelStore' def i env
+      (i', def', env') = labelAssertion def i env
       (i'', ss', env'') = labelStore ss i' env'
   in (i'', def' ++ ss', env'')
 
@@ -216,15 +216,15 @@ label' p nextIndex env = let i = nextIndex in case p of
             (i'', ts', env'') = label' ts i' env'
 
 
-{-@ reflect labelStore' @-}
-{-@ labelStore' :: assertion:(Assertion p) ->
+{-@ reflect labelAssertion @-}
+{-@ labelAssertion :: assertion:(Assertion p) ->
                    m0:Nat -> LabelEnv p (Btwn 0 m0) ->
                    (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
              <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
               \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}> @-}
-labelStore' :: (Num p, Ord p) => Assertion p -> Int -> LabelEnv p Int
+labelAssertion :: (Num p, Ord p) => Assertion p -> Int -> LabelEnv p Int
             -> (Int, [LDSL p Int], LabelEnv p Int)
-labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
+labelAssertion assertion nextIndex env = let i = nextIndex in case assertion of
     NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
       where (w', [p1'], env') = label' p1 i env
     BOOL p1  -> (i', [LBOOL p1'], env')
