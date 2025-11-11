@@ -55,14 +55,6 @@ hasType (TVec τ) VNil         = True
 hasType (TVec τ) (VCons x xs) = hasType τ x && hasType (TVec τ) xs
 hasType _         _           = False
 
-
-
-{-@ reflect assertFValue @-}
-{-@ assertFValue :: Maybe (FValue p) -> Maybe (FValue p) @-}
-assertFValue :: Maybe (DSLValue p) -> Maybe (DSLValue p)
-assertFValue = id
-
-
 {-@ reflect eval @-}
 {-@ eval :: program:TypedDSL p -> NameValuation p
          -> Maybe ({v:DSLValue p | agreesWith program v}) @-}
