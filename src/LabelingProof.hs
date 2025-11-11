@@ -160,28 +160,29 @@ labelLemma m0 m e ρ λ σ π λ' e' σ' v = case e of
             (ih2, π2) = labelLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
 
 
-{-
 -- This is Theorem 2.
-{-@ labelProof :: m':Nat -> m:{Nat | m >= m'}
-               -> e:ScalarDSL p
-               -> as:Store p
-               -> ρ:NameValuation p
-               -> λ:LabelEnv p (Btwn 0 m) -> λ':LabelEnv p (Btwn 0 m)
-               -> {as':[LDSL p (Btwn 0 m)] |
-                       labelStore as 0 M.MTip = (m', as', λ')}
-               -> {es':[LDSL p (Btwn 0 m)] |
-                       label' e m' λ' = (m, es', λ)}
-               -> σ:{VecN p m | σ = witnessGen m as' ρ}
-               -> {assertionsHold ρ as <=> semanticsHold m σ as'} @-}
-labelProof :: (Fractional p, Eq p) => Int -> Int -> DSL p -> Store p
-           -> NameValuation p
-           -> LabelEnv p Int -> LabelEnv p Int
-           -> [LDSL p Int] -> [LDSL p Int]
-           -> Vec p
-           -> Proof
-labelProof m' m e []     ρ λ λ' as' es' σ = trivial
-labelProof m' m e (a:as) ρ λ λ' as' es' σ = case a of
-  NZERO p1  -> undefined -- IH missing
-  BOOL p1   -> undefined -- IH missing
-  EQA p1 p2 -> undefined -- IH missing
--}
+{-@ labelThm :: m:Nat
+             -> e:ScalarDSL p
+
+             -> ρ:NameValuation p
+             -> λ:LabelEnv p (Btwn 0 m)
+             -> e':{LDSL p (Btwn 0 m) | label' e 0 M.MTip = (m, mkList1 e', λ)}
+             -> σ:{M.Map (Btwn 0 m) p | Just σ = update m ρ M.MTip e'}
+
+             -> v:p
+
+             -> { eval e ρ = Just (VF v) <=>
+                  M.lookup (outputWire e') σ = Just v } @-}
+labelThm :: (Fractional p, Eq p, Ord p)
+         => Int -> DSL p
+
+         -> NameValuation p
+         -> LabelEnv p Int
+         -> LDSL p Int
+         -> M.Map Int p
+
+         -> p
+
+         -> Proof
+labelThm m e ρ λ e' σ v = fst $
+  labelLemma 0 m e ρ M.MTip M.MTip (const trivial) λ e' σ v
