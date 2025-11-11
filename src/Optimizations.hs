@@ -70,7 +70,6 @@ opt f (CONS h ts) = f `atNode` (CONS (opt f h) (opt f ts))
 -- How to apply a general optimization on an assertion
 {-@ opt' :: Opt p -> Assertion p -> Assertion p @-}
 opt' :: Opt p -> Assertion p -> Assertion p
-opt' f (DEF s p τ) = DEF s (opt f p) τ
 opt' f (NZERO p) = NZERO (opt f p)
 opt' f (BOOL p) = BOOL (opt f p)
 opt' f (EQA p1 p2) = EQA (opt f p1) (opt f p2)

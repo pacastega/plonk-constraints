@@ -187,16 +187,14 @@ inferType _ = Nothing
 
 -- (Non-expression) assertions
 data Assertion p =
-    DEF   Var     (DSL p) Ty -- variable definition
-  | NZERO (DSL p)            -- non-zero assertion
+    NZERO (DSL p)            -- non-zero assertion
   | BOOL  (DSL p)            -- booleanity assertion
   | EQA   (DSL p) (DSL p)    -- equality assertion
   deriving Show
 
 {-@
 data Assertion p =
-    DEF   Var           (ScalarDSL p) ScalarTy
-  | NZERO (ScalarDSL p)
+    NZERO (ScalarDSL p)
   | BOOL  (ScalarDSL p)
   | EQA   (ScalarDSL p) (ScalarDSL p)
 @-}

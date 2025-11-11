@@ -77,8 +77,6 @@ labelStoreCSE (def:ss) nextIndex env =
 labelStoreCSE' :: (Num p, Ord p) => Assertion p -> Int -> ExtLabelEnv p Int
             -> (Int, [LDSL p Int], ExtLabelEnv p Int)
 labelStoreCSE' assertion nextIndex env = let i = nextIndex in case assertion of
-    DEF s d τ -> (i', [d'], M.insert (VAR s τ) (outputWire d') env')
-      where (i', [d'], env') = labelCSE' d i env
     NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
       where (w', [p1'], env') = labelCSE' p1 i env
     BOOL p1  -> (i', [LBOOL p1'], env')
@@ -227,8 +225,6 @@ label' p nextIndex env = let i = nextIndex in case p of
 labelStore' :: (Num p, Ord p) => Assertion p -> Int -> LabelEnv p Int
             -> (Int, [LDSL p Int], LabelEnv p Int)
 labelStore' assertion nextIndex env = let i = nextIndex in case assertion of
-    DEF s d τ -> (i', [d'], M.insert s (outputWire d') env')
-      where (i', [d'], env') = label' d i env
     NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
       where (w', [p1'], env') = label' p1 i env
     BOOL p1  -> (i', [LBOOL p1'], env')

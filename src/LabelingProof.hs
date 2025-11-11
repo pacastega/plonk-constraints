@@ -182,7 +182,6 @@ labelProof :: (Fractional p, Eq p) => Int -> Int -> DSL p -> Store p
            -> Proof
 labelProof m' m e []     ρ λ λ' as' es' σ = trivial
 labelProof m' m e (a:as) ρ λ λ' as' es' σ = case a of
-  DEF _ _ _ -> undefined -- dummy
   NZERO p1  -> undefined -- IH missing
   BOOL p1   -> undefined -- IH missing
   EQA p1 p2 -> undefined -- IH missing
