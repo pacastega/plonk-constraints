@@ -19,7 +19,7 @@ vvlen :: Vec a -> Int
 vvlen Nil         = 0
 vvlen (Cons _ xs) = 1 + vvlen xs
 
-{-@ infixl 9 ! @-}
+{-@ infix ! @-}
 {-@ reflect ! @-}
 {-@ (!) :: xs:Vec a -> {n:Nat | n < vvlen xs} -> a @-}
 (!) :: Vec a -> Int -> a
