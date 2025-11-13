@@ -56,11 +56,11 @@ hasType (TVec τ) (VCons x xs) = hasType τ x && hasType (TVec τ) xs
 hasType _         _           = False
 
 {-@ reflect eval @-}
-{-@ eval :: program:TypedDSL p -> NameValuation p
-         -> Maybe ({v:DSLValue p | agreesWith program v}) @-}
+{-@ eval :: expr:TypedDSL p -> NameValuation p
+         -> Maybe ({v:DSLValue p | agreesWith expr v}) @-}
 eval :: (Fractional p, Eq p) => DSL p -> NameValuation p -> Maybe (DSLValue p)
-eval program v = case program of
-  VAR name τ -> case M.lookup name v of
+eval expr ρ = case expr of
+  VAR name τ -> case M.lookup name ρ of
     Nothing -> Nothing
     Just value -> case τ of
       TBool -> if boolean value then Just (VF value) else Nothing
@@ -70,39 +70,39 @@ eval program v = case program of
   BOOL False -> withProof (Just (VF 0)) (boolean 0)
 
   UN op p1 -> case op of
-    ADDC k    -> fmap' (add (VF k))   (eval p1 v)
-    MULC k    -> fmap' (mul (VF k))   (eval p1 v)
+    ADDC k    -> fmap' (add (VF k))   (eval p1 ρ)
+    MULC k    -> fmap' (mul (VF k))   (eval p1 ρ)
 
-    NOT       -> fmap' notFn          (eval p1 v)
-    UnsafeNOT -> fmap' notFn          (eval p1 v)
+    NOT       -> fmap' notFn          (eval p1 ρ)
+    UnsafeNOT -> fmap' notFn          (eval p1 ρ)
 
-    ISZERO    -> fmap' (eqlFn (VF 0)) (eval p1 v)
-    EQLC k    -> fmap' (eqlFn (VF k)) (eval p1 v)
+    ISZERO    -> fmap' (eqlFn (VF 0)) (eval p1 ρ)
+    EQLC k    -> fmap' (eqlFn (VF k)) (eval p1 ρ)
 
-    BoolToF   -> eval p1 v
+    BoolToF   -> eval p1 ρ
 
   BIN op p1 p2 -> case op of
-    ADD -> liftA2' add (eval p1 v) (eval p2 v)
-    SUB -> liftA2' sub (eval p1 v) (eval p2 v)
-    MUL -> liftA2' mul (eval p1 v) (eval p2 v)
-    DIV -> case (eval p1 v, eval p2 v) of
+    ADD -> liftA2' add (eval p1 ρ) (eval p2 ρ)
+    SUB -> liftA2' sub (eval p1 ρ) (eval p2 ρ)
+    MUL -> liftA2' mul (eval p1 ρ) (eval p2 ρ)
+    DIV -> case (eval p1 ρ, eval p2 ρ) of
       (Just (VF x), Just (VF y)) -> if y /= 0 then Just (VF (x / y)) else Nothing
       _ -> Nothing
 
-    LINCOMB k1 k2 -> liftA2' (linCombFn k1 k2) (eval p1 v) (eval p2 v)
+    LINCOMB k1 k2 -> liftA2' (linCombFn k1 k2) (eval p1 ρ) (eval p2 ρ)
 
-    AND -> liftA2' andFn (eval p1 v) (eval p2 v)
-    OR  -> liftA2' orFn  (eval p1 v) (eval p2 v)
-    XOR -> liftA2' xorFn (eval p1 v) (eval p2 v)
+    AND -> liftA2' andFn (eval p1 ρ) (eval p2 ρ)
+    OR  -> liftA2' orFn  (eval p1 ρ) (eval p2 ρ)
+    XOR -> liftA2' xorFn (eval p1 ρ) (eval p2 ρ)
 
-    UnsafeAND -> liftA2' andFn (eval p1 v) (eval p2 v)
-    UnsafeOR  -> liftA2' orFn  (eval p1 v) (eval p2 v)
-    UnsafeXOR -> liftA2' xorFn (eval p1 v) (eval p2 v)
+    UnsafeAND -> liftA2' andFn (eval p1 ρ) (eval p2 ρ)
+    UnsafeOR  -> liftA2' orFn  (eval p1 ρ) (eval p2 ρ)
+    UnsafeXOR -> liftA2' xorFn (eval p1 ρ) (eval p2 ρ)
 
-    EQL -> liftA2' eqlFn (eval p1 v) (eval p2 v)
+    EQL -> liftA2' eqlFn (eval p1 ρ) (eval p2 ρ)
 
   NIL _     -> Just VNil
-  CONS h ts -> liftA2' VCons (eval h v) (eval ts v)
+  CONS h ts -> liftA2' VCons (eval h ρ) (eval ts ρ)
 
 
 {-@ reflect linCombFn @-}

@@ -80,9 +80,9 @@ removeConstants _ = Nothing -- any other pattern is not a redex
 {-@ reflect isJust @-}
 
 {-@ removeConstantsProof :: ρ:NameValuation p
-         -> d1:{TypedDSL p | isJust (eval d1 ρ)}
-         -> d2:{TypedDSL p | removeConstants d1 = Just d2}
-         -> { eval d1 ρ = eval d2 ρ } @-}
+         -> e1:{TypedDSL p | isJust (eval e1 ρ)}
+         -> e2:{TypedDSL p | removeConstants e1 = Just e2}
+         -> { eval e1 ρ = eval e2 ρ } @-}
 removeConstantsProof :: (Fractional p, Eq p)
                      => NameValuation p -> DSL p -> DSL p -> Proof
 removeConstantsProof ρ p@(BIN op arg1 arg2) p' = case op of

@@ -103,10 +103,10 @@ nub = S.toList . S.fromList
 {-@ test :: GlobalStore p (TypedDSL p) -> NameValuation p -> IO () @-}
 test :: (Ord p, Fractional p, Show p) =>
         GlobalStore p (DSL p) -> NameValuation p -> IO ()
-test programStore valuation = do
+test programStore ρ = do
   let (GStore program store hints) = optimize programStore
 
-  let valuation' = extend valuation hints
+  let ρ' = extend ρ hints
 
   -- let program' = constantFolding program
   let program' = program
@@ -123,7 +123,7 @@ test programStore valuation = do
   -- putStrLn $ "Compiled circuit: " ++ show circuit
   putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
 
-  case witnessGen m labeledPrograms valuation' of
+  case witnessGen m labeledPrograms ρ' of
     Nothing -> do putStrLn "Witness generation failed"
                   putStrLn $ replicate 80 '='
     Just input -> do
@@ -140,16 +140,16 @@ test programStore valuation = do
 {-@ test' :: GlobalStore p (TypedDSL p) -> NameValuation p -> String -> IO () @-}
 test' :: (Ord p, Fractional p, Show p) =>
          GlobalStore p (DSL p) -> NameValuation p -> String -> IO ()
-test' programStore valuation tikzFilename = do
+test' programStore ρ tikzFilename = do
   let (GStore program store hints) = optimize programStore
 
-  let valuation' = extend valuation hints
+  let ρ' = extend ρ hints
 
   let (m, labeledBodies, labeledStore) = label program store
   let labeledPrograms = labeledStore ++ labeledBodies
 
   let circuit = concatMap (compile m) labeledPrograms
-  case witnessGen m labeledPrograms valuation' of
+  case witnessGen m labeledPrograms ρ' of
     Nothing -> putStrLn "Witness generation failed"
     Just input -> do
       let output = map (\p -> input ! outputWire p) labeledBodies
