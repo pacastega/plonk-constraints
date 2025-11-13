@@ -32,7 +32,6 @@ library
       Constraints
       DSL
       Examples
-      GlobalStore
       Label
       LabelingProof.LabelingLemmas
       LabelingProof.LabelingEQL
@@ -48,6 +47,7 @@ library
       Optimizations.ConstantFolding
       Optimizations.RemoveConstants
       PlinkLib
+      PlinkST
       Poseidon2.Poseidon2
       Poseidon2.Poseidon2Cnst
       Poseidon2.BLS12

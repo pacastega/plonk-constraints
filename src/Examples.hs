@@ -50,7 +50,7 @@ import Poseidon2.BLS12
 import Poseidon2.Goldilocks
 import Poseidon2.Poseidon2
 
-import GlobalStore
+import PlinkST
 
 import Language.Haskell.Liquid.ProofCombinators
 
@@ -100,11 +100,11 @@ cyan s = "\ESC[36m" ++ s ++ "\ESC[0m"
 nub :: Ord a => [a] -> [a]
 nub = S.toList . S.fromList
 
-{-@ test :: GlobalStore p (TypedDSL p) -> NameValuation p -> IO () @-}
-test :: (Ord p, Fractional p, Show p) =>
-        GlobalStore p (DSL p) -> NameValuation p -> IO ()
+{-@ test :: PlinkST p (TypedDSL p) -> NameValuation p -> IO () @-}
+test :: (Ord p, Fractional p, Show p)
+     => PlinkST p (DSL p) -> NameValuation p -> IO ()
 test programStore ρ = do
-  let (GStore program store hints) = optimize programStore
+  let (PlinkST program store hints) = optimize programStore
 
   let ρ' = extend ρ hints
 
@@ -137,11 +137,11 @@ test programStore ρ = do
       putStrLn $ replicate 80 '='
 
 
-{-@ test' :: GlobalStore p (TypedDSL p) -> NameValuation p -> String -> IO () @-}
-test' :: (Ord p, Fractional p, Show p) =>
-         GlobalStore p (DSL p) -> NameValuation p -> String -> IO ()
+{-@ test' :: PlinkST p (TypedDSL p) -> NameValuation p -> String -> IO () @-}
+test' :: (Ord p, Fractional p, Show p)
+      => PlinkST p (DSL p) -> NameValuation p -> String -> IO ()
 test' programStore ρ tikzFilename = do
-  let (GStore program store hints) = optimize programStore
+  let (PlinkST program store hints) = optimize programStore
 
   let ρ' = extend ρ hints
 
@@ -331,8 +331,8 @@ vec5 = rotateL TF (range 1 10) 3
 vec6 :: DSL PF
 vec6 = rotateR TF (range 1 10) 2
 
-{-@ vec7 :: GlobalStore PF (FieldDSL PF) @-}
-vec7 :: GlobalStore PF (DSL PF)
+{-@ vec7 :: PlinkST PF (FieldDSL PF) @-}
+vec7 :: PlinkST PF (DSL PF)
 vec7 = fromBinary $ PlinkLib.fromList TBool $ map boolFromIntegral [1,1,0,1]
 
 testVectors :: IO ()
@@ -350,13 +350,13 @@ testVectors = do
 
 -- Modular arithmetic examples -------------------------------------------------
 
-{-@ mod1 :: GlobalStore PF (FieldDSL PF) @-}
-mod1 :: GlobalStore PF (DSL PF)
+{-@ mod1 :: PlinkST PF (FieldDSL PF) @-}
+mod1 :: PlinkST PF (DSL PF)
 mod1 = addMod 5 (VAR "x" TF) (VAR "y" TF)
 
 
-{-@ shift :: GlobalStore PF (FieldDSL PF) @-}
-shift :: GlobalStore PF (DSL PF)
+{-@ shift :: PlinkST PF (FieldDSL PF) @-}
+shift :: PlinkST PF (DSL PF)
 shift = do
   let x = VAR "x" TF
   vec <- toBinary 3 x
@@ -364,8 +364,8 @@ shift = do
   return y
 
 
-{-@ rotate :: GlobalStore PF (FieldDSL PF) @-}
-rotate :: GlobalStore PF (DSL PF)
+{-@ rotate :: PlinkST PF (FieldDSL PF) @-}
+rotate :: PlinkST PF (DSL PF)
 rotate = do
   let x = VAR "x" TF
   vec <- toBinary 5 x
@@ -386,32 +386,32 @@ testMod = do
 
 -- SHA256 examples -------------------------------------------------------------
 
-{-@ sha256_1 :: GlobalStore BigPF (VecDSL BigPF TBool) @-}
-sha256_1 :: GlobalStore BigPF (DSL BigPF)
+{-@ sha256_1 :: PlinkST BigPF (VecDSL BigPF TBool) @-}
+sha256_1 :: PlinkST BigPF (DSL BigPF)
 sha256_1 = sha256 "Hello, world!"
 
-{-@ sha256_2 :: GlobalStore BigPF (VecDSL BigPF TBool) @-}
-sha256_2 :: GlobalStore BigPF (DSL BigPF)
+{-@ sha256_2 :: PlinkST BigPF (VecDSL BigPF TBool) @-}
+sha256_2 :: PlinkST BigPF (DSL BigPF)
 sha256_2 = sha256 ""
 
-{-@ sha256_3 :: GlobalStore BigPF (VecDSL BigPF TBool) @-}
-sha256_3 :: GlobalStore BigPF (DSL BigPF)
+{-@ sha256_3 :: PlinkST BigPF (VecDSL BigPF TBool) @-}
+sha256_3 :: PlinkST BigPF (DSL BigPF)
 sha256_3 = sha256 "The quick brown fox jumps over the lazy dog"
 
-{-@ sha256_4 :: GlobalStore BigPF (VecDSL BigPF TBool) @-}
-sha256_4 :: GlobalStore BigPF (DSL BigPF)
+{-@ sha256_4 :: PlinkST BigPF (VecDSL BigPF TBool) @-}
+sha256_4 :: PlinkST BigPF (DSL BigPF)
 sha256_4 = sha256 (replicate 64 'a')
 
-{-@ sha256_5 :: GlobalStore BigPF (VecDSL BigPF TBool) @-}
-sha256_5 :: GlobalStore BigPF (DSL BigPF)
+{-@ sha256_5 :: PlinkST BigPF (VecDSL BigPF TBool) @-}
+sha256_5 :: PlinkST BigPF (DSL BigPF)
 sha256_5 = sha256 (replicate (2*64) 'a')
 
-{-@ sha256_6 :: GlobalStore BigPF (VecDSL BigPF TBool) @-}
-sha256_6 :: GlobalStore BigPF (DSL BigPF)
+{-@ sha256_6 :: PlinkST BigPF (VecDSL BigPF TBool) @-}
+sha256_6 :: PlinkST BigPF (DSL BigPF)
 sha256_6 = sha256 (replicate (3*64) 'a')
 
-{-@ sha256_7 :: GlobalStore BigPF (VecDSL BigPF TBool) @-}
-sha256_7 :: GlobalStore BigPF (DSL BigPF)
+{-@ sha256_7 :: PlinkST BigPF (VecDSL BigPF TBool) @-}
+sha256_7 :: PlinkST BigPF (DSL BigPF)
 sha256_7 = sha256 (replicate (4*64) 'a')
 
 testSha :: IO ()
@@ -426,37 +426,37 @@ testSha = do
 
 -- Poseidon2 examples ----------------------------------------------------------
 
-{-@ poseidon2_sbox :: GlobalStore F_BLS12 (FieldDSL F_BLS12) @-}
-poseidon2_sbox :: GlobalStore F_BLS12 (DSL F_BLS12)
+{-@ poseidon2_sbox :: PlinkST F_BLS12 (FieldDSL F_BLS12) @-}
+poseidon2_sbox :: PlinkST F_BLS12 (DSL F_BLS12)
 poseidon2_sbox = sbox_p bls12_3 (VAR "x" TF)
 
-{-@ poseidon2_int3 :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
-poseidon2_int3 :: GlobalStore F_BLS12 (DSL F_BLS12)
+{-@ poseidon2_int3 :: PlinkST F_BLS12 (VecDSL' F_BLS12 3) @-}
+poseidon2_int3 :: PlinkST F_BLS12 (DSL F_BLS12)
 poseidon2_int3 = pure $ matMulInternal bls12_3
     (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
 
-{-@ poseidon2_ext3 :: GlobalStore F_BLS12 (VecDSL' F_BLS12 3) @-}
-poseidon2_ext3 :: GlobalStore F_BLS12 (DSL F_BLS12)
+{-@ poseidon2_ext3 :: PlinkST F_BLS12 (VecDSL' F_BLS12 3) @-}
+poseidon2_ext3 :: PlinkST F_BLS12 (DSL F_BLS12)
 poseidon2_ext3 = pure $ matMulExternal bls12_3
     (CONS (VAR "x2" TF) (CONS (VAR "x1" TF) (CONS (VAR "x0" TF) (NIL TF))))
 
-{-@ poseidon2_int8 :: GlobalStore F_G (VecDSL' F_G 8) @-}
-poseidon2_int8 :: GlobalStore F_G (DSL F_G)
+{-@ poseidon2_int8 :: PlinkST F_G (VecDSL' F_G 8) @-}
+poseidon2_int8 :: PlinkST F_G (DSL F_G)
 poseidon2_int8 = pure $ matMulInternal goldilocks_8 (vecVar varNames TF)
   where varNames = map (\i -> "x" ++ show i) (firstNats 8)
 
-{-@ poseidon2_ext8 :: GlobalStore F_G (VecDSL' F_G 8) @-}
-poseidon2_ext8 :: GlobalStore F_G (DSL F_G)
+{-@ poseidon2_ext8 :: PlinkST F_G (VecDSL' F_G 8) @-}
+poseidon2_ext8 :: PlinkST F_G (DSL F_G)
 poseidon2_ext8 = pure $ matMulExternal goldilocks_8 (vecVar varNames TF)
   where varNames = map (\i -> "x" ++ show i) (firstNats 8)
 
-{-@ poseidon2_m4 :: GlobalStore F_G (VecDSL' F_G 4) @-}
-poseidon2_m4 :: GlobalStore F_G (DSL F_G)
+{-@ poseidon2_m4 :: PlinkST F_G (VecDSL' F_G 4) @-}
+poseidon2_m4 :: PlinkST F_G (DSL F_G)
 poseidon2_m4 = pure $ matMulM4 (vecVar varNames TF)
   where varNames = map (\i -> "x" ++ show i) (firstNats 4)
 
-{-@ poseidon2_m4' :: GlobalStore F_G (VecDSL' F_G 8) @-}
-poseidon2_m4' :: GlobalStore F_G (DSL F_G)
+{-@ poseidon2_m4' :: PlinkST F_G (VecDSL' F_G 8) @-}
+poseidon2_m4' :: PlinkST F_G (DSL F_G)
 poseidon2_m4' = pure $ matMulM4' (vecVar varNames TF)
   where varNames = map (\i -> "x" ++ show i) (firstNats 8)
 
@@ -492,20 +492,20 @@ testPoseidon = do
 -- Optimizations ---------------------------------------------------------------
 
 -- (3 - (2 + 1)) + x ≡ x
-{-@ opt1 :: GlobalStore BigPF (FieldDSL BigPF) @-}
-opt1 :: GlobalStore BigPF (DSL BigPF)
+{-@ opt1 :: PlinkST BigPF (FieldDSL BigPF) @-}
+opt1 :: PlinkST BigPF (DSL BigPF)
 opt1 = let p = (CONST 3 `minus` (CONST 2 `plus` CONST 1)) `plus` (VAR "x" TF)
        in inferType p ?? pure p
 
 -- (3 - 2) * x + y ≡ x + y
-{-@ opt2 :: GlobalStore BigPF (FieldDSL BigPF) @-}
-opt2 :: GlobalStore BigPF (DSL BigPF)
+{-@ opt2 :: PlinkST BigPF (FieldDSL BigPF) @-}
+opt2 :: PlinkST BigPF (DSL BigPF)
 opt2 = let p = ((CONST 3 `minus` CONST 2) `times` (VAR "x" TF)) `plus` (VAR "y" TF)
        in inferType p ?? pure p
 
 -- (3 - 1) * x + y ≡ lincomb(2,x, 1,y)
-{-@ opt3 :: GlobalStore BigPF (FieldDSL BigPF) @-}
-opt3 :: GlobalStore BigPF (DSL BigPF)
+{-@ opt3 :: PlinkST BigPF (FieldDSL BigPF) @-}
+opt3 :: PlinkST BigPF (DSL BigPF)
 opt3 = let p = ((CONST 3 `minus` CONST 1) `times` (VAR "x" TF)) `plus` (VAR "y" TF)
        in inferType p ?? pure p
 

@@ -10,7 +10,7 @@ import Prelude hiding (Word)
 import DSL
 import PlinkLib
 import Utils
-import GlobalStore
+import PlinkST
 
 import Data.Char (ord)
 
@@ -132,29 +132,29 @@ padding msg = msg +++ (fromList TBool [BOOL True])
     (+++) = vAppend TBool
 
 {-@ plus32 :: Word p -> Word p
-           -> GlobalStore p (Word p) @-}
-plus32 :: (Integral p, Fractional p, Ord p) =>
-          DSL p -> DSL p -> GlobalStore p (DSL p)
+           -> PlinkST p (Word p) @-}
+plus32 :: (Integral p, Fractional p, Ord p)
+       => DSL p -> DSL p -> PlinkST p (DSL p)
 plus32 = addMod 32 -- addition modulo 2^32
 
 
 {-@ processMsg :: {msg:VecDSL p TBool | (vlength msg) mod 512 = 0}
-               -> GlobalStore p (VecDSL p TBool) @-}
+               -> PlinkST p (VecDSL p TBool) @-}
 -- TODO: can we prove the resulting length is what it should be?
-processMsg :: (Integral p, Fractional p, Ord p) =>
-              DSL p -> GlobalStore p (DSL p)
+processMsg :: (Integral p, Fractional p, Ord p)
+           => DSL p -> PlinkST p (DSL p)
 processMsg msg = do
   let chunks = vChunk TBool 512 msg -- split into 512-bit chunks
   finalHashes <- foldl processChunk (pure h) chunks -- process all the chunks
   finalHashes' <- sequence' $ map (toBinary 32) finalHashes -- convert to binary
   return $ vConcat TBool finalHashes' -- concatenate all the hashes
 
-{-@ processChunk :: GlobalStore p (ListN (Word p) 8)
+{-@ processChunk :: PlinkST p (ListN (Word p) 8)
                  -> {v:VecDSL p TBool | vlength v = 512}
-                 -> GlobalStore p (ListN (Word p) 8) @-}
-processChunk :: (Integral p, Fractional p, Ord p) =>
-                GlobalStore p [Word p] -> DSL p
-             -> GlobalStore p [Word p]
+                 -> PlinkST p (ListN (Word p) 8) @-}
+processChunk :: (Integral p, Fractional p, Ord p)
+             => PlinkST p [Word p] -> DSL p
+             -> PlinkST p [Word p]
 processChunk currentHash chunk = do
   let words = vChunk TBool 32 chunk -- split chunk as list of 16 32-bit words
   words' <- sequence' $ map fromBinary words -- convert to list of 16 32-bit ints
@@ -172,18 +172,18 @@ processChunk currentHash chunk = do
 rotate :: DSL p -> Int -> DSL p
 rotate = rotateR TBool
 
-{-@ extend :: ListN (Word p) 16 -> GlobalStore p (ListN (Word p) 64) @-}
-extend :: (Integral p, Fractional p, Ord p) =>
-          [Word p] -> GlobalStore p [Word p]
+{-@ extend :: ListN (Word p) 16 -> PlinkST p (ListN (Word p) 64) @-}
+extend :: (Integral p, Fractional p, Ord p)
+       => [Word p] -> PlinkST p [Word p]
 extend ws = go 16 (pure ws) where
 
   {-@ go :: n:{Int | 16 <= n && n <= 64}
-         -> GlobalStore p (ListN (Word p) n)
-         -> GlobalStore p (ListN (Word p) 64)
+         -> PlinkST p (ListN (Word p) n)
+         -> PlinkST p (ListN (Word p) 64)
           / [64-n] @-}
-  go :: (Integral p, Fractional p, Ord p) =>
-        Int -> GlobalStore p [Word p]
-     -> GlobalStore p [Word p]
+  go :: (Integral p, Fractional p, Ord p)
+     => Int -> PlinkST p [Word p]
+     -> PlinkST p [Word p]
   go i acc
     | i == 64   = acc
     | otherwise = do
@@ -200,28 +200,28 @@ extend ws = go 16 (pure ws) where
         tmp <- return (ws!!(i-16)) >>= plus32 s0 >>= plus32 (ws!!(i-7)) >>= plus32 s1
         go (i+1) (return (ws ++ [tmp]))
 
-{-@ compress :: GlobalStore p (ListN (Word p) 8) -> ListN (Word p) 64
-             -> GlobalStore p (ListN (Word p) 8) @-}
-compress :: (Integral p, Fractional p, Ord p) =>
-            GlobalStore p [Word p] -> [Word p]
-         -> GlobalStore p [Word p]
+{-@ compress :: PlinkST p (ListN (Word p) 8) -> ListN (Word p) 64
+             -> PlinkST p (ListN (Word p) 8) @-}
+compress :: (Integral p, Fractional p, Ord p)
+         => PlinkST p [Word p] -> [Word p]
+         -> PlinkST p [Word p]
 compress = aux 64 where
 
   {-@ aux :: l:{Nat | l <= 64}
-          -> GlobalStore p (ListN (Word p) 8)
+          -> PlinkST p (ListN (Word p) 8)
           -> ListN (Word p) l
-          -> GlobalStore p (ListN (Word p) 8) @-}
-  aux :: (Integral p, Fractional p, Ord p) =>
-         Int -> GlobalStore p [Word p] -> [Word p]
-      -> GlobalStore p [Word p]
+          -> PlinkST p (ListN (Word p) 8) @-}
+  aux :: (Integral p, Fractional p, Ord p)
+      => Int -> PlinkST p [Word p] -> [Word p]
+      -> PlinkST p [Word p]
   aux 0 acc []     = acc
   aux l acc (p:ps) = aux (l-1) (go (64-l) acc p) ps
 
-  {-@ go :: Btwn 0 64 -> GlobalStore p (ListN (Word p) 8) -> Word p
-         -> GlobalStore p (ListN (Word p) 8) @-}
+  {-@ go :: Btwn 0 64 -> PlinkST p (ListN (Word p) 8) -> Word p
+         -> PlinkST p (ListN (Word p) 8) @-}
   go :: (Integral p, Fractional p, Ord p)
-     => Int -> GlobalStore p [Word p] -> Word p
-     -> GlobalStore p [Word p]
+     => Int -> PlinkST p [Word p] -> Word p
+     -> PlinkST p [Word p]
   go i currentHash w = do
     l <- currentHash
     let [a,b,c,d,e,f,g,h] = l
@@ -265,10 +265,10 @@ compress = aux 64 where
 
 {-@ assume ord :: Char -> Btwn 0 256 @-}
 
-{-@ sha256 :: {s:String | len s < pow 2 61} ->
-              GlobalStore p (VecDSL p TBool) @-}
+{-@ sha256 :: {s:String | len s < pow 2 61}
+           -> PlinkST p (VecDSL p TBool) @-}
 sha256 :: (Integral p, Fractional p, Ord p)
-       => String -> GlobalStore p (DSL p)
+       => String -> PlinkST p (DSL p)
 sha256 = processMsg . padding . toBits where
   {-@ toBits :: s:String
              -> {v:VecDSL p TBool | vlength v = 8 * len s} @-}

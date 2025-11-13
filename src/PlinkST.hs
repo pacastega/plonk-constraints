@@ -1,9 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-module GlobalStore where
-
--- TODO: swap arguments of GStore
+module PlinkST where
 
 import DSL
 import WitnessGeneration
@@ -15,27 +13,27 @@ import qualified Liquid.Data.Map as M
 import qualified Data.Map as M
 #endif
 
-data GlobalStore p b =
-  GStore { body  :: b
-         , store :: [Assertion p]
-         , hints :: NameValuation p -> NameValuation p -- TODO: change to Map?
-         }
+data PlinkST p b =
+  PlinkST { body  :: b
+          , store :: [Assertion p]
+          , hints :: NameValuation p -> NameValuation p
+          }
 
-instance Show b => Show (GlobalStore p b) where
+instance Show b => Show (PlinkST p b) where
   show = show . body
 
-instance Functor (GlobalStore p) where
-  fmap f (GStore body store hints) = GStore (f body) store hints
+instance Functor (PlinkST p) where
+  fmap f (PlinkST body store hints) = PlinkST (f body) store hints
 
-instance Applicative (GlobalStore p) where
-  pure x = GStore x [] (const M.empty)
-  GStore f store hints <*> GStore x store' hints' =
-    GStore (f x) (store ++ store') (combine hints hints')
+instance Applicative (PlinkST p) where
+  pure x = PlinkST x [] (const M.empty)
+  PlinkST f store hints <*> PlinkST x store' hints' =
+    PlinkST (f x) (store ++ store') (combine hints hints')
 
-instance Monad (GlobalStore p) where
-  GStore body store hints >>= f = case f body of
-    GStore body' store' hints' ->
-      GStore body' (store ++ store') (combine hints hints')
+instance Monad (PlinkST p) where
+  PlinkST body store hints >>= f = case f body of
+    PlinkST body' store' hints' ->
+      PlinkST body' (store ++ store') (combine hints hints')
 
 combine :: (NameValuation p -> NameValuation p)
         -> (NameValuation p -> NameValuation p)
@@ -48,23 +46,23 @@ combine hints1 hints2 ρ =
   in M.union hints1' hints2'
 
 
-assert :: Assertion p -> GlobalStore p ()
-assert x = GStore () [x] (const M.empty)
+assert :: Assertion p -> PlinkST p ()
+assert x = PlinkST () [x] (const M.empty)
 
 -- Introduce a hint for witness generation --
 -- CAREFUL! This bypasses the type system because the variable 'name' could have
 -- been defined with an incompatible type.
-define :: String -> (NameValuation p -> Maybe p) -> GlobalStore p ()
-define name f = GStore () [] hint where
+define :: String -> (NameValuation p -> Maybe p) -> PlinkST p ()
+define name f = PlinkST () [] hint where
   hint ρ = case f ρ of
     Nothing    -> M.empty
     Just value -> M.singleton name value
 
 {-@ defineVec :: strs:[String]
               -> (NameValuation p -> Maybe (ListN p (len strs)))
-              -> GlobalStore p () @-}
-defineVec :: [String] -> (NameValuation p -> Maybe [p]) -> GlobalStore p ()
-defineVec names f = GStore () [] hints where
+              -> PlinkST p () @-}
+defineVec :: [String] -> (NameValuation p -> Maybe [p]) -> PlinkST p ()
+defineVec names f = PlinkST () [] hints where
   hints ρ = case f ρ of
     Nothing   -> M.empty
     Just bits -> M.fromList (zip names bits)

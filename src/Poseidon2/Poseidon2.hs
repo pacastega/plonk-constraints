@@ -8,7 +8,7 @@ import Utils
 import DSL
 import PlinkLib
 import Semantics
-import GlobalStore
+import PlinkST
 import Poseidon2.Poseidon2Cnst
 
 import Language.Haskell.Liquid.ProofCombinators
@@ -99,12 +99,12 @@ matMulM4 (CONS x0 (CONS x1 (CONS x2 (CONS x3 (NIL TF))))) =
 
 
 {-@ sbox :: ins:Instance p -> VecDSL' p (t ins)
-         -> GlobalStore p (VecDSL' p (t ins)) @-}
-sbox :: (Fractional p, Eq p) => Instance p -> DSL p -> GlobalStore p (DSL p)
+         -> PlinkST p (VecDSL' p (t ins)) @-}
+sbox :: (Fractional p, Eq p) => Instance p -> DSL p -> PlinkST p (DSL p)
 sbox ins = vMapM TF TF (sbox_p ins)
 
-{-@ sbox_p :: Instance p -> FieldDSL p -> GlobalStore p (FieldDSL p) @-}
-sbox_p :: (Fractional p, Eq p) => Instance p -> DSL p -> GlobalStore p (DSL p)
+{-@ sbox_p :: Instance p -> FieldDSL p -> PlinkST p (FieldDSL p) @-}
+sbox_p :: (Fractional p, Eq p) => Instance p -> DSL p -> PlinkST p (DSL p)
 sbox_p (Ins {..}) x = yield res where
   x2 = (x `times` x)
 
@@ -124,9 +124,9 @@ addRC = vZipWith TF TF TF plus
 
 {-@ fullRound :: ins:Instance p -> VecDSL' p (t ins)
               -> VecDSL' p (t ins)
-              -> GlobalStore p (VecDSL' p (t ins)) @-}
+              -> PlinkST p (VecDSL' p (t ins)) @-}
 fullRound :: (Fractional p, Eq p)
-          => Instance p -> DSL p -> DSL p -> GlobalStore p (DSL p)
+          => Instance p -> DSL p -> DSL p -> PlinkST p (DSL p)
 fullRound ins state rc = do
   nonLinear <- sbox ins (addRC state rc)
   let res = matMulExternal ins nonLinear
@@ -138,9 +138,9 @@ tGT0 Ins {} = ()
 
 {-@ partialRound :: ins:Instance p -> VecDSL' p (t ins)
                  -> FieldDSL p
-                 -> GlobalStore p (VecDSL' p (t ins)) @-}
+                 -> PlinkST p (VecDSL' p (t ins)) @-}
 partialRound :: (Fractional p, Eq p)
-             => Instance p -> DSL p -> DSL p -> GlobalStore p (DSL p)
+             => Instance p -> DSL p -> DSL p -> PlinkST p (DSL p)
 partialRound ins state@(CONS h ts) rc = do
   h' <- sbox_p ins (h `plus` rc)
   let res = matMulInternal ins (CONS h' ts)
@@ -152,8 +152,8 @@ partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 {- permutation :: ins:Instance p -> VecDSL' p (t ins)
                 -> VecDSL' p (t ins) @-}
 {-@ permutation :: ins:Instance p -> VecDSL' p (t ins)
-                -> GlobalStore p (VecDSL' p (t ins)) @-}
-permutation :: (Fractional p, Eq p) => Instance p -> DSL p -> GlobalStore p (DSL p)
+                -> PlinkST p (VecDSL' p (t ins)) @-}
+permutation :: (Fractional p, Eq p) => Instance p -> DSL p -> PlinkST p (DSL p)
 permutation ins@(Ins {..}) xs = do
     let step1 = matMulExternal ins xs
     step2 <- foldM'  t (fullRound ins)    step1 roundConstants_f1
@@ -171,20 +171,20 @@ fold' _ _ z []     = z
 fold' n f z (x:xs) = fold' n f (f z x) xs
 
 {-@ foldM' :: n:Nat
-           -> (VecDSL' p n -> VecDSL' p n -> GlobalStore p (VecDSL' p n))
-           ->  VecDSL' p n -> [VecDSL' p n] -> GlobalStore p (VecDSL' p n) @-}
-foldM' :: Int -> (DSL p -> DSL p -> GlobalStore p (DSL p))
-      -> DSL p -> [DSL p] -> GlobalStore p (DSL p)
+           -> (VecDSL' p n -> VecDSL' p n -> PlinkST p (VecDSL' p n))
+           ->  VecDSL' p n -> [VecDSL' p n] -> PlinkST p (VecDSL' p n) @-}
+foldM' :: Int -> (DSL p -> DSL p -> PlinkST p (DSL p))
+      -> DSL p -> [DSL p] -> PlinkST p (DSL p)
 foldM' _ _ z []     = pure z
 foldM' n f z (x:xs) = do
   z' <- f z x
   foldM' n f z' xs
 
 {-@ foldM'' :: n:Nat
-            -> (VecDSL' p n -> FieldDSL p -> GlobalStore p (VecDSL' p n))
-            ->  VecDSL' p n -> [FieldDSL p] -> GlobalStore p (VecDSL' p n) @-}
-foldM'' :: Int -> (DSL p -> DSL p -> GlobalStore p (DSL p))
-       -> DSL p -> [DSL p] -> GlobalStore p (DSL p)
+            -> (VecDSL' p n -> FieldDSL p -> PlinkST p (VecDSL' p n))
+            ->  VecDSL' p n -> [FieldDSL p] -> PlinkST p (VecDSL' p n) @-}
+foldM'' :: Int -> (DSL p -> DSL p -> PlinkST p (DSL p))
+       -> DSL p -> [DSL p] -> PlinkST p (DSL p)
 foldM'' _ _ z []     = pure z
 foldM'' n f z (x:xs) = do
   z' <- f z x

@@ -11,7 +11,7 @@ import DSL
 import Utils (fmap', liftA2', pow, map', any')
 import Semantics
 
-import GlobalStore
+import PlinkST
 
 import Language.Haskell.Liquid.ProofCombinators
 
@@ -52,9 +52,9 @@ vecVar :: [String] -> Ty -> DSL p
 vecVar strs τ = fromList τ (map' (\s -> VAR s τ) strs)
 
 {-@ yield :: e:TypedDSL p
-          -> GlobalStore p ({v:TypedDSL p | inferType v = inferType e
-                                         && vlength v = vlength e}) @-}
-yield :: (Fractional p, Eq p) => DSL p -> GlobalStore p (DSL p)
+          -> PlinkST p ({v:TypedDSL p | inferType v = inferType e
+                                     && vlength v = vlength e}) @-}
+yield :: (Fractional p, Eq p) => DSL p -> PlinkST p (DSL p)
 yield e@(UN {}; BIN {}) = do
   let Just τ = inferType e
   -- introduce a new variable to avoid exponential growth of the AST
@@ -173,11 +173,11 @@ vMap _  τ2 _  (NIL _)     = NIL τ2
 vMap τ1 τ2 op (CONS x xs) = op x `CONS` vMap τ1 τ2 op xs
 
 {-@ vMapM :: τ1:Ty -> τ2:Ty
-          -> op:({a:DSL p | typed a τ1} -> GlobalStore p ({b:DSL p | typed b τ2}))
+          -> op:({a:DSL p | typed a τ1} -> PlinkST p ({b:DSL p | typed b τ2}))
           -> u:VecDSL p τ1
-          -> GlobalStore p ({v:VecDSL p τ2 | vlength v = vlength u}) @-}
-vMapM :: Ty -> Ty -> (DSL p -> GlobalStore p (DSL p))
-      -> DSL p -> GlobalStore p (DSL p)
+          -> PlinkST p ({v:VecDSL p τ2 | vlength v = vlength u}) @-}
+vMapM :: Ty -> Ty -> (DSL p -> PlinkST p (DSL p))
+      -> DSL p -> PlinkST p (DSL p)
 vMapM _  τ2 _  (NIL _)     = pure $ NIL τ2
 vMapM τ1 τ2 op (CONS x xs) = do
   x'  <- op x
@@ -264,9 +264,9 @@ fromInt n = go 0 (NIL TBool) where
 
 
 {-@ binaryValue :: {v:VecDSL p TBool | vlength v > 0}
-                -> GlobalStore p (FieldDSL p) @-}
+                -> PlinkST p (FieldDSL p) @-}
 binaryValue :: (Integral p, Fractional p, Eq p) =>
-               DSL p -> GlobalStore p (DSL p)
+               DSL p -> PlinkST p (DSL p)
 binaryValue v = pure $ go v (CONST 0) where
   {-@ go :: VecDSL p TBool -> FieldDSL p -> FieldDSL p @-}
   go :: (Integral p, Fractional p, Eq p) => DSL p -> DSL p -> DSL p
@@ -288,9 +288,9 @@ binaryRepr n = go 0 [] . toInteger where
                   in go (m+1) (fromIntegral r : acc) q
 
 {-@ fromBinary :: {v:VecDSL p TBool | vlength v > 0}
-               -> GlobalStore p (FieldDSL p) @-}
+               -> PlinkST p (FieldDSL p) @-}
 fromBinary :: (Integral p, Fractional p, Eq p) =>
-              DSL p -> GlobalStore p (DSL p)
+              DSL p -> PlinkST p (DSL p)
 fromBinary vec = do
   let x' = var "x"
   let x = VAR x' TF
@@ -302,9 +302,9 @@ fromBinary vec = do
 
 
 {-@ toBinary :: n:Nat1 -> FieldDSL p
-             -> GlobalStore p ({v:VecDSL p TBool | vlength v = n}) @-}
+             -> PlinkST p ({v:VecDSL p TBool | vlength v = n}) @-}
 toBinary :: (Integral p, Fractional p, Eq p) =>
-            Int -> DSL p -> GlobalStore p (DSL p)
+            Int -> DSL p -> PlinkST p (DSL p)
 toBinary n x = do
   let vec' = vars n "bits"
   let vec = vecVar vec' TBool
@@ -319,9 +319,9 @@ toBinary n x = do
 -- x + y (mod 2^e)
 {-@ addMod :: Nat1
            -> FieldDSL p -> FieldDSL p
-           -> GlobalStore p (FieldDSL p) @-}
+           -> PlinkST p (FieldDSL p) @-}
 addMod :: (Integral p, Fractional p, Ord p) =>
-          Int -> DSL p -> DSL p -> GlobalStore p (DSL p)
+          Int -> DSL p -> DSL p -> PlinkST p (DSL p)
 addMod e x y = do
   let modulus = 2^e
 

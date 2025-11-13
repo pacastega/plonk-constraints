@@ -8,7 +8,7 @@ import Data.Maybe (fromMaybe)
 import Control.Applicative ((<|>))
 
 import DSL
-import GlobalStore
+import PlinkST
 import Utils (boolean, any', (??))
 
 import Optimizations.ConstantFolding
@@ -21,16 +21,16 @@ optimizations :: (Fractional p, Eq p) => [Opt p]
 optimizations = [constantFolding ||| removeConstants]
 
 -- Apply all optimizations
-{-@ optimize :: GlobalStore p ({d:DSL p | wellTyped d})
-             -> GlobalStore p ({d:DSL p | wellTyped d}) @-}
-optimize :: (Fractional p, Eq p) =>
-            GlobalStore p (DSL p) -> GlobalStore p (DSL p)
+{-@ optimize :: PlinkST p ({d:DSL p | wellTyped d})
+             -> PlinkST p ({d:DSL p | wellTyped d}) @-}
+optimize :: (Fractional p, Eq p)
+         => PlinkST p (DSL p) -> PlinkST p (DSL p)
 optimize program = optimize' (foldr' compose Just optimizations) program where
-  {-@ optimize' :: Opt p -> GlobalStore p ({d:DSL p | wellTyped d})
-                -> GlobalStore p ({d:DSL p | wellTyped d}) @-}
-  optimize' :: Opt p -> GlobalStore p (DSL p) -> GlobalStore p (DSL p)
-  optimize' f (GStore body store hints) =
-    GStore (opt f body) (map (opt' f) store) hints
+  {-@ optimize' :: Opt p -> PlinkST p ({d:DSL p | wellTyped d})
+                -> PlinkST p ({d:DSL p | wellTyped d}) @-}
+  optimize' :: Opt p -> PlinkST p (DSL p) -> PlinkST p (DSL p)
+  optimize' f (PlinkST body store hints) =
+    PlinkST (opt f body) (map (opt' f) store) hints
 
   {-@ foldr' :: (Opt p -> Opt p -> Opt p) -> Opt p -> [Opt p] -> Opt p @-}
   foldr' :: (Opt p -> Opt p -> Opt p) -> Opt p -> [Opt p] -> Opt p
