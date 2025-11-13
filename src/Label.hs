@@ -50,8 +50,8 @@ size (CONS h ts) = 1 + size h + size ts
                    \_ m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
 label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
 label program store = (m, labeledPrograms, labeledStore) where
-  (m', labeledStore, env') = labelStore store 0 M.empty
-  (m, labeledPrograms, _) = label' program m' env'
+  (m', labeledStore, λ') = labelStore store 0 M.empty
+  (m, labeledPrograms, _λ) = label' program m' λ'
 
 #else
 
@@ -61,42 +61,42 @@ type ExtLabelEnv p i = M.Map (DSL p) i
 
 label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
 label program store = (m, labeledPrograms, labeledStore) where
-  (m', labeledStore, env') = labelStoreCSE store 0 M.empty
-  (m, labeledPrograms, _) = labelCSE' program m' env'
+  (m', labeledStore, λ') = labelStoreCSE store 0 M.empty
+  (m, labeledPrograms, _λ) = labelCSE' program m' λ'
 
 labelStoreCSE :: (Num p, Ord p)
               => Store p -> Int -> ExtLabelEnv p Int
               -> (Int, [LDSL p Int], ExtLabelEnv p Int)
-labelStoreCSE [] nextIndex env = (nextIndex, [], env)
-labelStoreCSE (def:ss) nextIndex env =
+labelStoreCSE [] nextIndex λ = (nextIndex, [], λ)
+labelStoreCSE (def:ss) nextIndex λ =
   let i = nextIndex
-      (i', def', env') = labelStoreCSE' def i env
-      (i'', s'', env'') = labelStoreCSE ss i' env'
-  in (i'', def' ++ s'', env'')
+      (i', def', λ') = labelStoreCSE' def i λ
+      (i'', s'', λ'') = labelStoreCSE ss i' λ'
+  in (i'', def' ++ s'', λ'')
 
 labelStoreCSE' :: (Num p, Ord p) => Assertion p -> Int -> ExtLabelEnv p Int
             -> (Int, [LDSL p Int], ExtLabelEnv p Int)
-labelStoreCSE' assertion nextIndex env = let i = nextIndex in case assertion of
-    NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
-      where (w', [p1'], env') = labelCSE' p1 i env
-    BOOLEAN p1  -> (i', [LBOOLEAN p1'], env')
-      where (i', [p1'], env') = labelCSE' p1 i env
-    EQA p1 p2 -> case M.lookup p1 env of
-      Just i1 -> case M.lookup p2 env of
-        Just i2 -> (i, [LEQA (LWIRE τ1 i1) (LWIRE τ2 i2)], env) -- both are labeled: can't relabel them
+labelStoreCSE' assertion nextIndex λ = let i = nextIndex in case assertion of
+    NZERO p1  -> (w'+1, [LNZERO p1' w'], λ')
+      where (w', [p1'], λ') = labelCSE' p1 i λ
+    BOOLEAN p1  -> (i', [LBOOLEAN p1'], λ')
+      where (i', [p1'], λ') = labelCSE' p1 i λ
+    EQA p1 p2 -> case M.lookup p1 λ of
+      Just i1 -> case M.lookup p2 λ of
+        Just i2 -> (i, [LEQA (LWIRE τ1 i1) (LWIRE τ2 i2)], λ) -- both are labeled: can't relabel them
           where Just τ1 = inferType p1; Just τ2 = inferType p2
-        Nothing -> (i', [withOutputWire i' i1 p2'], env'') -- use i1 for p2
-          where (i', [p2'], env') = labelCSE' p2 i env
-                env'' = M.insert p2 i1 env'
-      Nothing -> case M.lookup p2 env of
-        Just i2 -> (i', [withOutputWire i' i2 p1'], env'') -- use i2 for p1
-          where (i', [p1'], env') = labelCSE' p1 i env
-                env'' = M.insert p1 i2 env'
-        Nothing -> (i'', [p1', withOutputWire i'' i1 p2'], env''')
-          where (i' , [p1'], env')  = labelCSE' p1 i  env
-                (i'', [p2'], env'') = labelCSE' p2 i' env'
+        Nothing -> (i', [withOutputWire i' i1 p2'], λ'') -- use i1 for p2
+          where (i', [p2'], λ') = labelCSE' p2 i λ
+                λ'' = M.insert p2 i1 λ'
+      Nothing -> case M.lookup p2 λ of
+        Just i2 -> (i', [withOutputWire i' i2 p1'], λ'') -- use i2 for p1
+          where (i', [p1'], λ') = labelCSE' p1 i λ
+                λ'' = M.insert p1 i2 λ'
+        Nothing -> (i'', [p1', withOutputWire i'' i1 p2'], λ''')
+          where (i' , [p1'], λ')  = labelCSE' p1 i  λ
+                (i'', [p2'], λ'') = labelCSE' p2 i' λ'
                 i1 = outputWire p1'
-                env''' = M.insert p2 i1 env'' -- arbitrarily choose i1 for both
+                λ''' = M.insert p2 i1 λ'' -- arbitrarily choose i1 for both
 
 
 {-@ withOutputWire :: m:Nat -> Btwn 0 m -> LDSL p (Btwn 0 m)
@@ -121,37 +121,37 @@ withOutputWire _ i program = case program of
 
 labelCSE' :: (Num p, Ord p) => DSL p -> Int -> ExtLabelEnv p Int
           -> (Int, [LDSL p Int], ExtLabelEnv p Int)
-labelCSE' p nextIndex env = case M.lookup p env of
-  Just i  -> let Just τ = inferType p in (nextIndex, [LWIRE τ i], env)
+labelCSE' p nextIndex λ = case M.lookup p λ of
+  Just i  -> let Just τ = inferType p in (nextIndex, [LWIRE τ i], λ)
   Nothing -> let i = nextIndex in case p of
 
-    VAR s τ -> (i+1, [LVAR s τ i], M.insert p i env)
-    CONST x -> (i+1, [LCONST x i], M.insert p i env)
-    BOOL False -> labelCSE' (CONST zero) nextIndex env
-    BOOL True  -> labelCSE' (CONST one) nextIndex env
+    VAR s τ -> (i+1, [LVAR s τ i], M.insert p i λ)
+    CONST x -> (i+1, [LCONST x i], M.insert p i λ)
+    BOOL False -> labelCSE' (CONST zero) nextIndex λ
+    BOOL True  -> labelCSE' (CONST one) nextIndex λ
 
     UN op p1 -> case op of
-      BoolToF -> labelCSE' p1 i env -- noop
-      ISZERO -> labelCSE' (UN (EQLC zero) p1) nextIndex env
-      EQLC k -> (w'+1, [LEQLC p1' k w' i'], M.insert p i' env')
-        where (i', [p1'], env') = labelCSE' p1 i env; w' = i'+1
-      _ -> (i'+1, [LUN op p1' i'], M.insert p i' env')
-        where (i', [p1'], env') = labelCSE' p1 i env
+      BoolToF -> labelCSE' p1 i λ -- noop
+      ISZERO -> labelCSE' (UN (EQLC zero) p1) nextIndex λ
+      EQLC k -> (w'+1, [LEQLC p1' k w' i'], M.insert p i' λ')
+        where (i', [p1'], λ') = labelCSE' p1 i λ; w' = i'+1
+      _ -> (i'+1, [LUN op p1' i'], M.insert p i' λ')
+        where (i', [p1'], λ') = labelCSE' p1 i λ
 
     BIN op p1 p2 -> case op of
-      DIV -> (w'+1, [LDIV p1' p2' w' i'], M.insert p i' env')
-        where (i'', [p1'], env'') = labelCSE' p1 i   env
-              (i' , [p2'], env')  = labelCSE' p2 i'' env''
+      DIV -> (w'+1, [LDIV p1' p2' w' i'], M.insert p i' λ')
+        where (i'', [p1'], λ'') = labelCSE' p1 i   λ
+              (i' , [p2'], λ')  = labelCSE' p2 i'' λ''
               w' = i'+1
-      EQL -> labelCSE' (UN ISZERO (BIN SUB p1 p2)) nextIndex env
-      _ -> (i'+1, [LBIN op p1' p2' i'], M.insert p i' env')
-        where (i'', [p1'], env'') = labelCSE' p1 i   env
-              (i' , [p2'], env')  = labelCSE' p2 i'' env''
+      EQL -> labelCSE' (UN ISZERO (BIN SUB p1 p2)) nextIndex λ
+      _ -> (i'+1, [LBIN op p1' p2' i'], M.insert p i' λ')
+        where (i'', [p1'], λ'') = labelCSE' p1 i   λ
+              (i' , [p2'], λ')  = labelCSE' p2 i'' λ''
 
-    NIL _ -> (i, [], env)
-    CONS h ts -> (i'', h' ++ ts', env'')
-      where (i',  h',  env')  = labelCSE' h  i  env
-            (i'', ts', env'') = labelCSE' ts i' env'
+    NIL _ -> (i, [], λ)
+    CONS h ts -> (i'', h' ++ ts', λ'')
+      where (i',  h',  λ')  = labelCSE' h  i  λ
+            (i'', ts', λ'') = labelCSE' ts i' λ'
 
 #endif
 
@@ -166,12 +166,12 @@ labelCSE' p nextIndex env = case M.lookup p env of
                        \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}> @-}
 labelStore :: (Num p, Ord p) =>
               Store p -> Int -> LabelEnv p Int -> (Int, [LDSL p Int], LabelEnv p Int)
-labelStore [] nextIndex env = (nextIndex, [], env)
-labelStore (def:ss) nextIndex env =
+labelStore [] nextIndex λ = (nextIndex, [], λ)
+labelStore (def:ss) nextIndex λ =
   let i = nextIndex
-      (i', def', env') = labelAssertion def i env
-      (i'', ss', env'') = labelStore ss i' env'
-  in (i'', def' ++ ss', env'')
+      (i', def', λ') = labelAssertion def i λ
+      (i'', ss', λ'') = labelStore ss i' λ'
+  in (i'', def' ++ ss', λ'')
 
 
 {-@ reflect label' @-}
@@ -183,37 +183,37 @@ labelStore (def:ss) nextIndex env =
            / [size program] @-}
 label' :: (Num p, Ord p) => DSL p -> Int -> LabelEnv p Int
        -> (Int, [LDSL p Int], LabelEnv p Int)
-label' p nextIndex env = let i = nextIndex in case p of
-    VAR s τ -> case M.lookup s env of
-      Nothing -> (i+1, [LVAR s τ i], M.insert s i env)
-      Just j -> (nextIndex, [LWIRE τ j], env)
+label' p nextIndex λ = let i = nextIndex in case p of
+    VAR s τ -> case M.lookup s λ of
+      Nothing -> (i+1, [LVAR s τ i], M.insert s i λ)
+      Just j -> (nextIndex, [LWIRE τ j], λ)
 
-    CONST x -> (i+1, [LCONST x i], env)
-    BOOL False -> label' (CONST zero) nextIndex env
-    BOOL True  -> label' (CONST one) nextIndex env
+    CONST x -> (i+1, [LCONST x i], λ)
+    BOOL False -> label' (CONST zero) nextIndex λ
+    BOOL True  -> label' (CONST one) nextIndex λ
 
     UN op p1 -> case op of
-      BoolToF -> label' p1 i env -- noop
-      ISZERO -> label' (UN (EQLC zero) p1) nextIndex env
-      EQLC k -> (w'+1, [LEQLC p1' k w' i'], env')
-        where (i', [p1'], env') = label' p1 i env; w' = i'+1
-      _ -> (i'+1, [LUN op p1' i'], env')
-        where (i', [p1'], env') = label' p1 i env
+      BoolToF -> label' p1 i λ -- noop
+      ISZERO -> label' (UN (EQLC zero) p1) nextIndex λ
+      EQLC k -> (w'+1, [LEQLC p1' k w' i'], λ')
+        where (i', [p1'], λ') = label' p1 i λ; w' = i'+1
+      _ -> (i'+1, [LUN op p1' i'], λ')
+        where (i', [p1'], λ') = label' p1 i λ
 
     BIN op p1 p2 -> case op of
-      DIV -> (w'+1, [LDIV p1' p2' w' i'], env')
-        where (i'', [p1'], env'') = label' p1 i   env
-              (i' , [p2'], env')  = label' p2 i'' env''
+      DIV -> (w'+1, [LDIV p1' p2' w' i'], λ')
+        where (i'', [p1'], λ'') = label' p1 i   λ
+              (i' , [p2'], λ')  = label' p2 i'' λ''
               w' = i'+1
-      EQL -> label' (UN ISZERO (BIN SUB p1 p2)) nextIndex env
-      _ -> (i'+1, [LBIN op p1' p2' i'], env')
-        where (i'', [p1'], env'') = label' p1 i   env
-              (i' , [p2'], env')  = label' p2 i'' env''
+      EQL -> label' (UN ISZERO (BIN SUB p1 p2)) nextIndex λ
+      _ -> (i'+1, [LBIN op p1' p2' i'], λ')
+        where (i'', [p1'], λ'') = label' p1 i   λ
+              (i' , [p2'], λ')  = label' p2 i'' λ''
 
-    NIL _ -> (i, [], env)
-    CONS h ts -> (i'', h' ++ ts', env'')
-      where (i',  h',  env')  = label' h  i  env
-            (i'', ts', env'') = label' ts i' env'
+    NIL _ -> (i, [], λ)
+    CONS h ts -> (i'', h' ++ ts', λ'')
+      where (i',  h',  λ')  = label' h  i  λ
+            (i'', ts', λ'') = label' ts i' λ'
 
 
 {-@ reflect labelAssertion @-}
@@ -224,11 +224,11 @@ label' p nextIndex env = let i = nextIndex in case p of
               \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}> @-}
 labelAssertion :: (Num p, Ord p) => Assertion p -> Int -> LabelEnv p Int
             -> (Int, [LDSL p Int], LabelEnv p Int)
-labelAssertion assertion nextIndex env = let i = nextIndex in case assertion of
-    NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
-      where (w', [p1'], env') = label' p1 i env
-    BOOLEAN p1  -> (i', [LBOOLEAN p1'], env')
-      where (i', [p1'], env') = label' p1 i env
-    EQA p1 p2 -> (i', [LEQA p1' p2'], env')
-      where (i'', [p1'], env'') = label' p1 i   env
-            (i' , [p2'], env')  = label' p2 i'' env''
+labelAssertion assertion nextIndex λ = let i = nextIndex in case assertion of
+    NZERO p1  -> (w'+1, [LNZERO p1' w'], λ')
+      where (w', [p1'], λ') = label' p1 i λ
+    BOOLEAN p1  -> (i', [LBOOLEAN p1'], λ')
+      where (i', [p1'], λ') = label' p1 i λ
+    EQA p1 p2 -> (i', [LEQA p1' p2'], λ')
+      where (i'', [p1'], λ'') = label' p1 i   λ
+            (i' , [p2'], λ')  = label' p2 i'' λ''
