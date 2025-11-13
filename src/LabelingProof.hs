@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
@@ -107,8 +108,6 @@ labelLemma m0 m e ρ λ σ π λ' e' σ' v = case e of
       where (m1, ps1, λ1) = label' p1 m0 λ
             p1' = case ps1 of [x] -> x
             σ1 = case witnessGen' m1 ρ σ p1' ? wgLemma m1 m ρ p1' σ of Just s -> s
-            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
-            (ih1, π1) = labelLemma m0 m1 p1 ρ λ  σ  π λ1 p1' σ1 v1
 
     _ -> label1Inc op p1 m0 λ m1 p1' λ1 m e' λ'
       ?? labelProofUn  m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1

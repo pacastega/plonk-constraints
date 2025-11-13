@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
@@ -88,16 +89,16 @@ lookupLemma key (M.MBin k _ m) = if key == k then () else lookupLemma key m
 freshLemma :: Int -> M.Map k Int -> Proof
 freshLemma _ _ = ()
 
-elementLemma :: Eq k => k -> v -> M.Map k v -> Proof
+elementLemma :: k -> v -> M.Map k v -> Proof
 elementLemma _ _ _ = ()
 
-notElemLemma :: Eq k => k -> v -> M.Map k v -> Proof
+notElemLemma :: k -> v -> M.Map k v -> Proof
 notElemLemma _ _ _ = ()
 
-notElemLemma' :: Eq k => k -> Int -> M.Map k Int -> Proof
+notElemLemma' :: k -> Int -> M.Map k Int -> Proof
 notElemLemma' _ _ _ = ()
 
-lookupLemma :: Eq k => k -> M.Map k v -> Proof
+lookupLemma :: k -> M.Map k v -> Proof
 lookupLemma _ _ = ()
 
 #endif

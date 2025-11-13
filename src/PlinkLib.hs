@@ -17,31 +17,31 @@ import Language.Haskell.Liquid.ProofCombinators
 
 -- Aliases for arithmetic operations -------------------------------------------
 {-@ plus :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
-plus :: Num p => DSL p -> DSL p -> DSL p
+plus :: DSL p -> DSL p -> DSL p
 plus = BIN ADD
 
 {-@ minus :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
-minus :: Num p => DSL p -> DSL p -> DSL p
+minus :: DSL p -> DSL p -> DSL p
 minus = BIN SUB
 
 {-@ times :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
-times :: Num p => DSL p -> DSL p -> DSL p
+times :: DSL p -> DSL p -> DSL p
 times = BIN MUL
 
 {-@ over :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
-over :: Num p => DSL p -> DSL p -> DSL p
+over ::  DSL p -> DSL p -> DSL p
 over = BIN DIV
 
 {-@ (/\) :: BoolDSL p -> BoolDSL p -> BoolDSL p @-}
-(/\) :: Num p => DSL p -> DSL p -> DSL p
+(/\) :: DSL p -> DSL p -> DSL p
 (/\) = BIN AND
 
 {-@ (\/) :: BoolDSL p -> BoolDSL p -> BoolDSL p @-}
-(\/) :: Num p => DSL p -> DSL p -> DSL p
+(\/) :: DSL p -> DSL p -> DSL p
 (\/) = BIN OR
 
 {-@ (=?) :: FieldDSL p -> FieldDSL p -> BoolDSL p @-}
-(=?) :: Num p => DSL p -> DSL p -> DSL p
+(=?) :: DSL p -> DSL p -> DSL p
 (=?) = BIN EQL
 
 
@@ -237,13 +237,13 @@ rotateR τ xs n = let (ys, zs) = vTakeDrop τ (vlength xs - n) xs
 
 {-@ shiftL :: u:VecDSL p TBool -> Btwn 0 (vlength u)
            -> {v:VecDSL p TBool | vlength v = vlength u} @-}
-shiftL :: Num p => DSL p -> Int -> DSL p
+shiftL :: DSL p -> Int -> DSL p
 shiftL xs n = let (_, zs) = vTakeDrop TBool n xs in
   vAppend TBool zs (vReplicate TBool n (BOOL False))
 
 {-@ shiftR :: u:VecDSL p TBool -> Btwn 0 (vlength u)
            -> {v:VecDSL p TBool | vlength v = vlength u} @-}
-shiftR :: Num p => DSL p -> Int -> DSL p
+shiftR :: DSL p -> Int -> DSL p
 shiftR xs n = let (ys, _) = vTakeDrop TBool (vlength xs - n) xs in
   vAppend TBool (vReplicate TBool n (BOOL False)) ys
 
@@ -265,17 +265,17 @@ fromInt n = go 0 (NIL TBool) where
 
 {-@ binaryValue :: {v:VecDSL p TBool | vlength v > 0}
                 -> PlinkST p (FieldDSL p) @-}
-binaryValue :: (Integral p, Fractional p, Eq p) =>
+binaryValue :: (Integral p, Fractional p) =>
                DSL p -> PlinkST p (DSL p)
 binaryValue v = pure $ go v (CONST 0) where
   {-@ go :: VecDSL p TBool -> FieldDSL p -> FieldDSL p @-}
-  go :: (Integral p, Fractional p, Eq p) => DSL p -> DSL p -> DSL p
+  go :: (Integral p, Fractional p) => DSL p -> DSL p -> DSL p
   go (NIL _)     acc = acc
   go (CONS x xs) acc = go xs (x' `plus` (CONST 2 `times` acc))
     where x' = UN BoolToF x
 
 {-@ binaryRepr :: n:Nat -> p -> ListN p n @-}
-binaryRepr :: (Integral p, Eq p) => Int -> p -> [p]
+binaryRepr :: (Integral p) => Int -> p -> [p]
 binaryRepr n = go 0 [] . toInteger where
   {-@ go :: m:{Nat | m <= n} ->
             ListN p m ->
@@ -289,7 +289,7 @@ binaryRepr n = go 0 [] . toInteger where
 
 {-@ fromBinary :: {v:VecDSL p TBool | vlength v > 0}
                -> PlinkST p (FieldDSL p) @-}
-fromBinary :: (Integral p, Fractional p, Eq p) =>
+fromBinary :: (Integral p, Fractional p) =>
               DSL p -> PlinkST p (DSL p)
 fromBinary vec = do
   let x' = var "x"
@@ -303,7 +303,7 @@ fromBinary vec = do
 
 {-@ toBinary :: n:Nat1 -> FieldDSL p
              -> PlinkST p ({v:VecDSL p TBool | vlength v = n}) @-}
-toBinary :: (Integral p, Fractional p, Eq p) =>
+toBinary :: (Integral p, Fractional p) =>
             Int -> DSL p -> PlinkST p (DSL p)
 toBinary n x = do
   let vec' = vars n "bits"
@@ -320,7 +320,7 @@ toBinary n x = do
 {-@ addMod :: Nat1
            -> FieldDSL p -> FieldDSL p
            -> PlinkST p (FieldDSL p) @-}
-addMod :: (Integral p, Fractional p, Ord p) =>
+addMod :: (Integral p, Fractional p) =>
           Int -> DSL p -> DSL p -> PlinkST p (DSL p)
 addMod e x y = do
   let modulus = 2^e

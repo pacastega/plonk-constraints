@@ -61,17 +61,17 @@ matMulM4' xs = vConcat TF step2 ? lengthsLemma 4 step2 where
 
   -- apply matMulM4 separately to each 4-element chunk:
   step1 = map matMulM4 (vChunk TF 4 xs)
-  step1 :: Num p => [DSL p]
+  step1 :: [DSL p]
   {-@ step1 :: {l:[VecDSL' p 4] | 4 * len l = vlength xs} @-}
 
   -- add components in four groups depending on their remainder modulo 4:
   sums = fold' 4 (vZipWith TF TF TF plus) (vReplicate TF 4 (CONST 0)) step1
-  sums :: Num p => DSL p
+  sums :: DSL p
   {-@ sums :: VecDSL' p 4 @-}
 
   -- add the sums to each 4-element chunk:
   step2 = map (vZipWith TF TF TF plus sums) step1
-  step2 :: Num p => [DSL p]
+  step2 :: [DSL p]
   {-@ step2 :: {l:[VecDSL' p 4] | 4 * len l = vlength xs} @-}
 
 
@@ -119,7 +119,7 @@ sbox_p (Ins {..}) x = yield res where
 {-@ addRC :: xs: VecDSL p TF
           -> {ys:VecDSL p TF | vlength ys = vlength xs}
           -> {zs:VecDSL p TF | vlength zs = vlength xs} @-}
-addRC :: Num p => DSL p -> DSL p -> DSL p
+addRC :: DSL p -> DSL p -> DSL p
 addRC = vZipWith TF TF TF plus
 
 {-@ fullRound :: ins:Instance p -> VecDSL' p (t ins)

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection"    @-}
 {-@ LIQUID "--ple"           @-}

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
@@ -128,7 +129,7 @@ test programStore ρ = do
                   putStrLn $ replicate 80 '='
     Just input -> do
       let output = map (\p -> input ! outputWire p) labeledBodies
-      let output' = map (\p -> input ! outputWire p) labeledStore
+      -- let output' = map (\p -> input ! outputWire p) labeledStore
 
       -- putStrLn $ "Input:                " ++ show input
       -- putStrLn $ "Auxiliary values:     " ++ cyan (show output')
@@ -153,7 +154,7 @@ test' programStore ρ tikzFilename = do
     Nothing -> putStrLn "Witness generation failed"
     Just input -> do
       let output = map (\p -> input ! outputWire p) labeledBodies
-      let output' = map (\p -> input ! outputWire p) labeledStore
+      -- let output' = map (\p -> input ! outputWire p) labeledStore
 
       -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
       putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
@@ -315,7 +316,7 @@ vec3 = get TF (range 1 5) 3 where
 {-@ vecMul :: a:VecDSL p TF ->
               b:{VecDSL p TF | vlength b = vlength a} ->
               c:{VecDSL p TF | vlength c = vlength a} @-}
-vecMul :: Num p => DSL p -> DSL p -> DSL p
+vecMul :: DSL p -> DSL p -> DSL p
 vecMul = vZipWith TF TF TF times
 
 -- [1, 2, 3] * [5, 6, 7] = [1*5, 2*6, 3*7] = [5, 12, 21]

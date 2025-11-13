@@ -127,22 +127,22 @@ mul (VF x) (VF y) = VF (x * y)
 
 {-@ reflect notFn @-}
 {-@ notFn :: BoolValue p -> BoolValue p @-}
-notFn :: (Num p, Eq p) => DSLValue p -> DSLValue p
+notFn :: (Num p) => DSLValue p -> DSLValue p
 notFn (VF b) = VF (1 - b)
 
 {-@ reflect andFn @-}
 {-@ andFn :: BoolValue p -> BoolValue p -> BoolValue p @-}
-andFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
+andFn :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
 andFn (VF b) (VF c) = VF (b * c)
 
 {-@ reflect orFn @-}
 {-@ orFn :: BoolValue p -> BoolValue p -> BoolValue p @-}
-orFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
+orFn :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
 orFn  (VF b) (VF c) = VF (b + c - b*c)
 
 {-@ reflect xorFn @-}
 {-@ xorFn :: BoolValue p -> BoolValue p -> BoolValue p @-}
-xorFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
+xorFn :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
 xorFn (VF b) (VF c) = VF (b + c - 2*b*c)
 
 {-@ reflect eqlFn @-}

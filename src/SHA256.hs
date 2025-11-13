@@ -133,7 +133,7 @@ padding msg = msg +++ (fromList TBool [BOOL True])
 
 {-@ plus32 :: Word p -> Word p
            -> PlinkST p (Word p) @-}
-plus32 :: (Integral p, Fractional p, Ord p)
+plus32 :: (Integral p, Fractional p)
        => DSL p -> DSL p -> PlinkST p (DSL p)
 plus32 = addMod 32 -- addition modulo 2^32
 
@@ -141,7 +141,7 @@ plus32 = addMod 32 -- addition modulo 2^32
 {-@ processMsg :: {msg:VecDSL p TBool | (vlength msg) mod 512 = 0}
                -> PlinkST p (VecDSL p TBool) @-}
 -- TODO: can we prove the resulting length is what it should be?
-processMsg :: (Integral p, Fractional p, Ord p)
+processMsg :: (Integral p, Fractional p)
            => DSL p -> PlinkST p (DSL p)
 processMsg msg = do
   let chunks = vChunk TBool 512 msg -- split into 512-bit chunks
@@ -152,7 +152,7 @@ processMsg msg = do
 {-@ processChunk :: PlinkST p (ListN (Word p) 8)
                  -> {v:VecDSL p TBool | vlength v = 512}
                  -> PlinkST p (ListN (Word p) 8) @-}
-processChunk :: (Integral p, Fractional p, Ord p)
+processChunk :: (Integral p, Fractional p)
              => PlinkST p [Word p] -> DSL p
              -> PlinkST p [Word p]
 processChunk currentHash chunk = do
@@ -173,7 +173,7 @@ rotate :: DSL p -> Int -> DSL p
 rotate = rotateR TBool
 
 {-@ extend :: ListN (Word p) 16 -> PlinkST p (ListN (Word p) 64) @-}
-extend :: (Integral p, Fractional p, Ord p)
+extend :: (Integral p, Fractional p)
        => [Word p] -> PlinkST p [Word p]
 extend ws = go 16 (pure ws) where
 
@@ -181,7 +181,7 @@ extend ws = go 16 (pure ws) where
          -> PlinkST p (ListN (Word p) n)
          -> PlinkST p (ListN (Word p) 64)
           / [64-n] @-}
-  go :: (Integral p, Fractional p, Ord p)
+  go :: (Integral p, Fractional p)
      => Int -> PlinkST p [Word p]
      -> PlinkST p [Word p]
   go i acc
@@ -202,7 +202,7 @@ extend ws = go 16 (pure ws) where
 
 {-@ compress :: PlinkST p (ListN (Word p) 8) -> ListN (Word p) 64
              -> PlinkST p (ListN (Word p) 8) @-}
-compress :: (Integral p, Fractional p, Ord p)
+compress :: (Integral p, Fractional p)
          => PlinkST p [Word p] -> [Word p]
          -> PlinkST p [Word p]
 compress = aux 64 where
@@ -211,7 +211,7 @@ compress = aux 64 where
           -> PlinkST p (ListN (Word p) 8)
           -> ListN (Word p) l
           -> PlinkST p (ListN (Word p) 8) @-}
-  aux :: (Integral p, Fractional p, Ord p)
+  aux :: (Integral p, Fractional p)
       => Int -> PlinkST p [Word p] -> [Word p]
       -> PlinkST p [Word p]
   aux 0 acc []     = acc
@@ -219,7 +219,7 @@ compress = aux 64 where
 
   {-@ go :: Btwn 0 64 -> PlinkST p (ListN (Word p) 8) -> Word p
          -> PlinkST p (ListN (Word p) 8) @-}
-  go :: (Integral p, Fractional p, Ord p)
+  go :: (Integral p, Fractional p)
      => Int -> PlinkST p [Word p] -> Word p
      -> PlinkST p [Word p]
   go i currentHash w = do
@@ -267,7 +267,7 @@ compress = aux 64 where
 
 {-@ sha256 :: {s:String | len s < pow 2 61}
            -> PlinkST p (VecDSL p TBool) @-}
-sha256 :: (Integral p, Fractional p, Ord p)
+sha256 :: (Integral p, Fractional p)
        => String -> PlinkST p (DSL p)
 sha256 = processMsg . padding . toBits where
   {-@ toBits :: s:String

@@ -76,6 +76,9 @@ library
       -Wno-unused-top-binds
       -Wno-unused-imports
       -Wno-incomplete-patterns
+      -Wno-unused-matches
+      -Wno-name-shadowing
+      -Wno-type-defaults
       -fplugin=LiquidHaskell
   cpp-options:
       -DLiquidOn

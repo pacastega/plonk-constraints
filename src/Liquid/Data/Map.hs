@@ -35,7 +35,7 @@ alter f k (MBin k' v' m)
     | otherwise = MBin k' v' (alter f k m)
 
 {-@ reflect insert @-}
-insert :: Eq k => k -> v -> Map k v -> Map k v
+insert :: k -> v -> Map k v -> Map k v
 insert k v m = MBin k v m
 
 {-@ reflect findWithDefault @-}

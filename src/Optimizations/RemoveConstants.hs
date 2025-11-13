@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
@@ -65,8 +66,6 @@ removeConstants e@(BIN op arg1 arg2) = case op of
     _ -> case arg2 of
       CONST k -> Just (UN (EQLC k) arg1)
       _       -> Nothing
-
-    _ -> Nothing
 
   _ -> Nothing -- not a redex
 removeConstants (UN op p1) = case op of
