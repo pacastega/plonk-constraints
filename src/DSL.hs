@@ -205,38 +205,38 @@ data Assertion p =
 
 -- Labeled DSL
 data LDSL p i =
-  LWIRE      Ty               i |
-  LVAR   Var Ty               i |
-  LCONST p                    i |
+    LWIRE      Ty i
+  | LVAR   Var Ty i
+  | LCONST p      i
 
-  LDIV   (LDSL p i) (LDSL p i) i i |
+  | LDIV (LDSL p i) (LDSL p i) i i
 
-  LUN  (UnOp p)  (LDSL p i)            i |
-  LBIN (BinOp p) (LDSL p i) (LDSL p i) i |
+  | LUN  (UnOp p)  (LDSL p i)            i
+  | LBIN (BinOp p) (LDSL p i) (LDSL p i) i
 
-  LEQLC   (LDSL p i) p       i i |
+  | LEQLC   (LDSL p i) p i i
 
-  LNZERO   (LDSL p i)           i |
-  LBOOLEAN (LDSL p i)             |
-  LEQA     (LDSL p i) (LDSL p i)
+  | LNZERO   (LDSL p i) i
+  | LBOOLEAN (LDSL p i)
+  | LEQA     (LDSL p i) (LDSL p i)
   deriving (Show, Eq)
 
 {-@
 data LDSL p i =
-  LWIRE      ScalarTy     i |
-  LVAR   Var ScalarTy     i |
-  LCONST p                i |
+    LWIRE      ScalarTy i
+  | LVAR   Var ScalarTy i
+  | LCONST p            i
 
-  LDIV   (LDSL p i) (LDSL p i) i i |
+  | LDIV   (LDSL p i) (LDSL p i) i i
 
-  LUN  (UnOp' p)  (LDSL p i)            i |
-  LBIN (BinOp' p) (LDSL p i) (LDSL p i) i |
+  | LUN  (UnOp' p)  (LDSL p i)            i
+  | LBIN (BinOp' p) (LDSL p i) (LDSL p i) i
 
-  LEQLC   (LDSL p i) p       i i |
+  | LEQLC   (LDSL p i) p i i
 
-  LNZERO   (LDSL p i)           i |
-  LBOOLEAN (LDSL p i)             |
-  LEQA     (LDSL p i) (LDSL p i)
+  | LNZERO   (LDSL p i) i
+  | LBOOLEAN (LDSL p i)
+  | LEQA     (LDSL p i) (LDSL p i)
 @-}
 
 
