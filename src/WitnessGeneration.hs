@@ -29,10 +29,10 @@ extend :: NameValuation p -> (NameValuation p -> NameValuation p)
 extend ρ hints = M.union ρ (hints ρ)
 
 {-@ reflect witnessGen @-}
-{-@ witnessGen :: m:Nat ->
-                  [LDSL p (Btwn 0 m)] ->
-                  NameValuation p ->
-                  Maybe (VecN p m) @-}
+{-@ witnessGen :: m:Nat
+               -> [LDSL p (Btwn 0 m)]
+               -> NameValuation p
+               -> Maybe (VecN p m) @-}
 witnessGen :: (Eq p, Fractional p) =>
               Int -> [LDSL p Int] -> NameValuation p -> Maybe (Vec p)
 witnessGen m programs ρ = toVector m <$> σ where
@@ -40,8 +40,8 @@ witnessGen m programs ρ = toVector m <$> σ where
 
 {-@ reflect witnessGen' @-}
 {-@ witnessGen' :: m:Nat
-        -> NameValuation p -> M.Map (Btwn 0 m) p -> LDSL p (Btwn 0 m)
-        -> Maybe (M.Map (Btwn 0 m) p) @-}
+                -> NameValuation p -> M.Map (Btwn 0 m) p -> LDSL p (Btwn 0 m)
+                -> Maybe (M.Map (Btwn 0 m) p) @-}
 witnessGen' :: (Eq p, Fractional p) => Int
     -> NameValuation p -> M.Map Int p -> LDSL p Int -> Maybe (M.Map Int p)
 witnessGen' m _ σ (LWIRE τ i) = case M.lookup i σ of
