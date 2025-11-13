@@ -166,8 +166,8 @@ labelLemma m0 m e ρ λ σ π λ' e' σ' v = case e of
 
              -> ρ:NameValuation p
              -> λ:LabelEnv p (Btwn 0 m)
-             -> e':{LDSL p (Btwn 0 m) | label' e 0 M.MTip = (m, mkList1 e', λ)}
-             -> σ:{M.Map (Btwn 0 m) p | Just σ = witnessGen' m ρ M.MTip e'}
+             -> e':{LDSL p (Btwn 0 m) | label' e 0 M.empty = (m, mkList1 e', λ)}
+             -> σ:{M.Map (Btwn 0 m) p | Just σ = witnessGen' m ρ M.empty e'}
 
              -> v:p
 
@@ -185,4 +185,4 @@ labelThm :: (Fractional p, Eq p, Ord p)
 
          -> Proof
 labelThm m e ρ λ e' σ v = fst $
-  labelLemma 0 m e ρ M.MTip M.MTip (const trivial) λ e' σ v
+  labelLemma 0 m e ρ M.empty M.empty (const trivial) λ e' σ v
