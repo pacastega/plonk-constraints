@@ -140,7 +140,6 @@ plus32 = addMod 32 -- addition modulo 2^32
 
 {-@ processMsg :: {msg:VecDSL p TBool | (vlength msg) mod 512 = 0}
                -> PlinkST p (VecDSL p TBool) @-}
--- TODO: can we prove the resulting length is what it should be?
 processMsg :: (Integral p, Fractional p)
            => DSL p -> PlinkST p (DSL p)
 processMsg msg = do

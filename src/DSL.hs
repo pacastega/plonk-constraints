@@ -242,7 +242,7 @@ data LDSL p i =
 
 type Store p = [Assertion p]
 
--- TODO: this could probably be avoided by using record syntax
+-- TODO: this could be avoided by using record syntax
 {-@ measure outputWire @-}
 outputWire :: LDSL p i -> i
 outputWire (LWIRE _ i)    = i
@@ -260,7 +260,7 @@ outputWire (LEQLC _ _ _ i) = i
 -- assertions
 outputWire (LNZERO p w) = outputWire p
 outputWire (LBOOLEAN p) = outputWire p
-outputWire (LEQA p1 p2) = outputWire p2 --FIXME: assertions don't have output
+outputWire (LEQA p1 p2) = outputWire p2
 
 
 -- the number of gates needed to compile the program into a circuit

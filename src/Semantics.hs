@@ -27,15 +27,6 @@ valSize (VF _)       = 1
 valSize (VNil)       = 0
 valSize (VCons x xs) = valSize x + valSize xs
 
--- FIXME: ideally, vectors would be encoded as a single constructor for DSLValue
--- that takes a Haskell list of other DSLValue's, and valSize could call the
--- function 'go' below, but it doesn't seem to work
-
--- {-@ measure go @-}
--- go :: [DSLValue p] -> Int
--- go [] = 0
--- go (x:xs) = valSize x + go xs
-
 {-@ type FValue p = {v:DSLValue p | hasType TF v} @-}
 {-@ type BoolValue p = {v:DSLValue p | hasType TBool v} @-}
 

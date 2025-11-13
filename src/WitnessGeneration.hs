@@ -45,7 +45,7 @@ witnessGen m programs ρ = toVector m <$> σ where
 witnessGen' :: (Eq p, Fractional p) => Int
     -> NameValuation p -> M.Map Int p -> LDSL p Int -> Maybe (M.Map Int p)
 witnessGen' m _ σ (LWIRE τ i) = case M.lookup i σ of
-  Nothing -> Nothing -- wire is not defined; TODO: should not happen
+  Nothing -> Nothing -- wire is not defined
   Just value -> case τ of
     TF -> Just σ -- no restrictions
     TBool -> if boolean value then Just σ else Nothing
@@ -147,12 +147,3 @@ toVector' :: Num p => Int -> Int -> M.Map Int p -> Vec p -> Vec p
 toVector' m 0 val acc = acc
 toVector' m l val acc = toVector' m (l-1) val
                          (Cons (M.findWithDefault zero (l-1) val) acc)
-
-
-
--- -- TODO: ‘ensure (/= 0)’ should work for ‘x2’ in the case of ‘LDIV’ above
--- {-@ ensure :: p:(a -> Bool) -> x:a ->
---               {v:Maybe {w:a | p w} | v = (if (p x) then (Just x)
---                                                    else Nothing)} @-}
-ensure :: (a -> Bool) -> a -> Maybe a
-ensure p x = if p x then Just x else Nothing
