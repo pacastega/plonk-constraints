@@ -66,8 +66,8 @@ eval program v = case program of
       TBool -> if boolean value then Just (VF value) else Nothing
       TF    -> Just (VF value)
   CONST x -> Just (VF x)
-  BOOLEAN True  -> withProof (Just (VF 1)) (boolean 1)
-  BOOLEAN False -> withProof (Just (VF 0)) (boolean 0)
+  BOOL True  -> withProof (Just (VF 1)) (boolean 1)
+  BOOL False -> withProof (Just (VF 0)) (boolean 0)
 
   UN op p1 -> case op of
     ADDC k    -> fmap' (add (VF k))   (eval p1 v)

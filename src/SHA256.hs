@@ -118,8 +118,8 @@ k = [ CONST 0x428a2f98
 {-@ padding :: msg:{VecDSL p TBool | vlength msg < pow 2 64}
             -> {res:VecDSL p TBool | (vlength res) mod 512 = 0} @-}
 padding :: Num p => DSL p -> DSL p
-padding msg = msg +++ (fromList TBool [BOOLEAN True])
-                  +++ (vReplicate TBool k (BOOLEAN False)) +++ len
+padding msg = msg +++ (fromList TBool [BOOL True])
+                  +++ (vReplicate TBool k (BOOL False)) +++ len
   where
     l = vlength msg
     -- 512*c is the smallest multiple of 512 above l+1+64

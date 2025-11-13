@@ -78,7 +78,7 @@ labelLemma m0 m e ρ λ σ π λ' e' σ' v = case e of
   VAR s τ -> labelVar m0 m s τ ρ λ σ π λ' e' σ' v
   CONST _ -> (trivial, \x -> π x ? notElemLemma' x (outputWire e') λ)
 
-  BOOLEAN b -> case b of
+  BOOL b -> case b of
     True -> (trivial, \x -> π x ? notElemLemma' x (outputWire e') λ)
     False -> (trivial, \x -> π x ? notElemLemma' x (outputWire e') λ)
 

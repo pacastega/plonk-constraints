@@ -60,7 +60,7 @@ type Var = String
 data DSL p =
     VAR Var Ty -- variable
   | CONST p       -- constant (of type p, i.e. prime field)
-  | BOOLEAN Bool
+  | BOOL Bool
 
   | UN  (UnOp p)  (DSL p)         -- unary operators
   | BIN (BinOp p) (DSL p) (DSL p) -- binary operators
@@ -76,7 +76,7 @@ infixr 5 `CONS`
 {-@ data DSL p where
       VAR :: name:Var -> ScalarTy -> DSL p
       CONST :: p -> DSL p
-      BOOLEAN :: Bool -> DSL p
+      BOOL :: Bool -> DSL p
 
       UN  :: (UnOp p)  -> DSL p -> DSL p
       BIN :: (BinOp p) -> DSL p -> DSL p -> DSL p
@@ -100,7 +100,7 @@ isVar _      = False
 
 {-@ boolFromIntegral :: a -> BoolDSL p @-}
 boolFromIntegral :: Integral a => a -> DSL p
-boolFromIntegral x = BOOLEAN (x /= 0)
+boolFromIntegral x = BOOL (x /= 0)
 
 
 {-@ reflect typed @-}
@@ -144,7 +144,7 @@ vector p = case inferType p of
 inferType :: DSL p -> Maybe Ty
 inferType (VAR _ τ) = Just τ
 inferType (CONST _) = Just TF
-inferType (BOOLEAN _) = Just TBool
+inferType (BOOL  _) = Just TBool
 
 inferType (UN op p) = case op of
   ADDC _ -> if inferType p == Just TF then Just TF else Nothing
@@ -187,16 +187,16 @@ inferType _ = Nothing
 
 -- (Non-expression) assertions
 data Assertion p =
-    NZERO (DSL p)            -- non-zero assertion
-  | BOOL  (DSL p)            -- booleanity assertion
-  | EQA   (DSL p) (DSL p)    -- equality assertion
+    NZERO   (DSL p)            -- non-zero assertion
+  | BOOLEAN (DSL p)            -- booleanity assertion
+  | EQA     (DSL p) (DSL p)    -- equality assertion
   deriving Show
 
 {-@
 data Assertion p =
-    NZERO (ScalarDSL p)
-  | BOOL  (ScalarDSL p)
-  | EQA   (ScalarDSL p) (ScalarDSL p)
+    NZERO   (ScalarDSL p)
+  | BOOLEAN (ScalarDSL p)
+  | EQA     (ScalarDSL p) (ScalarDSL p)
 @-}
 
 
@@ -216,9 +216,9 @@ data LDSL p i =
 
   LEQLC   (LDSL p i) p       i i |
 
-  LNZERO  (LDSL p i)           i |
-  LBOOL   (LDSL p i)             |
-  LEQA    (LDSL p i) (LDSL p i)
+  LNZERO   (LDSL p i)           i |
+  LBOOLEAN (LDSL p i)             |
+  LEQA     (LDSL p i) (LDSL p i)
   deriving (Show, Eq)
 
 {-@
@@ -234,9 +234,9 @@ data LDSL p i =
 
   LEQLC   (LDSL p i) p       i i |
 
-  LNZERO  (LDSL p i)           i |
-  LBOOL   (LDSL p i)             |
-  LEQA    (LDSL p i) (LDSL p i)
+  LNZERO   (LDSL p i)           i |
+  LBOOLEAN (LDSL p i)             |
+  LEQA     (LDSL p i) (LDSL p i)
 @-}
 
 
@@ -259,7 +259,7 @@ outputWire (LEQLC _ _ _ i) = i
 
 -- assertions
 outputWire (LNZERO p w) = outputWire p
-outputWire (LBOOL  p)   = outputWire p
+outputWire (LBOOLEAN p) = outputWire p
 outputWire (LEQA p1 p2) = outputWire p2 --FIXME: assertions don't have output
 
 
@@ -284,7 +284,7 @@ nGates (LBIN op p1 p2 _) = nGates p1 + nGates p2 + case op of
 nGates (LEQLC p1 _ _ _) = 2 + nGates p1
 
 nGates (LNZERO p1 _)    = 1 + nGates p1
-nGates (LBOOL p1)       = 1 + nGates p1
+nGates (LBOOLEAN p1)    = 1 + nGates p1
 nGates (LEQA p1 p2)     = 1 + nGates p1 + nGates p2
 
 -- compile the program into a circuit including the output wire index
@@ -344,7 +344,7 @@ compile m (LNZERO p1 w) = c
     c1 = compile m p1
     i1 = outputWire p1
     c = append' (nonZeroGate m [i1, w]) c1
-compile m (LBOOL p1) = c
+compile m (LBOOLEAN p1) = c
   where
     c1 = compile m p1
     i1 = outputWire p1
@@ -421,7 +421,7 @@ semanticsAreCorrect m (LNZERO p1 w) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
   correct = correct1 && (input!i1 * input!w == 1)
-semanticsAreCorrect m (LBOOL p1) input = correct where
+semanticsAreCorrect m (LBOOLEAN p1) input = correct where
   correct1 = semanticsAreCorrect m p1 input
   i1 = outputWire p1
   correct = correct1 && boolean (input!i1)

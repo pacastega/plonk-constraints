@@ -239,13 +239,13 @@ rotateR τ xs n = let (ys, zs) = vTakeDrop τ (vlength xs - n) xs
            -> {v:VecDSL p TBool | vlength v = vlength u} @-}
 shiftL :: Num p => DSL p -> Int -> DSL p
 shiftL xs n = let (_, zs) = vTakeDrop TBool n xs in
-  vAppend TBool zs (vReplicate TBool n (BOOLEAN False))
+  vAppend TBool zs (vReplicate TBool n (BOOL False))
 
 {-@ shiftR :: u:VecDSL p TBool -> Btwn 0 (vlength u)
            -> {v:VecDSL p TBool | vlength v = vlength u} @-}
 shiftR :: Num p => DSL p -> Int -> DSL p
 shiftR xs n = let (ys, _) = vTakeDrop TBool (vlength xs - n) xs in
-  vAppend TBool (vReplicate TBool n (BOOLEAN False)) ys
+  vAppend TBool (vReplicate TBool n (BOOL False)) ys
 
 -- Integers mod 2^n -----------------------------------------------------------
 {-@ fromInt :: n:Nat -> x:Btwn 0 (pow 2 n) ->
@@ -331,7 +331,7 @@ addMod e x y = do
   let z' = var "sum"
   let z = VAR z' TF
 
-  assert $ BOOL b
+  assert $ BOOLEAN b
   assert $ (x `plus` y) `EQA` (z `plus` (b `times` CONST modulus))
 
   define b' (\v -> (\x y -> if x + y < modulus then 0 else 1)

@@ -20,25 +20,25 @@ constantFolding (BIN op (CONST k1) (CONST k2)) = case op of
   MUL -> Just (CONST (k1 * k2))
   DIV -> if k2 /= 0 then Just (CONST (k1 / k2)) else Nothing
   LINCOMB c1 c2 -> Just (CONST (c1*k1 + c2*k2))
-  EQL -> Just (BOOLEAN (k1 == k2))
+  EQL -> Just (BOOL (k1 == k2))
   _ -> Nothing
 
-constantFolding (BIN op (BOOLEAN b1) (BOOLEAN b2)) = case op of
-  AND -> Just (BOOLEAN (b1 && b2)); UnsafeAND -> Just (BOOLEAN (b1 && b2))
-  OR  -> Just (BOOLEAN (b1 || b2)); UnsafeOR  -> Just (BOOLEAN (b1 || b2))
-  XOR -> Just (BOOLEAN (b1 /= b2)); UnsafeXOR -> Just (BOOLEAN (b1 /= b2))
+constantFolding (BIN op (BOOL b1) (BOOL b2)) = case op of
+  AND -> Just (BOOL (b1 && b2)); UnsafeAND -> Just (BOOL (b1 && b2))
+  OR  -> Just (BOOL (b1 || b2)); UnsafeOR  -> Just (BOOL (b1 || b2))
+  XOR -> Just (BOOL (b1 /= b2)); UnsafeXOR -> Just (BOOL (b1 /= b2))
   _ -> Nothing
 
-constantFolding (UN op (BOOLEAN b)) = case op of
-  NOT -> Just (BOOLEAN (not b)); UnsafeNOT -> Just (BOOLEAN (not b))
+constantFolding (UN op (BOOL b)) = case op of
+  NOT -> Just (BOOL (not b)); UnsafeNOT -> Just (BOOL (not b))
   BoolToF -> if b then Just (CONST 1) else Just (CONST 0)
   _ -> Nothing
 
 constantFolding (UN op (CONST k)) = case op of
   ADDC k' -> Just (CONST (k + k'))
   MULC k' -> Just (CONST (k * k'))
-  ISZERO  -> Just (BOOLEAN (k == 0))
-  EQLC k' -> Just (BOOLEAN (k == k'))
+  ISZERO  -> Just (BOOL  (k == 0))
+  EQLC k' -> Just (BOOL  (k == k'))
   _ -> Nothing
 
 constantFolding _ = Nothing -- any other pattern is not a redex
@@ -57,12 +57,12 @@ constantFoldingProof _ (BIN op (CONST _) (CONST _)) _ = case op of
   LINCOMB _ _ -> trivial
   EQL -> trivial
 
-constantFoldingProof _ (BIN op (BOOLEAN _) (BOOLEAN _)) _ = case op of
+constantFoldingProof _ (BIN op (BOOL _) (BOOL _)) _ = case op of
   AND -> (); UnsafeAND -> ()
   OR  -> (); UnsafeOR  -> ()
   XOR -> (); UnsafeXOR -> ()
 
-constantFoldingProof _ (UN op (BOOLEAN _)) _ = case op of
+constantFoldingProof _ (UN op (BOOL _)) _ = case op of
   NOT -> (); UnsafeNOT -> ()
   BoolToF -> ()
 

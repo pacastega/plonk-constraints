@@ -23,7 +23,7 @@ type LabelEnv p i = M.Map String i
 size :: DSL p -> Int
 size (VAR _ _) = 1
 size (CONST _) = 1
-size (BOOLEAN _) = 2 -- syntactic sugar: BOOLEAN -> CONST
+size (BOOL _) = 2 -- syntactic sugar: BOOL -> CONST
 
 size (UN op p1) = case op of
   ISZERO -> 1 + size p1 + 1 -- syntactic sugar: ISZERO -> EQLC
@@ -79,7 +79,7 @@ labelStoreCSE' :: (Num p, Ord p) => Assertion p -> Int -> ExtLabelEnv p Int
 labelStoreCSE' assertion nextIndex env = let i = nextIndex in case assertion of
     NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
       where (w', [p1'], env') = labelCSE' p1 i env
-    BOOL p1  -> (i', [LBOOL p1'], env')
+    BOOLEAN p1  -> (i', [LBOOLEAN p1'], env')
       where (i', [p1'], env') = labelCSE' p1 i env
     EQA p1 p2 -> case M.lookup p1 env of
       Just i1 -> case M.lookup p2 env of
@@ -115,7 +115,7 @@ withOutputWire _ i program = case program of
   LEQLC   p1 k w _ -> LEQLC p1 k w i
 
   LNZERO p1 w  -> LNZERO p1 w
-  LBOOL  p1    -> LBOOL p1
+  LBOOLEAN  p1 -> LBOOLEAN p1
   LEQA   p1 p2 -> LEQA p1 p2
 
 
@@ -127,8 +127,8 @@ labelCSE' p nextIndex env = case M.lookup p env of
 
     VAR s τ -> (i+1, [LVAR s τ i], M.insert p i env)
     CONST x -> (i+1, [LCONST x i], M.insert p i env)
-    BOOLEAN False  -> labelCSE' (CONST zero) nextIndex env
-    BOOLEAN True   -> labelCSE' (CONST one) nextIndex env
+    BOOL False -> labelCSE' (CONST zero) nextIndex env
+    BOOL True  -> labelCSE' (CONST one) nextIndex env
 
     UN op p1 -> case op of
       BoolToF -> labelCSE' p1 i env -- noop
@@ -189,8 +189,8 @@ label' p nextIndex env = let i = nextIndex in case p of
       Just j -> (nextIndex, [LWIRE τ j], env)
 
     CONST x -> (i+1, [LCONST x i], env)
-    BOOLEAN False  -> label' (CONST zero) nextIndex env
-    BOOLEAN True   -> label' (CONST one) nextIndex env
+    BOOL False -> label' (CONST zero) nextIndex env
+    BOOL True  -> label' (CONST one) nextIndex env
 
     UN op p1 -> case op of
       BoolToF -> label' p1 i env -- noop
@@ -227,7 +227,7 @@ labelAssertion :: (Num p, Ord p) => Assertion p -> Int -> LabelEnv p Int
 labelAssertion assertion nextIndex env = let i = nextIndex in case assertion of
     NZERO p1  -> (w'+1, [LNZERO p1' w'], env')
       where (w', [p1'], env') = label' p1 i env
-    BOOL p1  -> (i', [LBOOL p1'], env')
+    BOOLEAN p1  -> (i', [LBOOLEAN p1'], env')
       where (i', [p1'], env') = label' p1 i env
     EQA p1 p2 -> (i', [LEQA p1' p2'], env')
       where (i'', [p1'], env'') = label' p1 i   env

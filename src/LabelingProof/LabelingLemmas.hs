@@ -42,7 +42,7 @@ updateLemma m m' ρ e σ = case e of
   LEQLC e1 _ _ _ -> updateLemma m m' ρ e1 σ
 
   LNZERO e1 _ -> updateLemma m m' ρ e1 σ
-  LBOOL e1    -> updateLemma m m' ρ e1 σ
+  LBOOLEAN e1 -> updateLemma m m' ρ e1 σ
   LEQA e1 e2  -> updateLemma m m' ρ e1 σ ? case update m ρ σ e1 of
     Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
 

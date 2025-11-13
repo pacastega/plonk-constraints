@@ -127,7 +127,7 @@ update m sv valuation (LNZERO p1 w) =
       of Just x1 -> if x1 /= 0 then Just (M.insert w (1/x1) valuation1)
                     else Nothing
          _       -> Nothing
-update m sv valuation (LBOOL p1) = update m sv valuation p1
+update m sv valuation (LBOOLEAN p1) = update m sv valuation p1
 update m sv valuation (LEQA p1 p2) =
   case update m sv valuation p1 of
     Nothing -> Nothing

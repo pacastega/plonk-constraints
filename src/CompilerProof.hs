@@ -56,9 +56,9 @@ compileProof m (LBIN op p1 p2 i) input = case op of
 
 compileProof m (LEQLC p1 k w i) input = compileProof m p1 input
 
-compileProof m (LNZERO p1 w)    input = compileProof m p1 input
-compileProof m (LBOOL p1)       input = compileProof m p1 input
-compileProof m (LEQA p1 p2) input =
+compileProof m (LNZERO p1 w) input = compileProof m p1 input
+compileProof m (LBOOLEAN p1) input = compileProof m p1 input
+compileProof m (LEQA p1 p2)  input =
   let n1 = nGates p1
       n2 = nGates p2
   in compileProof m p1 input ?

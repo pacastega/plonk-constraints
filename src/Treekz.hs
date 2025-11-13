@@ -69,9 +69,9 @@ parse p = case p of
 
   LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parse p1]
 
-  LNZERO p1 w -> N ("$\\neq 0$" ++ wire [w]) [parse p1]
-  LBOOL  p1   -> N ("$\\in \\{0,1\\}$") [parse p1]
-  LEQA  p1 p2 -> N ("$\\overset{!}{=}$") [parse p1, parse p2]
+  LNZERO   p1 w  -> N ("$\\neq 0$" ++ wire [w]) [parse p1]
+  LBOOLEAN p1    -> N ("$\\in \\{0,1\\}$") [parse p1]
+  LEQA     p1 p2 -> N ("$\\overset{!}{=}$") [parse p1, parse p2]
   where
     wire l = "\\textcolor{red}{\\tiny " ++ (intercalate "," (map show l)) ++ "}"
 
