@@ -42,8 +42,8 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
                   -> e':{LDSL p (Btwn 0 m) | label' (UN (EQLC k) p1) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ σ e'}
-                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = update m ρ σ p1'}
+                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGen' m ρ σ e'}
+                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = witnessGen' m ρ σ p1'}
 
                   -> v:p -> v1:{p | M.lookup (outputWire p1') σ1 == Just v1}
 

@@ -21,30 +21,30 @@ import Semantics
 
 import Language.Haskell.Liquid.ProofCombinators
 
-{-@ updateLemma :: m:Nat -> m':{Nat | m' >= m}
-                -> ρ:NameValuation p -> e:LDSL p (Btwn 0 m)
-                -> σ:M.Map (Btwn 0 m) p
-                -> { update m ρ σ e == update m' ρ σ e } @-}
-updateLemma :: (Eq p, Fractional p) => Int -> Int
-                   -> NameValuation p -> LDSL p Int -> M.Map Int p -> Proof
-updateLemma m m' ρ e σ = case e of
+{-@ wgLemma :: m:Nat -> m':{Nat | m' >= m}
+            -> ρ:NameValuation p -> e:LDSL p (Btwn 0 m)
+            -> σ:M.Map (Btwn 0 m) p
+            -> { witnessGen' m ρ σ e == witnessGen' m' ρ σ e } @-}
+wgLemma :: (Eq p, Fractional p) => Int -> Int
+        -> NameValuation p -> LDSL p Int -> M.Map Int p -> Proof
+wgLemma m m' ρ e σ = case e of
   LWIRE {} -> ()
   LVAR {} -> ()
   LCONST {} -> ()
 
-  LDIV e1 e2 _ _ -> updateLemma m m' ρ e1 σ ? case update m ρ σ e1 of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
+  LDIV e1 e2 _ _ -> wgLemma m m' ρ e1 σ ? case witnessGen' m ρ σ e1 of
+    Nothing -> (); Just σ1 -> wgLemma m m' ρ e2 σ1
 
-  LUN _ e1 _ -> updateLemma m m' ρ e1 σ
-  LBIN _ e1 e2 _ -> updateLemma m m' ρ e1 σ ? case update m ρ σ e1 of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
+  LUN _ e1 _ -> wgLemma m m' ρ e1 σ
+  LBIN _ e1 e2 _ -> wgLemma m m' ρ e1 σ ? case witnessGen' m ρ σ e1 of
+    Nothing -> (); Just σ1 -> wgLemma m m' ρ e2 σ1
 
-  LEQLC e1 _ _ _ -> updateLemma m m' ρ e1 σ
+  LEQLC e1 _ _ _ -> wgLemma m m' ρ e1 σ
 
-  LNZERO e1 _ -> updateLemma m m' ρ e1 σ
-  LBOOLEAN e1 -> updateLemma m m' ρ e1 σ
-  LEQA e1 e2  -> updateLemma m m' ρ e1 σ ? case update m ρ σ e1 of
-    Nothing -> (); Just σ1 -> updateLemma m m' ρ e2 σ1
+  LNZERO e1 _ -> wgLemma m m' ρ e1 σ
+  LBOOLEAN e1 -> wgLemma m m' ρ e1 σ
+  LEQA e1 e2  -> wgLemma m m' ρ e1 σ ? case witnessGen' m ρ σ e1 of
+    Nothing -> (); Just σ1 -> wgLemma m m' ρ e2 σ1
 
 
 -- Lemmas specific for the LH-friendly implementation of maps ------------------
@@ -151,8 +151,8 @@ label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
                   -> e':{LDSL p (Btwn 0 m) | label' (UN op p1) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ σ e'}
-                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = update m ρ σ p1'}
+                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGen' m ρ σ e'}
+                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = witnessGen' m ρ σ p1'}
 
                   -> v:p -> v1:{p | M.lookup (outputWire p1') σ1 == Just v1}
 
@@ -206,9 +206,9 @@ labelProofUn m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1 = cas
                   -> p2':{LDSL p (Btwn 0 m2) | label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
 
                   -> e':{LDSL p (Btwn 0 m) | label' (BIN op p1 p2) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ σ e'}
-                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = update m ρ σ p1'}
-                  -> σ2:{M.Map (Btwn 0 m2) p | Just σ2 = update m ρ σ1 p2'}
+                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGen' m ρ σ e'}
+                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = witnessGen' m ρ σ p1'}
+                  -> σ2:{M.Map (Btwn 0 m2) p | Just σ2 = witnessGen' m ρ σ1 p2'}
 
                   -> v:p
                   -> v1:{p | M.lookup (outputWire p1') σ1 == Just v1}

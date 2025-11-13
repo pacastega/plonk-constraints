@@ -42,9 +42,9 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ  = (m1, mkList1 p1', λ1)}
                   -> p2':{LDSL p (Btwn 0 m2) | label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
                   -> e':{LDSL p (Btwn 0 m) | label' (BIN DIV p1 p2) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = update m ρ σ e'}
-                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = update m ρ σ p1'}
-                  -> σ2:{M.Map (Btwn 0 m2) p | Just σ2 = update m ρ σ1 p2'}
+                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGen' m ρ σ e'}
+                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = witnessGen' m ρ σ p1'}
+                  -> σ2:{M.Map (Btwn 0 m2) p | Just σ2 = witnessGen' m ρ σ1 p2'}
 
 
                   -> v:p
