@@ -362,74 +362,74 @@ compile m (LEQA p1 p2) = c
                            LDSL p (Btwn 0 m) -> VecN p m ->
                            Bool @-}
 semanticsAreCorrect :: (Eq p, Fractional p) => Int -> LDSL p Int -> Vec p -> Bool
-semanticsAreCorrect _ (LWIRE _ _)    _     = True
-semanticsAreCorrect _ (LVAR _ τ i)   input = case τ of
+semanticsAreCorrect _ (LWIRE _ _)    _ = True
+semanticsAreCorrect _ (LVAR _ τ i)   σ = case τ of
   TF    -> True              -- field-typed variables don't have restrictions
-  TBool -> boolean (input!i) -- bool-typed variables must be boolean
-semanticsAreCorrect _ (LCONST x i)   input = input!i == x
+  TBool -> boolean (σ!i) -- bool-typed variables must be boolean
+semanticsAreCorrect _ (LCONST x i)   σ = σ!i == x
 
-semanticsAreCorrect m (LDIV p1 p2 w i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
+semanticsAreCorrect m (LDIV p1 p2 w i) σ = correct where
+  correct1 = semanticsAreCorrect m p1 σ
+  correct2 = semanticsAreCorrect m p2 σ
   i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 && input!w * input!i2 == 1 &&
-    if input!i2 /= 0 then input!i == input!i1 / input!i2 else True
+  correct = correct1 && correct2 && σ!w * σ!i2 == 1 &&
+    if σ!i2 /= 0 then σ!i == σ!i1 / σ!i2 else True
 
-semanticsAreCorrect m (LUN op p1 i) input = case op of
-  ADDC k -> correct1 && input!i == input!i1 + k
-  MULC k -> correct1 && input!i == input!i1 * k
-  NOT    -> correct1 && (input!i == if input!i1 == 1 then 0 else 1) &&
-                          boolean (input!i1)
-  UnsafeNOT -> correct1 && (input!i == 1 - input!i1)
+semanticsAreCorrect m (LUN op p1 i) σ = case op of
+  ADDC k -> correct1 && σ!i == σ!i1 + k
+  MULC k -> correct1 && σ!i == σ!i1 * k
+  NOT    -> correct1 && (σ!i == if σ!i1 == 1 then 0 else 1) &&
+                          boolean (σ!i1)
+  UnsafeNOT -> correct1 && (σ!i == 1 - σ!i1)
   where
-    correct1 = semanticsAreCorrect m p1 input; i1 = outputWire p1
+    correct1 = semanticsAreCorrect m p1 σ; i1 = outputWire p1
 
-semanticsAreCorrect m (LBIN op p1 p2 i) input = case op of
-  ADD -> correct1 && correct2 && input!i == input!i1 + input!i2
-  SUB -> correct1 && correct2 && input!i == input!i1 - input!i2
-  MUL -> correct1 && correct2 && input!i == input!i1 * input!i2
-  LINCOMB k1 k2 -> correct1 && correct2 && input!i == k1*input!i1 + k2*input!i2
+semanticsAreCorrect m (LBIN op p1 p2 i) σ = case op of
+  ADD -> correct1 && correct2 && σ!i == σ!i1 + σ!i2
+  SUB -> correct1 && correct2 && σ!i == σ!i1 - σ!i2
+  MUL -> correct1 && correct2 && σ!i == σ!i1 * σ!i2
+  LINCOMB k1 k2 -> correct1 && correct2 && σ!i == k1*σ!i1 + k2*σ!i2
   AND -> correct1 && correct2 &&
-    (input!i == if input!i1 == 0 || input!i2 == 0 then 0 else 1) &&
-    boolean (input!i1) && boolean (input!i2)
+    (σ!i == if σ!i1 == 0 || σ!i2 == 0 then 0 else 1) &&
+    boolean (σ!i1) && boolean (σ!i2)
   OR -> correct1 && correct2 &&
-    (input!i == if input!i1 == 1 || input!i2 == 1 then 1 else 0) &&
-    boolean (input!i1) && boolean (input!i2)
+    (σ!i == if σ!i1 == 1 || σ!i2 == 1 then 1 else 0) &&
+    boolean (σ!i1) && boolean (σ!i2)
   XOR -> correct1 && correct2 &&
-    (input!i == if input!i1 /= input!i2 then 1 else 0) &&
-    boolean (input!i1) && boolean (input!i2)
+    (σ!i == if σ!i1 /= σ!i2 then 1 else 0) &&
+    boolean (σ!i1) && boolean (σ!i2)
   UnsafeAND -> correct1 && correct2 &&
-    (input!i == input!i1 * input!i2)
+    (σ!i == σ!i1 * σ!i2)
   UnsafeOR -> correct1 && correct2 &&
-    (input!i == input!i1 + input!i2 - input!i1*input!i2)
+    (σ!i == σ!i1 + σ!i2 - σ!i1*σ!i2)
   UnsafeXOR -> correct1 && correct2 &&
-    (input!i == input!i1 + input!i2 - 2*input!i1*input!i2)
+    (σ!i == σ!i1 + σ!i2 - 2*σ!i1*σ!i2)
   where
-    correct1 = semanticsAreCorrect m p1 input
-    correct2 = semanticsAreCorrect m p2 input
+    correct1 = semanticsAreCorrect m p1 σ
+    correct2 = semanticsAreCorrect m p2 σ
     i1 = outputWire p1; i2 = outputWire p2
 
-semanticsAreCorrect m (LEQLC p1 k w i) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
+semanticsAreCorrect m (LEQLC p1 k w i) σ = correct where
+  correct1 = semanticsAreCorrect m p1 σ
   i1 = outputWire p1
-  correct = correct1 && boolean (input!i) &&
-                        ((input!i1 - k) * input!i == 0) &&
-                        (if input!i1 == k
-                         then input!i == 1
-                         else input!i == 0 && input!w * (input!i1 - k) == 1)
-semanticsAreCorrect m (LNZERO p1 w) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
+  correct = correct1 && boolean (σ!i) &&
+                        ((σ!i1 - k) * σ!i == 0) &&
+                        (if σ!i1 == k
+                         then σ!i == 1
+                         else σ!i == 0 && σ!w * (σ!i1 - k) == 1)
+semanticsAreCorrect m (LNZERO p1 w) σ = correct where
+  correct1 = semanticsAreCorrect m p1 σ
   i1 = outputWire p1
-  correct = correct1 && (input!i1 * input!w == 1)
-semanticsAreCorrect m (LBOOLEAN p1) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
+  correct = correct1 && (σ!i1 * σ!w == 1)
+semanticsAreCorrect m (LBOOLEAN p1) σ = correct where
+  correct1 = semanticsAreCorrect m p1 σ
   i1 = outputWire p1
-  correct = correct1 && boolean (input!i1)
-semanticsAreCorrect m (LEQA p1 p2) input = correct where
-  correct1 = semanticsAreCorrect m p1 input
-  correct2 = semanticsAreCorrect m p2 input
+  correct = correct1 && boolean (σ!i1)
+semanticsAreCorrect m (LEQA p1 p2) σ = correct where
+  correct1 = semanticsAreCorrect m p1 σ
+  correct2 = semanticsAreCorrect m p2 σ
   i1 = outputWire p1; i2 = outputWire p2
-  correct = correct1 && correct2 && (input!i1 == input!i2)
+  correct = correct1 && correct2 && (σ!i1 == σ!i2)
 
 {-# NOINLINE counter #-}
 counter :: IORef Int

@@ -29,8 +29,8 @@ checkGate _ x ([a,b,c], [qL,qR,qO,qM,qC]) =
 {-@ satisfies :: n:Nat -> m:Nat -> VecN p m -> Circuit p n m -> Bool @-}
 -- Check that the input (values in wires) satisfies the circuit:
 satisfies :: (Eq p, Num p) => Int -> Int -> Vec p -> Circuit p -> Bool
-satisfies _ _ _     []     = True
-satisfies n m input (g:gs) = checkGate m input g && satisfies (n-1) m input gs
+satisfies _ _ _ []     = True
+satisfies n m σ (g:gs) = checkGate m σ g && satisfies (n-1) m σ gs
 
 
 {-@ transpose :: n:Nat -> m:Nat ->
