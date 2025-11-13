@@ -40,7 +40,7 @@ bar (ADDC x) = x
 bar _        = 0
 
 
--- this corresponds to Lemma 2. from the paper
+-- This corresponds to Lemma 1 from the paper
 {-@ labelLemma :: m0:Nat -> m:{Nat | m >= m0}
                -> e:ScalarDSL p
                -> ρ:NameValuation p
@@ -160,7 +160,7 @@ labelLemma m0 m e ρ λ σ π λ' e' σ' v = case e of
             (ih2, π2) = labelLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 v2
 
 
--- This is Theorem 2.
+-- This is Theorem 2 from the paper
 {-@ labelThm :: m:Nat
              -> e:ScalarDSL p
 

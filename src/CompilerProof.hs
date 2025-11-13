@@ -19,6 +19,7 @@ import DSL
 
 import Language.Haskell.Liquid.ProofCombinators
 
+-- This is Theorem 1 from the paper
 {-@ compileProof :: m:Nat ->
                     program:LDSL p (Btwn 0 m) ->
                     input:VecN p m ->
