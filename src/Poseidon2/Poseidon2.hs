@@ -109,11 +109,16 @@ partialRound ins state@(CONS h ts) rc = matMulInternal ins
 partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 
 
+
+someconstant :: Int
+someconstant = 1000
+
+
 -- poseidon2^π permutation
 {- permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
                 -> VecDSL' F_BLS12 (t ins) @-}
 {-@ permutation :: ins:Instance F_BLS12 -> VecDSL' F_BLS12 (t ins)
-                -> {v:DSL F_BLS12 | vlength v = t ins} @-}
+                -> {v:DSL F_BLS12 | vlength v = t ins && cost v <= some_constant * (t ins) } @-}
 permutation :: Instance F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12
 permutation ins@(Ins {..}) xs = step4
   where
@@ -132,15 +137,33 @@ permutation ins@(Ins {..}) xs = step4
 {- qualif MyTyped( v : DSL @(0)): ((DSL.typed v DSL.TF)) @-}
 
 
-{-@ fold' :: ins:Instance F_BLS12
-          -> (VecDSL' F_BLS12 (t ins) -> VecDSL' F_BLS12 (t ins) -> VecDSL' F_BLS12 (t ins))
+{-@ fold' :: ins:Instance F_BLS12 -> n:Nat -> m:Nat
+          -> f:(x1:VecDSL' F_BLS12 (t ins) -> x2:{VecDSL' F_BLS12 (t ins) | cost x2 <= m} -> {v:VecDSL' F_BLS12 (t ins) | cost v <= n  + cost  x1 +m } )
           -> z:VecDSL' F_BLS12 (t ins)
-          -> [VecDSL' F_BLS12 (t ins)]
-          -> VecDSL' F_BLS12 (t ins)
+          -> xs:[VecDSL' F_BLS12 (t ins)]
+          -> {v:VecDSL' F_BLS12 (t ins) | cost v <= n * (vlength xs)  + cost z  + m * (vlength xs) }
  @-}
-fold' :: Instance F_BLS12 -> (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12) -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
-fold' _ _ z []     = z
-fold' ins f z (x:xs) = fold' ins f (f z x) xs
+fold' :: Instance F_BLS12 -> Int ->  (DSL F_BLS12 -> DSL F_BLS12 -> DSL F_BLS12) -> DSL F_BLS12 -> [DSL F_BLS12] -> DSL F_BLS12
+fold' _ _ _ z []     = z
+fold' ins n f z (x:xs) = fold' ins n f (f z x) xs
+
+
+
+{-
+
+const (f z x) <= n + cost z + cost x
+
+{cost v <= n * (vlength (xs))  +  n + cost z + cost x}
+{cost v <= n * (vlength (x:xs))   + cost z + cost x}
+
+{cost v <= n * (vlength (xs))  + cost (f z x)}
+
+
+GOAL: {cost v <= n * (vlength xs) + n  + cost z}
+
+-----
+GOAL: {cost v <= n * (vlength (x:xs))  + cost z}
+-}
 
 
 
