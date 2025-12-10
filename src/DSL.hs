@@ -20,6 +20,7 @@ import Data.IORef
 import System.IO.Unsafe
 
 import Language.Haskell.Liquid.ProofCombinators
+import Language.Haskell.Liquid.Types.Types (DefV(measure))
 
 data Ty = TF | TBool | TVec Ty deriving (Eq, Ord, Show)
 {-@ type ScalarTy = {τ:Ty | scalarType τ} @-}
@@ -73,16 +74,29 @@ data DSL p =
 
 infixr 5 `CONS`
 
-{-@ data DSL p where
-      VAR :: name:Var -> ScalarTy -> DSL p
-      CONST :: p -> DSL p
-      BOOLEAN :: Bool -> DSL p
+{-@ measure dcost :: DSL p -> Nat @-}
+{-@ measure lcost :: DSL p -> Nat @-}
 
-      UN  :: (UnOp p)  -> DSL p -> DSL p
+{-@ measure isADDC  @-}
+isADDC :: UnOp p -> Bool
+isADDC (ADDC _) = True
+isADDC _        = False
+
+{-@ measure isConst @-}
+isConst :: DSL p -> Bool
+isConst CONST {} = True
+isConst _        = False
+
+{-@ data DSL p where
+      VAR :: name:Var -> ScalarTy -> {d:DSL p | dcost d = 0 && lcost d = 0 }
+      CONST :: p -> {d:DSL p | dcost d = 1  && lcost d = 0 }
+      BOOLEAN :: Bool -> {d:DSL p | dcost d = 1 && lcost d = 0 }
+
+      UN  :: uop:(UnOp p)  -> x:DSL p -> {d:DSL p | ((isADDC uop && isConst x) => dcost d = 1) }
       BIN :: (BinOp p) -> DSL p -> DSL p -> DSL p
 
-      NIL :: Ty -> DSL p
-      CONS :: (DSL p) -> (DSL p) -> DSL p
+      NIL :: Ty -> {d:DSL p | dcost d = 0 && lcost d = 0 }
+      CONS :: x:DSL p -> xs:DSL p -> {d:DSL p | dcost d = dcost x + dcost xs &&  }
 @-}
 
 {-@ measure vlength @-}
@@ -101,6 +115,10 @@ isVar _      = False
 {-@ boolFromIntegral :: a -> BoolDSL p @-}
 boolFromIntegral :: Integral a => a -> DSL p
 boolFromIntegral x = BOOLEAN (x /= 0)
+
+
+
+{-@ type TDSL p T UB = {d:DSL p | typed d T && tconst d <= UB} @-}
 
 
 {-@ reflect typed @-}
