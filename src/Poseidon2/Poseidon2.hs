@@ -148,11 +148,16 @@ partialRound ins state@(CONS h ts) rc = do
 partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 
 
+
+someconstant :: Int
+someconstant = 1000
+
+
 -- poseidon2^π permutation
 {- permutation :: ins:Instance p -> VecDSL' p (t ins)
                 -> VecDSL' p (t ins) @-}
 {-@ permutation :: ins:Instance p -> VecDSL' p (t ins)
-                -> PlinkST p (VecDSL' p (t ins)) @-}
+                -> PlinkST p ({v:VecDSL' p (t ins) | ccost v <= some_constant * (t ins)}) @-}
 permutation :: (Fractional p, Eq p) => Instance p -> DSL p -> PlinkST p (DSL p)
 permutation ins@(Ins {..}) xs = do
     let step1 = matMulExternal ins xs
@@ -162,13 +167,15 @@ permutation ins@(Ins {..}) xs = do
 
     return step4
 
-{-@ fold' :: n:Nat
-          -> (VecDSL' p n -> VecDSL' p n -> VecDSL' p n)
-          ->  VecDSL' p n -> [VecDSL' p n] ->  VecDSL' p n @-}
-fold' :: Int -> (DSL p -> DSL p -> DSL p)
-      -> DSL p -> [DSL p] -> DSL p
-fold' _ _ z []     = z
-fold' n f z (x:xs) = fold' n f (f z x) xs
+{-@ fold' :: n:Nat -> m1:Nat -> m2:Nat
+          -> f:(x1:VecDSL' p n -> x2:{VecDSL' p n | ccost x2 <= m2} -> {v:VecDSL' p n | ccost v <= m1  + ccost  x1 +m2 } )
+          -> z:VecDSL' p n
+          -> xs:[VecDSL' p n]
+          -> {v:VecDSL' p n | ccost v <= m1 * (vlength xs)  + ccost z  + m2 * (vlength xs) }
+@-}
+fold' :: Int -> Int -> Int -> (DSL p -> DSL p -> DSL p) -> DSL p -> [DSL p] -> DSL p
+fold' _ _  _  _ z []     = z
+fold' n m1 m2 f z (x:xs) = fold' n m1 m2 f (f z x) xs
 
 {-@ foldM' :: n:Nat
            -> (VecDSL' p n -> VecDSL' p n -> PlinkST p (VecDSL' p n))

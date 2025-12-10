@@ -20,6 +20,7 @@ import Data.IORef
 import System.IO.Unsafe
 
 import Language.Haskell.Liquid.ProofCombinators
+import Language.Haskell.Liquid.Types.Types (DefV(measure))
 
 data Ty = TF | TBool | TVec Ty deriving (Eq, Ord, Show)
 {-@ type ScalarTy = {τ:Ty | scalarType τ} @-}
@@ -73,16 +74,19 @@ data DSL p =
 
 infixr 5 `CONS`
 
+{-@ measure ccost :: DSL p -> Nat @-} -- (upper bound for) the constraint cost
+-- {-@ measure lcost :: DSL p -> Nat @-} -- (upper bound for) the lookup cost
+
 {-@ data DSL p where
-      VAR :: name:Var -> ScalarTy -> DSL p
-      CONST :: p -> DSL p
-      BOOL :: Bool -> DSL p
+      VAR :: name:Var -> ScalarTy -> { d:DSL p | ccost d = 1 }
+      CONST :: p -> { d:DSL p | ccost d = 1 }
+      BOOL :: Bool -> { d:DSL p | ccost d = 1 }
 
-      UN  :: (UnOp p)  -> DSL p -> DSL p
-      BIN :: (BinOp p) -> DSL p -> DSL p -> DSL p
+      UN  :: op:UnOp p -> x:DSL p -> { d:DSL p | ccost d = unOpCost op + ccost x }
+      BIN :: op:BinOp p -> x1:DSL p -> x2:DSL p -> { d:DSL p | ccost d = binOpCost op + ccost x1 + ccost x2 }
 
-      NIL :: Ty -> DSL p
-      CONS :: (DSL p) -> (DSL p) -> DSL p
+      NIL :: Ty -> {d:DSL p | ccost d = 0 }
+      CONS :: x:DSL p -> xs:DSL p -> {d:DSL p | ccost d = ccost x + ccost xs }
 @-}
 
 {-@ measure vlength @-}
@@ -101,6 +105,10 @@ isVar _      = False
 {-@ boolFromIntegral :: a -> BoolDSL p @-}
 boolFromIntegral :: Integral a => a -> DSL p
 boolFromIntegral x = BOOL (x /= 0)
+
+
+
+{-@ type TDSL p T UB = {d:DSL p | typed d T && ccost d <= UB} @-}
 
 
 {-@ reflect typed @-}
@@ -263,6 +271,22 @@ outputWire (LBOOLEAN p) = outputWire p
 outputWire (LEQA p1 p2) = outputWire p2
 
 
+{-@ measure unOpCost @-}
+{-@ unOpCost :: UnOp p -> Nat @-}
+unOpCost :: UnOp p -> Int
+unOpCost op = case op of
+  ADDC _ -> 1; MULC _ -> 1; NOT -> 2; UnsafeNOT -> 1
+  ISZERO -> 2; EQLC _ -> 2; BoolToF -> 0
+
+{-@ measure binOpCost @-}
+{-@ binOpCost :: BinOp p -> Nat @-}
+binOpCost :: BinOp p -> Int
+binOpCost op = case op of
+  ADD -> 1; SUB -> 1; MUL -> 1; DIV -> 2; LINCOMB _ _ -> 1
+  AND -> 3; OR  -> 3; XOR -> 3
+  UnsafeAND -> 1; UnsafeOR -> 1; UnsafeXOR -> 1
+  EQL -> 3
+
 -- the number of gates needed to compile the program into a circuit
 {-@ measure nGates @-}
 {-@ nGates :: LDSL p i -> Nat @-}
@@ -274,12 +298,8 @@ nGates (LCONST _ _)     = 1
 
 nGates (LDIV p1 p2 _ _) = 2 + nGates p1 + nGates p2
 
-nGates (LUN  op p  _)    = nGates p + case op of
-  ADDC _ -> 1; MULC _ -> 1; NOT -> 2; UnsafeNOT -> 1
-nGates (LBIN op p1 p2 _) = nGates p1 + nGates p2 + case op of
-  ADD -> 1; SUB -> 1; MUL -> 1; LINCOMB _ _ -> 1
-  AND -> 3; OR  -> 3; XOR -> 3
-  UnsafeAND -> 1; UnsafeOR -> 1; UnsafeXOR -> 1
+nGates (LUN  op p  _)    = nGates p + unOpCost op
+nGates (LBIN op p1 p2 _) = nGates p1 + nGates p2 + binOpCost op
 
 nGates (LEQLC p1 _ _ _) = 2 + nGates p1
 
