@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneDeriving, LambdaCase #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
@@ -74,19 +74,18 @@ data DSL p =
 
 infixr 5 `CONS`
 
-{-@ measure ccost :: DSL p -> Nat @-} -- (upper bound for) the constraint cost
 -- {-@ measure lcost :: DSL p -> Nat @-} -- (upper bound for) the lookup cost
 
 {-@ data DSL p where
-      VAR :: name:Var -> ScalarTy -> { d:DSL p | ccost d = 1 }
-      CONST :: p -> { d:DSL p | ccost d = 1 }
-      BOOL :: Bool -> { d:DSL p | ccost d = 1 }
+      VAR :: name:Var -> ScalarTy -> DSL p
+      CONST :: p -> DSL p
+      BOOL :: Bool -> DSL p
 
-      UN  :: op:UnOp p -> x:DSL p -> { d:DSL p | ccost d = unOpCost op + ccost x }
-      BIN :: op:BinOp p -> x1:DSL p -> x2:DSL p -> { d:DSL p | ccost d = binOpCost op + ccost x1 + ccost x2 }
+      UN  :: op:UnOp p -> x:DSL p -> DSL p
+      BIN :: op:BinOp p -> x1:DSL p -> x2:DSL p -> DSL p
 
-      NIL :: Ty -> {d:DSL p | ccost d = 0 }
-      CONS :: x:DSL p -> xs:DSL p -> {d:DSL p | ccost d = ccost x + ccost xs }
+      NIL :: Ty -> DSL p
+      CONS :: x:DSL p -> xs:DSL p -> DSL p
 @-}
 
 {-@ measure vlength @-}
@@ -100,6 +99,21 @@ vlength _           = 1
 isVar :: DSL p -> Bool
 isVar VAR {} = True
 isVar _      = False
+
+
+{-@ measure ccost @-}
+{-@ ccost :: DSL p -> Nat @-}
+ccost :: DSL p -> Int
+ccost = \case
+  VAR _ _ -> 1
+  CONST _ -> 1
+  BOOL  _ -> 1
+
+  UN op x -> unOpCost op + ccost x
+  BIN op x1 x2 -> binOpCost op + ccost x1 + ccost x2
+
+  NIL _ -> 0
+  CONS x xs -> ccost x + ccost xs
 
 
 {-@ boolFromIntegral :: a -> BoolDSL p @-}
