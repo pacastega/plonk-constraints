@@ -105,7 +105,9 @@ isVar _      = False
 {-@ ccost :: DSL p -> Nat @-}
 ccost :: DSL p -> Int
 ccost = \case
-  VAR _ _ -> 1
+  VAR _ τ -> case τ of
+    TF -> 0
+    TBool -> 1
   CONST _ -> 1
   BOOL  _ -> 1
 
