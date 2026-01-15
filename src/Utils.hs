@@ -51,7 +51,7 @@ mkList3 x y z = [x, y, z]
 {-@ map' :: (a -> b) -> xs:[a] -> {ys:[b] | len ys = len xs} @-}
 map' :: (a -> b) -> [a] -> [b]
 map' _ []     = []
-map' f (x:xs) = f x : map f xs
+map' f (x:xs) = f x : map' f xs
 
 {-@ zipWith' :: (a -> b -> c)
              -> xs:[a]
