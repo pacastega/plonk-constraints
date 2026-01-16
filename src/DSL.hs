@@ -117,14 +117,16 @@ ccost = \case
   NIL _ -> 0
   CONS x xs -> ccost x + ccost xs
 
+{-@ reflect ccosts @-}
+{-@ ccosts :: [DSL p] -> Nat @-}
+ccosts :: [DSL p] -> Int
+ccosts []     = 0
+ccosts (x:xs) = ccost x + ccosts xs
+
 
 {-@ boolFromIntegral :: a -> BoolDSL p @-}
 boolFromIntegral :: Integral a => a -> DSL p
 boolFromIntegral x = BOOL (x /= 0)
-
-
-
-{-@ type TDSL p T UB = {d:DSL p | typed d T && ccost d <= UB} @-}
 
 
 {-@ reflect typed @-}
