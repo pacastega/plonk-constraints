@@ -19,7 +19,7 @@ import DSL
 
 {-@ data Instance fp = Ins { t :: ValidT
                            , d :: ValidD
-                           , matInternalDiag :: VecDSL' fp t
+                           , matInternalDiag :: {v:VecDSL' fp t | ccost v = t}
                            , roundConstants_f1 :: [VecDSL'  fp t]
                            , roundConstants_p  :: [FieldDSL fp  ]
                            , roundConstants_f2 :: [VecDSL'  fp t]
