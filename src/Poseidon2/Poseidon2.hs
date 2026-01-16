@@ -13,14 +13,54 @@ import Poseidon2.Poseidon2Cnst
 
 import Language.Haskell.Liquid.ProofCombinators
 
-{-@ matMulInternal :: ins:Instance p -> VecDSL' p (t ins)
-                   -> VecDSL' p (t ins) @-}
+{-@ vZipWithCost :: τ1:Ty -> τ2:Ty -> τ3:Ty
+                 -> n:Nat
+                 -> f:({a:DSL p | typed a τ1} -> {b:DSL p | typed b τ2} ->
+                       {c:DSL p | typed c τ3 && ccost c = n + ccost a + ccost b})
+                 -> xs:VecDSL p τ1 -> {ys:VecDSL p τ2 | vlength ys = vlength xs}
+                 -> { ccost (vZipWith τ1 τ2 τ3 f xs ys) =
+                      n*(vlength xs) + ccost xs + ccost ys } @-}
+vZipWithCost :: Ty -> Ty -> Ty
+             -> Int
+             -> (DSL p -> DSL p -> DSL p)
+             -> DSL p -> DSL p
+             -> Proof
+vZipWithCost _  _  _  _ _ (NIL _)     (NIL _)     = trivial
+vZipWithCost τ1 τ2 τ3 n f (CONS x xs) (CONS y ys)
+    = vZipWithCost τ1 τ2 τ3 n f xs ys ? ccost (f x y)
+
+
+{-@ vSumCost :: xs:VecDSL p TF
+             -> { ccost (vSum xs) = 1 + vlength xs + ccost xs } @-}
+vSumCost :: Num p => DSL p -> Proof
+vSumCost (NIL _) = trivial
+vSumCost (CONS x xs) = vSumCost xs
+
+
+{-@ mapCost :: m:Nat -> n:Nat
+            -> f:(x:DSL p -> {y:DSL p | ccost y <= m*ccost x + n})
+            -> xs:[DSL p]
+            -> { ccosts (map' f xs) <= m*ccosts xs + n*(len xs) } @-}
+mapCost :: Int -> Int -> (DSL p -> DSL p) -> [DSL p] -> Proof
+mapCost m n f l@[] = trivial
+mapCost m n f l@(x:xs)
+  =   ccosts (map' f (x:xs))
+  === ccosts (f x : map' f xs)
+      ? mapCost m n f xs
+  =<= (m*ccost x + n) + (m*ccosts xs + n*length xs)
+  === m*(ccosts (x:xs)) + n*(length (x:xs))
+  *** QED
+
+
+{-@ matMulInternal :: ins:Instance p -> xs:VecDSL' p (t ins)
+                   -> {v:VecDSL' p (t ins) | ccost v <=
+                         ccost xs + (t ins)*(ccost xs + 4 + (t ins))} @-}
 matMulInternal :: Num p => Instance p -> DSL p -> DSL p
-matMulInternal (Ins {..}) xs = case t of
+matMulInternal ins@(Ins {..}) xs = case t of
   2 -> case xs of
     CONS x0 (CONS x1 (NIL TF)) ->
       fromList TF [ ((CONST 2 `times` x0) `plus` x1)
-               , (x0 `plus` (CONST 3 `times` x1)) ]
+                  , (x0 `plus` (CONST 3 `times` x1)) ]
     -- [x0,x1] -> [2*x0+x1, x0+3*x1], i.e. multiplying by the matrix
     -- [2 1]
     -- [1 3]
@@ -34,12 +74,22 @@ matMulInternal (Ins {..}) xs = case t of
     -- [2 1 1]
     -- [1 2 1]
     -- [1 1 3]
-  (4;8;12;16;20;24) -> vZipWith TF TF TF (\x μ -> sum `plus` (μ `times` x)) xs matInternalDiag
-    where sum = vSum xs
+  (4;8;12;16;20;24) ->
+    vZipWithCost TF TF TF (ccost sum + 2) zipFn xs matInternalDiag
+    ?? vZipWith TF TF TF zipFn xs matInternalDiag
+    where
+      {-@ sum :: {s:FieldDSL p | ccost s = (t ins) + 1 + ccost xs} @-}
+      sum = vSum xs ? vSumCost xs
+
+      {-@ zipFn :: x:FieldDSL p -> μ:FieldDSL p
+                -> {v:FieldDSL p | ccost v = ccost sum + 2 + ccost x + ccost μ} @-}
+      zipFn x μ = sum `plus` (μ `times` x)
   _ -> error "this value for t is not supported"
 
-{-@ matMulExternal :: ins:Instance p -> VecDSL' p (t ins)
-                   -> VecDSL' p (t ins) @-}
+
+{-@ matMulExternal :: ins:Instance p -> xs:VecDSL' p (t ins)
+                   -> {v:VecDSL' p (t ins) | ccost v <=
+                         ccost xs + 2*(t ins)*(ccost xs + 4 + (t ins))} @-}
 matMulExternal :: Num p => Instance p -> DSL p -> DSL p
 matMulExternal (Ins {..}) xs = case t of
   2 -> case xs of
@@ -54,13 +104,14 @@ matMulExternal (Ins {..}) xs = case t of
   (8;12;16;20;24) -> matMulM4' xs
   _ -> error "this value for t is not supported"
 
-{-@ matMulM4' :: {v:VecDSL p TF | (vlength v) mod 4 = 0}
-              -> {res:VecDSL p TF | vlength res = vlength v} @-}
+{-@ matMulM4' :: xs:{VecDSL p TF | (vlength xs) mod 4 = 0}
+              -> {res:VecDSL p TF | vlength res = vlength xs
+                    && ccost res <= ccost xs + 2*(vlength xs)*(ccost xs + 4 + (vlength xs))} @-}
 matMulM4' :: forall p. Num p => DSL p -> DSL p
 matMulM4' xs = vConcat TF step2 ? lengthsLemma 4 step2 where
 
   -- apply matMulM4 separately to each 4-element chunk:
-  step1 = map matMulM4 (vChunk TF 4 xs)
+  step1 = map' matMulM4 (vChunk TF 4 xs)
   step1 :: [DSL p]
   {-@ step1 :: {l:[VecDSL' p 4] | 4 * len l = vlength xs} @-}
 
@@ -70,12 +121,13 @@ matMulM4' xs = vConcat TF step2 ? lengthsLemma 4 step2 where
   {-@ sums :: VecDSL' p 4 @-}
 
   -- add the sums to each 4-element chunk:
-  step2 = map (vZipWith TF TF TF plus sums) step1
+  step2 = map' (vZipWith TF TF TF plus sums) step1
   step2 :: [DSL p]
   {-@ step2 :: {l:[VecDSL' p 4] | 4 * len l = vlength xs} @-}
 
 
-{-@ matMulM4 :: VecDSL' p 4 -> VecDSL' p 4 @-}
+{-@ matMulM4 :: xs:VecDSL' p 4
+             -> {v:VecDSL' p 4 | ccost v <= 22 + 8*ccost xs} @-}
 matMulM4 :: Num p => DSL p -> DSL p
 matMulM4 (CONS x0 (CONS x1 (CONS x2 (CONS x3 (NIL TF))))) =
    fromList TF [t6, t5, t7, t4]
@@ -167,15 +219,15 @@ permutation ins@(Ins {..}) xs = do
 
     return step4
 
-{-@ fold' :: n:Nat -> m1:Nat -> m2:Nat
-          -> f:(x1:VecDSL' p n -> x2:{VecDSL' p n | ccost x2 <= m2} -> {v:VecDSL' p n | ccost v <= m1  + ccost  x1 +m2 } )
+{-@ fold' :: n:Nat -> m:Nat -> m2:Nat
+          -> f:(x1:VecDSL' p n -> {x2:VecDSL' p n | ccost x2 <= m2} ->
+                 {v:VecDSL' p n | ccost v <= ccost x1 + m + m2})
           -> z:VecDSL' p n
-          -> xs:[VecDSL' p n]
-          -> {v:VecDSL' p n | ccost v <= m1 * (vlength xs)  + ccost z  + m2 * (vlength xs) }
-@-}
+          -> xs:[{v:VecDSL' p n | ccost v <= m2}]
+          -> {v:VecDSL' p n | ccost v <= ccost z + (m + m2) * (len xs)} @-}
 fold' :: Int -> Int -> Int -> (DSL p -> DSL p -> DSL p) -> DSL p -> [DSL p] -> DSL p
-fold' _ _  _  _ z []     = z
-fold' n m1 m2 f z (x:xs) = fold' n m1 m2 f (f z x) xs
+fold' _ _ _  _ z []     = z
+fold' n m m2 f z (x:xs) = fold' n m m2 f (f z x) xs
 
 {-@ foldM' :: n:Nat
            -> (VecDSL' p n -> VecDSL' p n -> PlinkST p (VecDSL' p n))
