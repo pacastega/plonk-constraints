@@ -16,30 +16,37 @@ import PlinkST
 import Language.Haskell.Liquid.ProofCombinators
 
 -- Aliases for arithmetic operations -------------------------------------------
+{-@ reflect plus @-}
 {-@ plus :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
 plus :: DSL p -> DSL p -> DSL p
 plus = BIN ADD
 
+{-@ reflect minus @-}
 {-@ minus :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
 minus :: DSL p -> DSL p -> DSL p
 minus = BIN SUB
 
+{-@ reflect times @-}
 {-@ times :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
 times :: DSL p -> DSL p -> DSL p
 times = BIN MUL
 
+{-@ reflect over @-}
 {-@ over :: FieldDSL p -> FieldDSL p -> FieldDSL p @-}
 over ::  DSL p -> DSL p -> DSL p
 over = BIN DIV
 
+{-@ reflect (/\) @-}
 {-@ (/\) :: BoolDSL p -> BoolDSL p -> BoolDSL p @-}
 (/\) :: DSL p -> DSL p -> DSL p
 (/\) = BIN AND
 
+{-@ reflect (\/) @-}
 {-@ (\/) :: BoolDSL p -> BoolDSL p -> BoolDSL p @-}
 (\/) :: DSL p -> DSL p -> DSL p
 (\/) = BIN OR
 
+{-@ reflect (=?) @-}
 {-@ (=?) :: FieldDSL p -> FieldDSL p -> BoolDSL p @-}
 (=?) :: DSL p -> DSL p -> DSL p
 (=?) = BIN EQL
@@ -74,6 +81,7 @@ yield e = return e
 
 
 -- List-like functions ---------------------------------------------------------
+{-@ reflect fromList @-}
 {-@ fromList :: τ:Ty
              -> l:[{v:DSL p | typed v τ}]
              -> {v:VecDSL p τ | vlength v = len l} @-}
@@ -150,6 +158,7 @@ vZip :: Ty -> DSL p -> DSL p -> [(DSL p, DSL p)]
 vZip τ (NIL _)     (NIL _)     = []
 vZip τ (CONS x xs) (CONS y ys) = (x,y) : vZip τ xs ys
 
+{-@ reflect vZipWith @-}
 {-@ vZipWith :: τ1:Ty -> τ2:Ty -> τ3:Ty
              -> op:({a:DSL p | typed a τ1} ->
                     {b:DSL p | typed b τ2} ->
@@ -185,6 +194,7 @@ vMapM τ1 τ2 op (CONS x xs) = do
   pure $ (CONS x' xs') ? (typed x' τ2) ? (typed xs' (TVec τ2))
 
 
+{-@ reflect vSum @-}
 {-@ vSum :: VecDSL p TF -> FieldDSL p @-}
 vSum :: Num p => DSL p -> DSL p
 vSum (NIL _) = CONST 0
