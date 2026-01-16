@@ -111,12 +111,18 @@ matMulM4' :: forall p. Num p => DSL p -> DSL p
 matMulM4' xs = vConcat TF step2 ? lengthsLemma 4 step2 where
 
   -- apply matMulM4 separately to each 4-element chunk:
-  step1 = map' matMulM4 (vChunk TF 4 xs)
+  step1 = map' matMulM4 (vChunk TF 4 xs) ? mapCost 8 22 matMulM4 (vChunk TF 4 xs)
   step1 :: [DSL p]
   {-@ step1 :: {l:[VecDSL' p 4] | 4 * len l = vlength xs} @-}
 
   -- add components in four groups depending on their remainder modulo 4:
-  sums = fold' 4 (vZipWith TF TF TF plus) (vReplicate TF 4 (CONST 0)) step1
+  sums = fold' 4 4 (2 * vlength xs) (vZipWith TF TF TF plus) (vReplicate TF 4 (CONST 0)) step1
+  -- first 4 means it operates on 4-long lists
+  -- second 4 means that each application of the function (vZipWith TF TF TF plus) introduces
+  -- 4 new constraints
+  -- 2 * vlength xs is because 8 new constraints are introduced for each 4-element
+  -- chunk, of which there are vlength xs / 4
+
   sums :: DSL p
   {-@ sums :: VecDSL' p 4 @-}
 
@@ -199,17 +205,11 @@ partialRound ins state@(CONS h ts) rc = do
   yield res ? typed res (TVec TF)
 partialRound ins (NIL _) _ = tGT0 ins ?? error "impossible since t > 0"
 
-
-
-someconstant :: Int
-someconstant = 1000
-
-
 -- poseidon2^π permutation
 {- permutation :: ins:Instance p -> VecDSL' p (t ins)
                 -> VecDSL' p (t ins) @-}
 {-@ permutation :: ins:Instance p -> VecDSL' p (t ins)
-                -> PlinkST p ({v:VecDSL' p (t ins) | ccost v <= some_constant * (t ins)}) @-}
+                -> PlinkST p (VecDSL' p (t ins)) @-}
 permutation :: (Fractional p, Eq p) => Instance p -> DSL p -> PlinkST p (DSL p)
 permutation ins@(Ins {..}) xs = do
     let step1 = matMulExternal ins xs
