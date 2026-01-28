@@ -45,7 +45,6 @@ compileProofE m e σ = case e of
                     compileProofE m e2 σ ?
                     satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
     where n1 = nGatesE e1; n2 = nGatesE e2
-  --FIXME: use or-patterns
   LUN op e1 i -> case op of
     ADDC _    -> compileProofE m e1 σ
     MULC _    -> compileProofE m e1 σ
