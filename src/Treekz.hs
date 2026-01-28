@@ -1,5 +1,6 @@
+{-# LANGUAGE LambdaCase #-}
 {-@ LIQUID "--reflection" @-}
-module Treekz where
+module Treekz (genTikz, genTikzs, parse, intro, outro) where
 
 import Data.List (intercalate)
 import DSL
@@ -37,43 +38,51 @@ genTikzs r delta trees = concatMap aux trees where
              genTikz r delta (0,0) tree ++
              "\\end{tikzpicture}\n\\newpage\n"
 
-parse :: (Show p, Show i) => LDSL p i -> Tree String
-parse p = case p of
+parse :: (Show p, Show i) => LProg p i -> Tree String
+parse (LExpr e) = parseE e
+parse (LAss a) = parseA a
+
+parseE :: (Show p, Show i) => LDSL p i -> Tree String
+parseE = \case
   LWIRE _ i      -> N (wire [i])                []
 
   LVAR s _ i     -> N ("$" ++ s ++ "$" ++ wire [i])         []
   LCONST x i     -> N (show x ++ wire [i])      []
 
-  LDIV p1 p2 _ i -> N ("$/$" ++ wire [i])       [parse p1, parse p2]
+  LDIV p1 p2 _ i -> N ("$/$" ++ wire [i])       [parseE p1, parseE p2]
 
   LUN op p1 i -> case op of
-    ADDC k    -> N ("$+" ++ show k ++ "$" ++ wire [i]) [parse p1]
-    MULC k    -> N ("$*" ++ show k ++ "$" ++ wire [i]) [parse p1]
-    NOT       -> N ("$\\neg$" ++ wire [i])             [parse p1]
-    UnsafeNOT -> N ("$\\hat\\neg$" ++ wire [i])        [parse p1]
+    ADDC k    -> N ("$+" ++ show k ++ "$" ++ wire [i]) [parseE p1]
+    MULC k    -> N ("$*" ++ show k ++ "$" ++ wire [i]) [parseE p1]
+    NOT       -> N ("$\\neg$" ++ wire [i])             [parseE p1]
+    UnsafeNOT -> N ("$\\hat\\neg$" ++ wire [i])        [parseE p1]
 
   LBIN op p1 p2 i -> case op of
-    ADD -> N ("$+$" ++ wire [i])       [parse p1, parse p2]
-    SUB -> N ("$-$" ++ wire [i])       [parse p1, parse p2]
-    MUL -> N ("$\\times$" ++ wire [i]) [parse p1, parse p2]
+    ADD -> N ("$+$" ++ wire [i])       [parseE p1, parseE p2]
+    SUB -> N ("$-$" ++ wire [i])       [parseE p1, parseE p2]
+    MUL -> N ("$\\times$" ++ wire [i]) [parseE p1, parseE p2]
     LINCOMB k1 k2 ->
       N ("$" ++ show k1 ++ "\\cdot + " ++ show k2 ++ "\\cdot$" ++ wire [i])
-        [parse p1, parse p2]
-    AND -> N ("$\\wedge$" ++ wire [i]) [parse p1, parse p2]
-    OR  -> N ("$\\vee$" ++ wire [i])   [parse p1, parse p2]
-    XOR -> N ("$\\oplus$" ++ wire [i]) [parse p1, parse p2]
+        [parseE p1, parseE p2]
+    AND -> N ("$\\wedge$" ++ wire [i]) [parseE p1, parseE p2]
+    OR  -> N ("$\\vee$" ++ wire [i])   [parseE p1, parseE p2]
+    XOR -> N ("$\\oplus$" ++ wire [i]) [parseE p1, parseE p2]
 
-    UnsafeAND -> N ("$\\hat\\wedge$" ++ wire [i]) [parse p1, parse p2]
-    UnsafeOR  -> N ("$\\hat\\vee$" ++ wire [i])   [parse p1, parse p2]
-    UnsafeXOR -> N ("$\\hat\\oplus$" ++ wire [i]) [parse p1, parse p2]
+    UnsafeAND -> N ("$\\hat\\wedge$" ++ wire [i]) [parseE p1, parseE p2]
+    UnsafeOR  -> N ("$\\hat\\vee$" ++ wire [i])   [parseE p1, parseE p2]
+    UnsafeXOR -> N ("$\\hat\\oplus$" ++ wire [i]) [parseE p1, parseE p2]
 
-  LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parse p1]
+  LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parseE p1]
 
-  LNZERO   p1 w  -> N ("$\\neq 0$" ++ wire [w]) [parse p1]
-  LBOOLEAN p1    -> N ("$\\in \\{0,1\\}$") [parse p1]
-  LEQA     p1 p2 -> N ("$\\overset{!}{=}$") [parse p1, parse p2]
-  where
-    wire l = "\\textcolor{red}{\\tiny " ++ (intercalate "," (map show l)) ++ "}"
+parseA :: (Show p, Show i) => LAss p i -> Tree String
+parseA = \case
+  LNZERO   p1 w  -> N ("$\\neq 0$" ++ wire [w]) [parseE p1]
+  LBOOLEAN p1    -> N ("$\\in \\{0,1\\}$") [parseE p1]
+  LEQA     p1 p2 -> N ("$\\overset{!}{=}$") [parseE p1, parseE p2]
+
+
+wire :: Show i => [i] -> String
+wire l = "\\textcolor{red}{\\tiny " ++ (intercalate "," (map show l)) ++ "}"
 
 norm :: Pos -> Float
 norm (x, y) = sqrt (x*x + y*y)

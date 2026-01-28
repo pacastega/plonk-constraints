@@ -45,10 +45,10 @@ size (CONS h ts) = 1 + size h + size ts
 {-@ reflect label @-}
 {-@ label :: TypedDSL p
           -> Store p
-          -> (m:Nat, [LDSL p Int], [LDSL p Int])
+          -> (m:Nat, [LDSL p Int], [LAss p Int])
                   <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
-                   \_ m -> {l:[LDSL p (Btwn 0 m)] | true}> @-}
-label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
+                   \_ m -> {l:[LAss p (Btwn 0 m)] | true}> @-}
+label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LAss p Int])
 label program store = (m, labeledPrograms, labeledStore) where
   (m', labeledStore, λ') = labelStore store 0 M.empty
   (m, labeledPrograms, _λ) = label' program m' λ'
@@ -59,14 +59,14 @@ label program store = (m, labeledPrograms, labeledStore) where
 
 type ExtLabelEnv p i = M.Map (DSL p) i
 
-label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LDSL p Int])
+label :: (Num p, Ord p) => DSL p -> Store p -> (Int, [LDSL p Int], [LAss p Int])
 label program store = (m, labeledPrograms, labeledStore) where
   (m', labeledStore, λ') = labelStoreCSE store 0 M.empty
   (m, labeledPrograms, _λ) = labelCSE' program m' λ'
 
 labelStoreCSE :: (Num p, Ord p)
               => Store p -> Int -> ExtLabelEnv p Int
-              -> (Int, [LDSL p Int], ExtLabelEnv p Int)
+              -> (Int, [LAss p Int], ExtLabelEnv p Int)
 labelStoreCSE [] nextIndex λ = (nextIndex, [], λ)
 labelStoreCSE (def:ss) nextIndex λ =
   let i = nextIndex
@@ -74,8 +74,8 @@ labelStoreCSE (def:ss) nextIndex λ =
       (i'', s'', λ'') = labelStoreCSE ss i' λ'
   in (i'', def' ++ s'', λ'')
 
-labelStoreCSE' :: (Num p, Ord p) => Assertion p -> Int -> ExtLabelEnv p Int
-            -> (Int, [LDSL p Int], ExtLabelEnv p Int)
+labelStoreCSE' :: (Num p, Ord p) => LAss p -> Int -> ExtLabelEnv p Int
+            -> (Int, [LAss p Int], ExtLabelEnv p Int)
 labelStoreCSE' assertion nextIndex λ = let i = nextIndex in case assertion of
     NZERO p1  -> (w'+1, [LNZERO p1' w'], λ')
       where (w', [p1'], λ') = labelCSE' p1 i λ
@@ -113,10 +113,6 @@ withOutputWire _ i program = case program of
   LBIN op p1 p2 _ -> LBIN op p1 p2 i
 
   LEQLC   p1 k w _ -> LEQLC p1 k w i
-
-  LNZERO p1 w  -> LNZERO p1 w
-  LBOOLEAN  p1 -> LBOOLEAN p1
-  LEQA   p1 p2 -> LEQA p1 p2
 
 
 labelCSE' :: (Num p, Ord p) => DSL p -> Int -> ExtLabelEnv p Int
@@ -161,11 +157,11 @@ labelCSE' p nextIndex λ = case M.lookup p λ of
 
 {-@ reflect labelStore @-}
 {-@ labelStore :: Store p -> m0:Nat -> LabelEnv p (Btwn 0 m0)
-               -> (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
-                      <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
+               -> (m:{Int | m >= m0}, [LAss p Int], LabelEnv p Int)
+                      <\m   -> {l:[LAss p (Btwn 0 m)] | true},
                        \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}> @-}
 labelStore :: (Num p, Ord p) =>
-              Store p -> Int -> LabelEnv p Int -> (Int, [LDSL p Int], LabelEnv p Int)
+              Store p -> Int -> LabelEnv p Int -> (Int, [LAss p Int], LabelEnv p Int)
 labelStore [] nextIndex λ = (nextIndex, [], λ)
 labelStore (def:ss) nextIndex λ =
   let i = nextIndex
@@ -219,11 +215,11 @@ label' p nextIndex λ = let i = nextIndex in case p of
 {-@ reflect labelAssertion @-}
 {-@ labelAssertion :: assertion:(Assertion p) ->
                    m0:Nat -> LabelEnv p (Btwn 0 m0) ->
-                   (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
-             <\m   -> {l:[LDSL p (Btwn 0 m)] | true},
-              \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}> @-}
+                   (m:{Int | m >= m0}, [LAss p Int], LabelEnv p Int)
+             <\m   -> {l:[LAss p (Btwn 0 m)] | true},
+              \_ m -> {v:LabelEnv p (Btwn 0 m) | true}> @-}
 labelAssertion :: (Num p, Ord p) => Assertion p -> Int -> LabelEnv p Int
-            -> (Int, [LDSL p Int], LabelEnv p Int)
+            -> (Int, [LAss p Int], LabelEnv p Int)
 labelAssertion assertion nextIndex λ = let i = nextIndex in case assertion of
     NZERO p1  -> (w'+1, [LNZERO p1' w'], λ')
       where (w', [p1'], λ') = label' p1 i λ

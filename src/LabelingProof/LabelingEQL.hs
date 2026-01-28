@@ -43,9 +43,9 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ  = (m1, mkList1 p1', λ1)}
                   -> p2':{LDSL p (Btwn 0 m2) | label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
                   -> e':{LDSL p (Btwn 0 m) | label' (BIN EQL p1 p2) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGen' m ρ σ e'}
-                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = witnessGen' m ρ σ p1'}
-                  -> σ2:{M.Map (Btwn 0 m2) p | Just σ2 = witnessGen' m ρ σ1 p2'}
+                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
+                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = witnessGenE' m ρ σ p1'}
+                  -> σ2:{M.Map (Btwn 0 m2) p | Just σ2 = witnessGenE' m ρ σ1 p2'}
 
 
                   -> v:p
@@ -103,7 +103,7 @@ labelProofEQL m0 _m1 _m2 m p1 p2 ρ λ _λ1 λ2 σ _π _λ' _p1' _p2' e' σ' _σ
     where (m3, sub', _) = label' (BIN SUB p1 p2) m0 λ
           (LEQLC _ _ w i) = e'
           osub = case sub' of [x] -> x
-          σ3 = case witnessGen' m3 ρ σ osub  ? wgLemma m3 m ρ osub σ  of Just s -> s
+          σ3 = case witnessGenE' m3 ρ σ osub  ? wgLemma m3 m ρ osub σ  of Just s -> s
           h3 =   eval (BIN EQL p1 p2) ρ
              === liftA2' eqlFn (eval p1 ρ) (eval p2 ρ) ? ih1 ? ih2
              === liftA2' eqlFn (Just (VF v1)) (Just (VF v2))
