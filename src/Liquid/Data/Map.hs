@@ -59,6 +59,10 @@ fromList :: [(k,v)] -> Map k v
 fromList []        = MTip
 fromList ((k,v):m) = MBin k v (fromList m)
 
+{-@ reflect member @-}
+member :: Eq k => k -> Map k v -> Bool
+member k m = elem' k (keys m)
+
 {-@ reflect keys @-}
 keys :: Map k v -> [k]
 keys MTip         = []
@@ -70,6 +74,6 @@ elems MTip         = []
 elems (MBin k v m) = v : elems m
 
 {-@ reflect lookup' @-}
-{-@ lookup' :: key:k -> {m:Map k v | elem' key (keys m)} -> v @-}
+{-@ lookup' :: key:k -> {m:Map k v | member key m} -> v @-}
 lookup' :: Eq k => k -> Map k v -> v
 lookup' k' (MBin k v m) = if k == k' then v else lookup' k' m

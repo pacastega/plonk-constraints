@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE StandaloneDeriving, CPP #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
@@ -15,7 +15,12 @@ import Circuits
 import Utils
 import Vec
 
+#if LiquidOn
+import qualified Liquid.Data.Map as M
+#else
 import qualified Data.Map as M
+#endif
+
 import Data.IORef
 import System.IO.Unsafe
 
@@ -369,87 +374,124 @@ compileA m (LEQA p1 p2) = c
     c = append' (equalGate m [i1, i2]) c'
 
 
+{-@ reflect closedExpr @-}
+{-@ closedExpr :: m:Nat -> σ:WireValuation p m -> e:LDSL p (Btwn 0 m) -> Bool @-}
+closedExpr :: Int -> WireValuation p -> LDSL p Int -> Bool
+closedExpr m σ e = case e of
+  LWIRE  _ i -> True
+  LVAR _ τ i -> case τ of
+    TF -> True
+    TBool -> M.member i σ
+  LCONST _ i -> M.member i σ
+
+  LDIV e1 e2 w i -> M.member w σ && M.member i σ
+                 && M.member (outputWire e1) σ && closedExpr m σ e1
+                 && M.member (outputWire e2) σ && closedExpr m σ e2
+
+  LUN  _ e1    i -> M.member i σ
+                 && M.member (outputWire e1) σ && closedExpr m σ e1
+  LBIN _ e1 e2 i -> M.member i σ
+                 && M.member (outputWire e1) σ && closedExpr m σ e1
+                 && M.member (outputWire e2) σ && closedExpr m σ e2
+
+  LEQLC e1 _ w i -> M.member i σ && M.member w σ
+                 && M.member (outputWire e1) σ && closedExpr m σ e1
+
+
+{-@ reflect closedAssertion @-}
+{-@ closedAssertion :: m:Nat -> WireValuation p m -> a:LAss p (Btwn 0 m) -> Bool @-}
+closedAssertion :: Int -> WireValuation p -> LAss p Int -> Bool
+closedAssertion m σ a = case a of
+  LNZERO e1 i -> M.member i σ && M.member (outputWire e1) σ && closedExpr m σ e1
+  LBOOLEAN e1 -> M.member (outputWire e1) σ && closedExpr m σ e1
+  LEQA  e1 e2 -> M.member (outputWire e1) σ && closedExpr m σ e1
+              && M.member (outputWire e2) σ && closedExpr m σ e2
+
+
+{-@ reflect closedProg @-}
+{-@ closedProg :: m:Nat -> WireValuation p m -> LProg p (Btwn 0 m) -> Bool @-}
+closedProg :: Int -> WireValuation p -> LProg p Int -> Bool
+closedProg m σ (LExpr e) = closedExpr m σ e
+closedProg m σ (LAss a) = closedAssertion m σ a
+
+
 {-@ reflect coherent @-}
-{-@ coherent :: m:Nat -> LProg p (Btwn 0 m) -> VecN p m -> Bool @-}
-coherent :: (Eq p, Fractional p) => Int -> LProg p Int -> Vec p -> Bool
+{-@ coherent :: m:Nat -> pr:LProg p (Btwn 0 m)
+             -> {σ:WireValuation p m | closedProg m σ pr} -> Bool @-}
+coherent :: (Eq p, Fractional p) => Int -> LProg p Int -> WireValuation p -> Bool
 coherent m (LExpr e) σ = coherentE m e σ
 coherent m (LAss a) σ = coherentA m a σ
 
 {-@ reflect coherentE @-}
-{-@ coherentE :: m:Nat -> LDSL p (Btwn 0 m) -> VecN p m -> Bool @-}
-coherentE :: (Eq p, Fractional p) => Int -> LDSL p Int -> Vec p -> Bool
-coherentE _ (LWIRE _ _)  _ = True
-coherentE _ (LVAR _ τ i) σ = case τ of
-  TF    -> True          -- field-typed variables don't have restrictions
-  TBool -> boolean (σ!i) -- bool-typed variables must be boolean
-coherentE _ (LCONST x i) σ = σ!i == x
+{-@ coherentE :: m:Nat -> e:LDSL p (Btwn 0 m)
+              -> {σ:WireValuation p m | closedExpr m σ e} -> Bool @-}
+coherentE :: (Eq p, Fractional p) => Int -> LDSL p Int -> WireValuation p -> Bool
+coherentE m e σ = case e of
+  LWIRE _ i -> True
+  LVAR _ τ i -> case τ of
+    TF -> True          -- field-typed variables don't have restrictions
+    TBool -> boolean vi -- bool-typed variables must be boolean
+      where vi = M.lookup' i σ
+  LCONST x i -> vi == x
+    where vi = M.lookup' i σ
 
-coherentE m (LDIV p1 p2 w i) σ = c where
-  c1 = coherentE m p1 σ
-  c2 = coherentE m p2 σ
-  i1 = outputWire p1; i2 = outputWire p2
-  c = c1 && c2 && σ!w * σ!i2 == 1 &&
-    if σ!i2 /= 0 then σ!i == σ!i1 / σ!i2 else True
+  LDIV e1 e2 w i -> coherentE m e1 σ && coherentE m e2 σ
+                 && vw * v2 == 1
+                 && if v2 /= 0 then vi == v1 / v2 else True
+    where vi = M.lookup' i σ
+          vw = M.lookup' w σ
+          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
+          v2 = closedExpr m σ e2 ?? M.lookup' (outputWire e2) σ
 
-coherentE m (LUN op p1 i) σ = case op of
-  ADDC k -> c1 && σ!i == σ!i1 + k
-  MULC k -> c1 && σ!i == σ!i1 * k
-  NOT    -> c1 && (σ!i == if σ!i1 == 1 then 0 else 1) &&
-                          boolean (σ!i1)
-  UnsafeNOT -> c1 && (σ!i == 1 - σ!i1)
-  where
-    c1 = coherentE m p1 σ; i1 = outputWire p1
+  LUN op e1 i -> case op of
+      ADDC k -> c1 && vi == v1 + k
+      MULC k -> c1 && vi == v1 * k
+      NOT    -> c1 && (vi == if v1 == 1 then 0 else 1) && boolean v1
+      UnsafeNOT -> c1 && (vi == 1 - v1)
+    where c1 = coherentE m e1 σ
+          vi = M.lookup' i σ
+          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
 
-coherentE m (LBIN op p1 p2 i) σ = case op of
-  ADD -> c1 && c2 && σ!i == σ!i1 + σ!i2
-  SUB -> c1 && c2 && σ!i == σ!i1 - σ!i2
-  MUL -> c1 && c2 && σ!i == σ!i1 * σ!i2
-  LINCOMB k1 k2 -> c1 && c2 && σ!i == k1*σ!i1 + k2*σ!i2
-  AND -> c1 && c2 &&
-    (σ!i == if σ!i1 == 0 || σ!i2 == 0 then 0 else 1) &&
-    boolean (σ!i1) && boolean (σ!i2)
-  OR -> c1 && c2 &&
-    (σ!i == if σ!i1 == 1 || σ!i2 == 1 then 1 else 0) &&
-    boolean (σ!i1) && boolean (σ!i2)
-  XOR -> c1 && c2 &&
-    (σ!i == if σ!i1 /= σ!i2 then 1 else 0) &&
-    boolean (σ!i1) && boolean (σ!i2)
-  UnsafeAND -> c1 && c2 &&
-    (σ!i == σ!i1 * σ!i2)
-  UnsafeOR -> c1 && c2 &&
-    (σ!i == σ!i1 + σ!i2 - σ!i1*σ!i2)
-  UnsafeXOR -> c1 && c2 &&
-    (σ!i == σ!i1 + σ!i2 - 2*σ!i1*σ!i2)
-  where
-    c1 = coherentE m p1 σ
-    c2 = coherentE m p2 σ
-    i1 = outputWire p1; i2 = outputWire p2
+  LBIN op e1 e2 i -> case op of
+      ADD -> c1 && c2 && vi == v1 + v2
+      SUB -> c1 && c2 && vi == v1 - v2
+      MUL -> c1 && c2 && vi == v1 * v2
+      LINCOMB k1 k2 -> c1 && c2 && vi == k1*v1 + k2*v2
+      AND -> c1 && c2 && boolean v1 && boolean v2
+          && (vi == if v1 == 0 || v2 == 0 then 0 else 1)
+      OR  -> c1 && c2 && boolean v1 && boolean v2
+          && (vi == if v1 == 1 || v2 == 1 then 1 else 0)
+      XOR -> c1 && c2 && boolean v1 && boolean v2
+          && (vi == if v1 /= v2 then 1 else 0)
+      UnsafeAND -> c1 && c2 && (vi == v1 * v2)
+      UnsafeOR  -> c1 && c2 && (vi == v1 + v2 - v1*v2)
+      UnsafeXOR -> c1 && c2 && (vi == v1 + v2 - 2*v1*v2)
+    where c1 = coherentE m e1 σ
+          c2 = coherentE m e2 σ
+          vi = M.lookup' i σ
+          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
+          v2 = closedExpr m σ e2 ?? M.lookup' (outputWire e2) σ
 
-coherentE m (LEQLC p1 k w i) σ = c where
-  c1 = coherentE m p1 σ
-  i1 = outputWire p1
-  c = c1 && boolean (σ!i) &&
-                        ((σ!i1 - k) * σ!i == 0) &&
-                        (if σ!i1 == k
-                         then σ!i == 1
-                         else σ!i == 0 && σ!w * (σ!i1 - k) == 1)
+  LEQLC e1 k w i -> coherentE m e1 σ && boolean vi
+                 && ((v1 - k) * vi == 0)
+                 && (if v1 == k then vi == 1 else vi == 0 && vw * (v1 - k) == 1)
+    where vi = M.lookup' i σ
+          vw = M.lookup' w σ
+          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
 
 {-@ reflect coherentA @-}
-{-@ coherentA :: m:Nat -> LAss p (Btwn 0 m) -> VecN p m -> Bool @-}
-coherentA :: (Eq p, Fractional p) => Int -> LAss p Int -> Vec p -> Bool
-coherentA m (LNZERO p1 w) σ = c where
-  c1 = coherentE m p1 σ
-  i1 = outputWire p1
-  c = c1 && (σ!i1 * σ!w == 1)
-coherentA m (LBOOLEAN p1) σ = c where
-  c1 = coherentE m p1 σ
-  i1 = outputWire p1
-  c = c1 && boolean (σ!i1)
-coherentA m (LEQA p1 p2) σ = c where
-  c1 = coherentE m p1 σ
-  c2 = coherentE m p2 σ
-  i1 = outputWire p1; i2 = outputWire p2
-  c = c1 && c2 && (σ!i1 == σ!i2)
+{-@ coherentA :: m:Nat -> a:LAss p (Btwn 0 m)
+              -> {σ:WireValuation p m | closedAssertion m σ a} -> Bool @-}
+coherentA :: (Eq p, Fractional p) => Int -> LAss p Int -> WireValuation p -> Bool
+coherentA m a σ = case a of
+  LNZERO e1 w -> coherentE m e1 σ && (v1 * vw == 1)
+    where vw = M.lookup' w σ
+          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
+  LBOOLEAN e1 -> coherentE m e1 σ && boolean v1
+    where v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
+  LEQA e1 e2 -> coherentE m e1 σ && coherentE m e2 σ && v1 == v2
+    where v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
+          v2 = closedExpr m σ e2 ?? M.lookup' (outputWire e2) σ
 
 
 {-# NOINLINE counter #-}
