@@ -67,11 +67,13 @@ notElemLemma :: Eq k => k -> v -> M.Map k v -> Proof
 notElemLemma _   _   M.MTip         = ()
 notElemLemma key val (M.MBin k _ m) = if key == k then () else notElemLemma key val m
 
+-- an index larger than all assigned indices will never be returned by lookup
 {-@ notElemLemma' :: key:k -> n:Int -> m:{M.Map k (Btwn 0 n) | elem' key (M.keys m)}
                   -> { M.lookup' key m /= n } @-}
 notElemLemma' :: Eq k => k -> Int -> M.Map k Int -> Proof
 notElemLemma' key n m = freshLemma n m ? notElemLemma key n m
 
+-- when the key is in the map, safe lookup works as normal lookup
 {-@ lookupLemma :: key:k -> m:{M.Map k v | elem' key (M.keys m)}
                 -> { M.lookup key m == Just (M.lookup' key m) } @-}
 lookupLemma :: Eq k => k -> M.Map k v -> Proof
