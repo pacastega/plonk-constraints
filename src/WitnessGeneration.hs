@@ -21,6 +21,7 @@ import qualified Liquid.Data.Map as M
 import qualified Data.Map as M
 #endif
 
+import Language.Haskell.Liquid.ProofCombinators
 
 {-@ reflect updateWith @-}
 updateWith :: Eq p => Maybe p -> Maybe p -> Maybe p
@@ -86,11 +87,18 @@ witnessGen' :: (Eq p, Fractional p) => Int
 witnessGen' m ρ σ (LExpr e) = freshE e σ ?? witnessGenE' m ρ σ e
 witnessGen' m ρ σ (LAss a) = freshA a σ ?? witnessGenA' m ρ σ a
 
+--FIXME: there should be a file with map lemmas
+{-@ reflect elemLemmaSet @-}
+{-@ elemLemmaSet :: key:k -> val:v -> {m:M.Map k v | M.lookup key m == Just val}
+                 -> { S.isSubsetOf (S.singleton key) (M.keySet m) } @-}
+elemLemmaSet :: Ord k => k -> v -> M.Map k v -> Proof
+elemLemmaSet k v (M.MBin k' _ m) = if k == k' then () else elemLemmaSet k v m
+
 {-@ reflect witnessGenE' @-}
 {-@ witnessGenE' :: m:Nat
                  -> NameValuation p -> σ:WireValuation p m
                  -> {e:LDSL p (Btwn 0 m) | wfE e && freshE e σ}
-                 -> Maybe ({σ':WireValuation p m |
+                 -> Maybe ({σ':WireValuation p m | closedExpr m σ' e &&
                              M.keySet σ' = S.union (M.keySet σ) (wiresE e)}) @-}
 witnessGenE' :: (Eq p, Fractional p) => Int
              -> NameValuation p -> WireValuation p -> LDSL p Int
@@ -98,7 +106,7 @@ witnessGenE' :: (Eq p, Fractional p) => Int
 witnessGenE' m ρ σ e = case e of
   LWIRE τ i -> case M.lookup i σ of
     Nothing -> Nothing -- wire is not defined
-    Just value -> case τ of
+    Just value -> elemLemmaSet i value σ ?? case τ of
       TF -> Just σ -- no restrictions
       TBool -> if boolean value then Just σ else Nothing
   LVAR s τ i -> case M.lookup s ρ of
@@ -111,60 +119,47 @@ witnessGenE' m ρ σ e = case e of
     Nothing -> Nothing
     Just σ1 -> case witnessGenE' m ρ σ1 p2 of
       Nothing -> Nothing
-      Just σ2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 σ1, M.lookup i2 σ2)
-        of (Just x1, Just x2) ->
-             if x2 == 0 then Nothing else
-               let σ3 = M.insert i (x1 / x2) σ2
-               in Just (M.insert w (1 / x2) σ3)
-           _                  -> Nothing
+      Just σ2 -> if x2 == 0 then Nothing else
+                   let σ3 = M.insert i (x1 / x2) σ2
+                   in Just (M.insert w (1 / x2) σ3)
+        where x1 = M.lookup' (outputWire p1) σ1
+              x2 = M.lookup' (outputWire p2) σ2
   LUN op p1 i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 ->
-      let i1 = outputWire p1
-      in case M.lookup i1 σ1
-      of Just x1 ->
-           let value = case op of
-                 ADDC k1 -> k1 + x1
-                 MULC k1 -> k1 * x1
-                 NOT -> 1 - x1
-                 UnsafeNOT -> 1 - x1
-           in Just (M.insert i value σ1)
-         _       -> Nothing
+    Just σ1 -> Just (M.insert i value σ1)
+      where x1 = M.lookup' (outputWire p1) σ1
+            value = case op of
+              ADDC k1 -> k1 + x1
+              MULC k1 -> k1 * x1
+              NOT -> 1 - x1
+              UnsafeNOT -> 1 - x1
   LBIN op p1 p2 i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
     Just σ1 -> case witnessGenE' m ρ σ1 p2 of
       Nothing -> Nothing
-      Just σ2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 σ1, M.lookup i2 σ2)
-        of (Just x1, Just x2) ->
-             let value = case op of
-                   ADD -> x1 + x2
-                   SUB -> x1 - x2
-                   MUL -> x1 * x2
-                   LINCOMB k1 k2 -> k1*x1 + k2*x2
-                   AND -> x1 * x2
-                   OR  -> x1 + x2 -   x1*x2
-                   XOR -> x1 + x2 - 2*x1*x2
-                   UnsafeAND -> x1 * x2
-                   UnsafeOR  -> x1 + x2 -   x1*x2
-                   UnsafeXOR -> x1 + x2 - 2*x1*x2
-             in Just (M.insert i value σ2)
-           _                  -> Nothing
+      Just σ2 -> Just (M.insert i value σ2)
+        where x1 = M.lookup' (outputWire p1) σ1
+              x2 = M.lookup' (outputWire p2) σ2
+              value = case op of
+                ADD -> x1 + x2
+                SUB -> x1 - x2
+                MUL -> x1 * x2
+                LINCOMB k1 k2 -> k1*x1 + k2*x2
+                AND -> x1 * x2
+                OR  -> x1 + x2 -   x1*x2
+                XOR -> x1 + x2 - 2*x1*x2
+                UnsafeAND -> x1 * x2
+                UnsafeOR  -> x1 + x2 -   x1*x2
+                UnsafeXOR -> x1 + x2 - 2*x1*x2
 
   LEQLC p1 k w i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 ->
-      let i1 = outputWire p1
-      in case M.lookup i1 σ1
-      of Just x1 -> if x1 == k
-           then let σ2 = M.insert w zero σ1
-                in Just (M.insert i one σ2)
-           else let σ2 = M.insert w (1/(x1-k)) σ1
-                in Just (M.insert i zero σ2)
-         _       -> Nothing
+    Just σ1 -> if x1 == k
+               then let σ2 = M.insert w zero σ1
+                    in Just (M.insert i one σ2)
+               else let σ2 = M.insert w (1/(x1-k)) σ1
+                    in Just (M.insert i zero σ2)
+      where x1 = M.lookup' (outputWire p1) σ1
 
 {-@ reflect witnessGenA' @-}
 {-@ witnessGenA' :: m:Nat

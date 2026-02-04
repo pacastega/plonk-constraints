@@ -249,6 +249,7 @@ wWiresE (LBIN _ e1 e2 _) = wWiresE e1 `S.union` wWiresE e2
 wWiresE (LEQLC e1 _ _ _) = wWiresE e1
 
 
+--FIXME: a LWIRE on its own isn't well-formed, so that case should be False
 -- A labeled expression is well-formed when
 -- a. sibling subexpressions don't have wire clashes between themselves
 -- b. new wires don't clash with subexpressions
