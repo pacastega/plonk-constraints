@@ -4,6 +4,7 @@ module Utils where
 
 import TypeAliases
 import Language.Haskell.Liquid.ProofCombinators ((?))
+import qualified Data.Set as S
 
 {-@ reflect fst' @-}
 fst' :: (a, b) -> a
@@ -142,3 +143,7 @@ all' p (x:xs) = p x && all' p xs
 elem' :: Eq a => a -> [a] -> Bool
 elem' _  []     = False
 elem' x' (x:xs) = x' == x || elem' x' xs
+
+{-@ inline disjoint @-}
+disjoint :: (Ord a) => S.Set a -> S.Set a -> Bool
+disjoint a b = S.null (S.intersection a b)

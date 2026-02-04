@@ -1,16 +1,19 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, ScopedTypeVariables #-}
 {-# OPTIONS -Wno-name-shadowing #-}
 {-@ LIQUID "--reflection" @-}
-module WitnessGeneration (extend, witnessGen, witnessGen',
-                          witnessGenE', witnessGenA') where
+{-@ LIQUID "--ple" @-}
+module WitnessGeneration where
 
 import Prelude hiding (flip)
 
+import Constraints
 import Data.Foldable (foldlM)
-import Utils (boolean, zero, one)
+import Utils
 import Vec
 import DSL
 import Semantics
+
+import qualified Data.Set as S
 
 #if LiquidOn
 import qualified Liquid.Data.Map as M
@@ -29,33 +32,69 @@ extend :: NameValuation p -> (NameValuation p -> NameValuation p)
        -> NameValuation p
 extend ρ hints = M.union ρ (hints ρ)
 
+
+{-@ inline freshE @-}
+freshE :: (Ord i) => LDSL p i -> M.Map i p -> Bool
+freshE e σ = disjoint (wiresE e) (M.keySet σ)
+
+{-@ inline freshA @-}
+freshA :: (Ord i) => LAss p i -> M.Map i p -> Bool
+freshA a σ = disjoint (wiresA a) (M.keySet σ)
+
+{-@ inline freshProgram @-}
+freshProgram :: (Ord i) => LProg p i -> M.Map i p -> Bool
+freshProgram pr σ = disjoint (wires pr) (M.keySet σ)
+
+{-@ inline freshPrograms @-}
+freshPrograms :: (Ord i) => [LProg p i] -> M.Map i p -> Bool
+freshPrograms ps σ = disjoint (allWires ps) (M.keySet σ)
+
 {-@ reflect witnessGen @-}
 {-@ witnessGen :: m:Nat
-               -> [LProg p (Btwn 0 m)]
+               -> {ps:[LProg p (Btwn 0 m)] | wfs ps}
                -> NameValuation p
-               -> Maybe (VecN p m) @-}
-witnessGen :: (Eq p, Fractional p) =>
-              Int -> [LProg p Int] -> NameValuation p -> Maybe (Vec p)
-witnessGen m programs ρ = toVector m <$> σ where
-  σ = foldlM (witnessGen' m ρ) M.empty programs
+               -> Maybe (WireValuation p m) @-}
+witnessGen :: forall p. (Eq p, Fractional p) => Int
+           -> [LProg p Int] -> NameValuation p -> Maybe (WireValuation p)
+witnessGen m programs ρ = witnessGenStar m ρ M.empty programs
+
+{-@ reflect witnessGenStar @-}
+{-@ witnessGenStar :: m:Nat
+                   -> NameValuation p
+                   -> σ:WireValuation p m
+                   -> ps:{[LProg p (Btwn 0 m)] | wfs ps && freshPrograms ps σ}
+                   -> Maybe ({σ':WireValuation p m |
+                               M.keySet σ' = S.union (M.keySet σ) (allWires ps)}) @-}
+witnessGenStar :: (Eq p, Fractional p) => Int
+               -> NameValuation p -> WireValuation p -> [LProg p Int]
+               -> Maybe (WireValuation p)
+witnessGenStar m ρ σ [] = Just σ
+witnessGenStar m ρ σ programs@(p:ps) = case witnessGen' m ρ σ p of
+  Nothing -> Nothing
+  Just σ' -> wfs programs ?? witnessGenStar m ρ σ' ps
+
 
 {-@ reflect witnessGen' @-}
 {-@ witnessGen' :: m:Nat
-                -> NameValuation p -> M.Map (Btwn 0 m) p -> LProg p (Btwn 0 m)
-                -> Maybe (M.Map (Btwn 0 m) p) @-}
+                -> NameValuation p -> σ:WireValuation p m
+                -> {pr:LProg p (Btwn 0 m) | wf pr && freshProgram pr σ}
+                -> Maybe ({σ':WireValuation p m |
+                            M.keySet σ' = S.union (M.keySet σ) (wires pr)}) @-}
 witnessGen' :: (Eq p, Fractional p) => Int
-            -> NameValuation p -> M.Map Int p -> LProg p Int
-            -> Maybe (M.Map Int p)
-witnessGen' m ρ σ (LExpr e) = witnessGenE' m ρ σ e
-witnessGen' m ρ σ (LAss a) = witnessGenA' m ρ σ a
+            -> NameValuation p -> WireValuation p -> LProg p Int
+            -> Maybe (WireValuation p)
+witnessGen' m ρ σ (LExpr e) = freshE e σ ?? witnessGenE' m ρ σ e
+witnessGen' m ρ σ (LAss a) = freshA a σ ?? witnessGenA' m ρ σ a
 
 {-@ reflect witnessGenE' @-}
 {-@ witnessGenE' :: m:Nat
-                 -> NameValuation p -> M.Map (Btwn 0 m) p -> LDSL p (Btwn 0 m)
-                 -> Maybe (M.Map (Btwn 0 m) p) @-}
+                 -> NameValuation p -> σ:WireValuation p m
+                 -> {e:LDSL p (Btwn 0 m) | wfE e && freshE e σ}
+                 -> Maybe ({σ':WireValuation p m |
+                             M.keySet σ' = S.union (M.keySet σ) (wiresE e)}) @-}
 witnessGenE' :: (Eq p, Fractional p) => Int
-             -> NameValuation p -> M.Map Int p -> LDSL p Int
-             -> Maybe (M.Map Int p)
+             -> NameValuation p -> WireValuation p -> LDSL p Int
+             -> Maybe (WireValuation p)
 witnessGenE' m ρ σ e = case e of
   LWIRE τ i -> case M.lookup i σ of
     Nothing -> Nothing -- wire is not defined
@@ -129,11 +168,13 @@ witnessGenE' m ρ σ e = case e of
 
 {-@ reflect witnessGenA' @-}
 {-@ witnessGenA' :: m:Nat
-                 -> NameValuation p -> M.Map (Btwn 0 m) p -> LAss p (Btwn 0 m)
-                 -> Maybe (M.Map (Btwn 0 m) p) @-}
+                 -> NameValuation p -> σ:WireValuation p m
+                 -> {a:LAss p (Btwn 0 m) | wfA a && freshA a σ}
+                 -> Maybe ({σ':WireValuation p m |
+                             M.keySet σ' = S.union (M.keySet σ) (wiresA a)}) @-}
 witnessGenA' :: (Eq p, Fractional p) => Int
-             -> NameValuation p -> M.Map Int p -> LAss p Int
-             -> Maybe (M.Map Int p)
+             -> NameValuation p -> WireValuation p -> LAss p Int
+             -> Maybe (WireValuation p)
 witnessGenA' m ρ σ a = case a of
   LNZERO p1 w -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
@@ -147,18 +188,3 @@ witnessGenA' m ρ σ a = case a of
   LEQA p1 p2 -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
     Just σ1 -> witnessGenE' m ρ σ1 p2
-
-
-{-@ reflect toVector @-}
-{-@ toVector :: m:Nat -> M.Map (Btwn 0 m) p -> VecN p m @-}
-toVector :: Num p => Int -> M.Map Int p -> Vec p
-toVector m σ = toVector' m m σ Nil
-
-{-@ reflect toVector' @-}
-{-@ toVector' :: m:Nat -> l:Nat -> M.Map (Btwn 0 m) p
-              -> {v:Vec p | vvlen v = (m-l)}
-              -> VecN p m / [l] @-}
-toVector' :: Num p => Int -> Int -> M.Map Int p -> Vec p -> Vec p
-toVector' m 0 val acc = acc
-toVector' m l val acc = toVector' m (l-1) val
-                         (Cons (M.findWithDefault zero (l-1) val) acc)
