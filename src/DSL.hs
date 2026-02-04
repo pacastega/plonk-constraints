@@ -238,6 +238,16 @@ wiresE (LUN _ e1 i) = wiresE e1 `S.union` S.singleton i
 wiresE (LBIN _ e1 e2 i) = wiresE e1 `S.union` wiresE e2 `S.union` S.singleton i
 wiresE (LEQLC e1 _ w i) = wiresE e1 `S.union` S.singleton w `S.union` S.singleton i
 
+{-@ measure wWiresE @-}
+wWiresE :: (Ord i) => LDSL p i -> S.Set i
+wWiresE (LWIRE _ i)      = S.singleton i
+wWiresE (LVAR {})        = S.empty
+wWiresE (LCONST {})      = S.empty
+wWiresE (LDIV e1 e2 _ _) = wWiresE e1 `S.union` wWiresE e2
+wWiresE (LUN _ e1 _)     = wWiresE e1
+wWiresE (LBIN _ e1 e2 _) = wWiresE e1 `S.union` wWiresE e2
+wWiresE (LEQLC e1 _ _ _) = wWiresE e1
+
 
 -- A labeled expression is well-formed when
 -- a. sibling subexpressions don't have wire clashes between themselves
@@ -267,6 +277,12 @@ wiresA (LNZERO e1 w) = wiresE e1 `S.union` S.singleton w
 wiresA (LBOOLEAN e1) = wiresE e1
 wiresA (LEQA e1 e2)  = wiresE e1 `S.union` wiresE e2
 
+{-@ measure wWiresA @-}
+wWiresA :: (Ord i) => LAss p i -> S.Set i
+wWiresA (LNZERO e1 _) = wWiresE e1
+wWiresA (LBOOLEAN e1) = wWiresE e1
+wWiresA (LEQA e1 e2)  = wWiresE e1 `S.union` wWiresE e2
+
 {-@ measure wfA @-}
 wfA :: (Ord i) => LAss p i -> Bool
 wfA (LNZERO e1 w) = wfE e1 && (wiresE e1 `disjoint` S.singleton w)
@@ -278,6 +294,11 @@ data LProg p i = LExpr (LDSL p i) | LAss (LAss p i)
 wires :: (Ord i) => LProg p i -> S.Set i
 wires (LExpr e) = wiresE e
 wires (LAss a) = wiresA a
+
+{-@ measure wWires @-}
+wWires :: (Ord i) => LProg p i -> S.Set i
+wWires (LExpr e) = wWiresE e
+wWires (LAss a) = wWiresA a
 
 {-@ reflect allWires @-}
 allWires :: (Ord i) => [LProg p i] -> S.Set i
@@ -312,6 +333,8 @@ data LDSL p i =
 
 -- TODO: this could be avoided by using record syntax
 {-@ measure outputWire @-}
+{-@ outputWire :: e:LDSL p i
+               -> {v:i | S.member v (S.union (wiresE e) (wWiresE e))} @-}
 outputWire :: LDSL p i -> i
 outputWire (LWIRE _ i)    = i
 
@@ -437,45 +460,22 @@ compileA m (LEQA p1 p2) = c
     c = append' (equalGate m [i1, i2]) c'
 
 
-{-@ reflect closedExpr @-}
+{-@ inline closedExpr @-}
 {-@ closedExpr :: m:Nat -> σ:WireValuation p m -> e:LDSL p (Btwn 0 m) -> Bool @-}
 closedExpr :: Int -> WireValuation p -> LDSL p Int -> Bool
-closedExpr m σ e = case e of
-  LWIRE  _ i -> True
-  LVAR _ τ i -> case τ of
-    TF -> True
-    TBool -> M.member i σ
-  LCONST _ i -> M.member i σ
-
-  LDIV e1 e2 w i -> M.member w σ && M.member i σ
-                 && M.member (outputWire e1) σ && closedExpr m σ e1
-                 && M.member (outputWire e2) σ && closedExpr m σ e2
-
-  LUN  _ e1    i -> M.member i σ
-                 && M.member (outputWire e1) σ && closedExpr m σ e1
-  LBIN _ e1 e2 i -> M.member i σ
-                 && M.member (outputWire e1) σ && closedExpr m σ e1
-                 && M.member (outputWire e2) σ && closedExpr m σ e2
-
-  LEQLC e1 _ w i -> M.member i σ && M.member w σ
-                 && M.member (outputWire e1) σ && closedExpr m σ e1
+closedExpr m σ e = (wiresE e `S.union` wWiresE e) `S.isSubsetOf` M.keySet σ
 
 
-{-@ reflect closedAssertion @-}
+{-@ inline closedAssertion @-}
 {-@ closedAssertion :: m:Nat -> WireValuation p m -> a:LAss p (Btwn 0 m) -> Bool @-}
 closedAssertion :: Int -> WireValuation p -> LAss p Int -> Bool
-closedAssertion m σ a = case a of
-  LNZERO e1 i -> M.member i σ && M.member (outputWire e1) σ && closedExpr m σ e1
-  LBOOLEAN e1 -> M.member (outputWire e1) σ && closedExpr m σ e1
-  LEQA  e1 e2 -> M.member (outputWire e1) σ && closedExpr m σ e1
-              && M.member (outputWire e2) σ && closedExpr m σ e2
+closedAssertion m σ a = (wiresA a `S.union` wWiresA a) `S.isSubsetOf` M.keySet σ
 
 
-{-@ reflect closedProg @-}
+{-@ inline closedProg @-}
 {-@ closedProg :: m:Nat -> WireValuation p m -> LProg p (Btwn 0 m) -> Bool @-}
 closedProg :: Int -> WireValuation p -> LProg p Int -> Bool
-closedProg m σ (LExpr e) = closedExpr m σ e
-closedProg m σ (LAss a) = closedAssertion m σ a
+closedProg m σ pr = (wires pr `S.union` wWires pr) `S.isSubsetOf` M.keySet σ
 
 
 {-@ reflect coherent @-}
@@ -503,8 +503,8 @@ coherentE m e σ = case e of
                  && if v2 /= 0 then vi == v1 / v2 else True
     where vi = M.lookup' i σ
           vw = M.lookup' w σ
-          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
-          v2 = closedExpr m σ e2 ?? M.lookup' (outputWire e2) σ
+          v1 = M.lookup' (outputWire e1) σ
+          v2 = M.lookup' (outputWire e2) σ
 
   LUN op e1 i -> case op of
       ADDC k -> c1 && vi == v1 + k
@@ -513,7 +513,7 @@ coherentE m e σ = case e of
       UnsafeNOT -> c1 && (vi == 1 - v1)
     where c1 = coherentE m e1 σ
           vi = M.lookup' i σ
-          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
+          v1 = M.lookup' (outputWire e1) σ
 
   LBIN op e1 e2 i -> case op of
       ADD -> c1 && c2 && vi == v1 + v2
@@ -532,15 +532,15 @@ coherentE m e σ = case e of
     where c1 = coherentE m e1 σ
           c2 = coherentE m e2 σ
           vi = M.lookup' i σ
-          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
-          v2 = closedExpr m σ e2 ?? M.lookup' (outputWire e2) σ
+          v1 = M.lookup' (outputWire e1) σ
+          v2 = M.lookup' (outputWire e2) σ
 
   LEQLC e1 k w i -> coherentE m e1 σ && boolean vi
                  && ((v1 - k) * vi == 0)
                  && (if v1 == k then vi == 1 else vi == 0 && vw * (v1 - k) == 1)
     where vi = M.lookup' i σ
           vw = M.lookup' w σ
-          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
+          v1 = M.lookup' (outputWire e1) σ
 
 {-@ reflect coherentA @-}
 {-@ coherentA :: m:Nat -> a:LAss p (Btwn 0 m)
@@ -549,12 +549,12 @@ coherentA :: (Eq p, Fractional p) => Int -> LAss p Int -> WireValuation p -> Boo
 coherentA m a σ = case a of
   LNZERO e1 w -> coherentE m e1 σ && (v1 * vw == 1)
     where vw = M.lookup' w σ
-          v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
+          v1 = M.lookup' (outputWire e1) σ
   LBOOLEAN e1 -> coherentE m e1 σ && boolean v1
-    where v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
+    where v1 = M.lookup' (outputWire e1) σ
   LEQA e1 e2 -> coherentE m e1 σ && coherentE m e2 σ && v1 == v2
-    where v1 = closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
-          v2 = closedExpr m σ e2 ?? M.lookup' (outputWire e2) σ
+    where v1 = M.lookup' (outputWire e1) σ
+          v2 = M.lookup' (outputWire e2) σ
 
 
 {-# NOINLINE counter #-}
