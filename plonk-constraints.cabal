@@ -58,6 +58,7 @@ library
       Utils
       Vec
       WitnessGeneration
+      WitnessGenProof
   other-modules:
       Treekz
       Paths_plonk_constraints

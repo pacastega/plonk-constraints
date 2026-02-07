@@ -75,6 +75,7 @@ any' p (Just x) = p x
 liquidAssert :: Bool -> ()
 liquidAssert _ = ()
 
+{-@ inline (??) @-}
 {-@ (??) :: x:b -> y:a -> {v:a | v == y} @-}
 (??) :: b -> a -> a
 _ ?? y = y

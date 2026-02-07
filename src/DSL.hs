@@ -261,11 +261,15 @@ wfE (LVAR _ _ i) = True
 wfE (LCONST _ i) = True
 wfE (LDIV e1 e2 w i ) = wfE e1 && wfE e2 && (wiresE e1 `disjoint` wiresE e2)
   && (wiresE e1 `S.union` wiresE e2) `disjoint` (S.singleton w `S.union` S.singleton i)
+  && w /= i
 wfE (LUN _ e1 i) = wfE e1 && (wiresE e1 `disjoint` S.singleton i)
 wfE (LBIN _ e1 e2 i) = wfE e1 && wfE e2 && (wiresE e1 `disjoint` wiresE e2)
   && (wiresE e1 `S.union` wiresE e2) `disjoint` (S.singleton i)
 wfE (LEQLC e1 _ w i) = wfE e1
   && (wiresE e1) `disjoint` (S.singleton w `S.union` S.singleton i)
+  && w /= i
+
+
 data LAss p i =
     LNZERO   (LDSL p i) i
   | LBOOLEAN (LDSL p i)
@@ -289,6 +293,7 @@ wfA :: (Ord i) => LAss p i -> Bool
 wfA (LNZERO e1 w) = wfE e1 && (wiresE e1 `disjoint` S.singleton w)
 wfA (LBOOLEAN e1) = wfE e1
 wfA (LEQA  e1 e2) = wfE e1 && wfE e2 && (wiresE e1 `disjoint` wiresE e2)
+
 data LProg p i = LExpr (LDSL p i) | LAss (LAss p i)
 
 {-@ measure wires @-}
@@ -301,10 +306,10 @@ wWires :: (Ord i) => LProg p i -> S.Set i
 wWires (LExpr e) = wWiresE e
 wWires (LAss a) = wWiresA a
 
-{-@ reflect allWires @-}
-allWires :: (Ord i) => [LProg p i] -> S.Set i
-allWires [] = S.empty
-allWires (p:ps) = wires p `S.union` allWires ps
+{-@ reflect wiress @-}
+wiress :: (Ord i) => [LProg p i] -> S.Set i
+wiress [] = S.empty
+wiress (p:ps) = wires p `S.union` wiress ps
 
 {-@ measure wf @-}
 wf :: (Ord i) => LProg p i -> Bool
@@ -315,7 +320,7 @@ wf (LAss a) = wfA a
 {-@ reflect wfs @-}
 wfs :: (Ord i) => [LProg p i] -> Bool
 wfs [] = True
-wfs (p:ps) = wf p && disjoint (wires p) (allWires ps) && wfs ps
+wfs (p:ps) = wf p && disjoint (wires p) (wiress ps) && wfs ps
 
 {-@
 data LDSL p i =

@@ -48,7 +48,7 @@ freshProgram pr σ = disjoint (wires pr) (M.keySet σ)
 
 {-@ inline freshPrograms @-}
 freshPrograms :: (Ord i) => [LProg p i] -> M.Map i p -> Bool
-freshPrograms ps σ = disjoint (allWires ps) (M.keySet σ)
+freshPrograms ps σ = disjoint (wiress ps) (M.keySet σ)
 
 {-@ reflect witnessGen @-}
 {-@ witnessGen :: m:Nat
@@ -65,7 +65,7 @@ witnessGen m programs ρ = witnessGenStar m ρ M.empty programs
                    -> σ:WireValuation p m
                    -> ps:{[LProg p (Btwn 0 m)] | wfs ps && freshPrograms ps σ}
                    -> Maybe ({σ':WireValuation p m |
-                               M.keySet σ' = S.union (M.keySet σ) (allWires ps)}) @-}
+                               M.keySet σ' = S.union (M.keySet σ) (wiress ps)}) @-}
 witnessGenStar :: (Eq p, Fractional p) => Int
                -> NameValuation p -> WireValuation p -> [LProg p Int]
                -> Maybe (WireValuation p)
@@ -154,12 +154,10 @@ witnessGenE' m ρ σ e = case e of
 
   LEQLC p1 k w i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 -> if x1 == k
-               then let σ2 = M.insert w zero σ1
-                    in Just (M.insert i one σ2)
-               else let σ2 = M.insert w (1/(x1-k)) σ1
-                    in Just (M.insert i zero σ2)
+    Just σ1 -> Just (M.insert i value (M.insert w witness σ1))
       where x1 = M.lookup' (outputWire p1) σ1
+            value = if x1 == k then one else zero -- think True or False
+            witness = if x1 == k then zero else 1/(x1-k)
 
 {-@ reflect witnessGenA' @-}
 {-@ witnessGenA' :: m:Nat
