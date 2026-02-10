@@ -22,10 +22,6 @@ import qualified Data.Map as M
 import Language.Haskell.Liquid.ProofCombinators
 
 
-{-@ assume divMulLemma :: x:p -> y:p -> { x/y * y == x } @-}
-divMulLemma :: (Eq p, Fractional p) => p -> p -> Proof
-divMulLemma _ _ = ()
-
 {-@ assume myAssume :: a -> {False} @-}
 myAssume :: a -> Proof
 myAssume _ = ()
@@ -116,7 +112,7 @@ wgSoundE' m ρ σ e σ' = case e of
 
                   ? liquidAssert (vi == v1 / v2) -- true
                   ? liquidAssert (vw == 1 / v2)  -- true
-                  ? divMulLemma 1 v2 ? liquidAssert (vw * v2 == 1)  -- x/y * y /= x (in ℕ)
+                  ? liquidAssert (vw * v2 == 1)  -- x/y * y /= x (in ℕ)
                   ? liquidAssert (vi == v1 / v2) -- x/y * y /= x (in ℕ)
     where σ1 = case witnessGenE' m ρ σ  e1 of Just s -> s
           σ2 = case witnessGenE' m ρ σ1 e2 of Just s -> s
@@ -183,7 +179,7 @@ wgSoundE' m ρ σ e σ' = case e of
                     else proof
                        ? liquidAssert (vi == zero)
                        ? liquidAssert (vw == 1/(v1-k))
-                       ? divMulLemma 1 (v1-k) ? liquidAssert (vw * (v1-k) == 1)   -- x/y * y /= x (in ℕ)
+                       ? liquidAssert (vw * (v1-k) == 1)   -- x/y * y /= x (in ℕ)
 
     where σ1 = case witnessGenE' m ρ σ e1 of Just s -> s
           proof = wgSoundE' m ρ σ e1 σ1
