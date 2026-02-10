@@ -1,4 +1,4 @@
-cabal-version: 1.12
+cabal-version: 2.4
 
 -- This file has been generated from package.yaml by hpack version 0.37.0.
 --
@@ -12,7 +12,7 @@ bug-reports:    https://github.com/pacastega/plonk-constraints/issues
 author:         Pablo Castellanos
 maintainer:     p.cas.gar@gmail.com
 copyright:      2024 Pablo Castellanos
-license:        GPL-3
+license:        GPL-3.0-only
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
