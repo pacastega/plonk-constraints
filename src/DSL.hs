@@ -226,6 +226,20 @@ data LDSL p i =
   | LEQLC   (LDSL p i) p i i
   deriving (Show, Eq)
 
+{-@
+data LDSL p i =
+    LWIRE      ScalarTy i
+  | LVAR   Var ScalarTy i
+  | LCONST p            i
+
+  | LDIV   (LDSL p i) (LDSL p i) i i
+
+  | LUN  (UnOp' p)  (LDSL p i)            i
+  | LBIN (BinOp' p) (LDSL p i) (LDSL p i) i
+
+  | LEQLC   (LDSL p i) p i i
+@-}
+
 
 {-@ measure wiresE @-}
 wiresE :: (Ord i) => LDSL p i -> S.Set i
@@ -321,20 +335,6 @@ wf (LAss a) = wfA a
 wfs :: (Ord i) => [LProg p i] -> Bool
 wfs [] = True
 wfs (p:ps) = wf p && disjoint (wires p) (wiress ps) && wfs ps
-
-{-@
-data LDSL p i =
-    LWIRE      ScalarTy i
-  | LVAR   Var ScalarTy i
-  | LCONST p            i
-
-  | LDIV   (LDSL p i) (LDSL p i) i i
-
-  | LUN  (UnOp' p)  (LDSL p i)            i
-  | LBIN (BinOp' p) (LDSL p i) (LDSL p i) i
-
-  | LEQLC   (LDSL p i) p i i
-@-}
 
 
 -- TODO: this could be avoided by using record syntax
