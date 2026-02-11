@@ -32,6 +32,7 @@ import LabelingProof.LabelingVar
 import LabelingProof.LabelingISZERO
 import LabelingProof.LabelingEQLC
 
+import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 

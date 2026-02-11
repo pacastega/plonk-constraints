@@ -26,6 +26,7 @@ import Semantics
 
 import LabelingProof.LabelingLemmas
 
+import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 {-@ labelProofDIV :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}

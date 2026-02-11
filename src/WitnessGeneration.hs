@@ -21,6 +21,7 @@ import qualified Liquid.Data.Map as M
 import qualified Data.Map as M
 #endif
 
+import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 {-@ reflect updateWith @-}
@@ -87,13 +88,6 @@ witnessGen' :: (Eq p, Fractional p) => Int
 witnessGen' m ρ σ (LExpr e) = freshE e σ ?? witnessGenE' m ρ σ e
 witnessGen' m ρ σ (LAss a) = freshA a σ ?? witnessGenA' m ρ σ a
 
---FIXME: there should be a file with map lemmas
-{-@ reflect elemLemmaSet @-}
-{-@ elemLemmaSet :: key:k -> val:v -> {m:M.Map k v | M.lookup key m == Just val}
-                 -> { S.isSubsetOf (S.singleton key) (M.keySet m) } @-}
-elemLemmaSet :: Ord k => k -> v -> M.Map k v -> Proof
-elemLemmaSet k v (M.MBin k' _ m) = if k == k' then () else elemLemmaSet k v m
-
 {-@ reflect witnessGenE' @-}
 {-@ witnessGenE' :: m:Nat
                  -> NameValuation p -> σ:WireValuation p m
@@ -105,7 +99,7 @@ witnessGenE' :: (Eq p, Fractional p) => Int
              -> Maybe (WireValuation p)
 witnessGenE' m ρ σ e = case e of
   LWIRE τ i -> case M.lookup i σ of
-    Nothing -> Nothing -- wire is not defined
+    Nothing -> Nothing -- wire hasn't appeared before
     Just value -> elemLemmaSet i value σ ?? case τ of
       TF -> Just σ -- no restrictions
       TBool -> if boolean value then Just σ else Nothing
