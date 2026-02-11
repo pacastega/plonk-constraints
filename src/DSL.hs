@@ -469,19 +469,19 @@ compileA m (LEQA p1 p2) = c
 {-@ inline closedExpr @-}
 {-@ closedExpr :: m:Nat -> σ:WireValuation p m -> e:LDSL p (Btwn 0 m) -> Bool @-}
 closedExpr :: Int -> WireValuation p -> LDSL p Int -> Bool
-closedExpr m σ e = (wiresE e `S.union` wWiresE e) `S.isSubsetOf` M.keySet σ
+closedExpr m σ e = (wiresE e `S.union` wWiresE e) `S.isSubsetOf` M.keysSet σ
 
 
 {-@ inline closedAssertion @-}
 {-@ closedAssertion :: m:Nat -> WireValuation p m -> a:LAss p (Btwn 0 m) -> Bool @-}
 closedAssertion :: Int -> WireValuation p -> LAss p Int -> Bool
-closedAssertion m σ a = (wiresA a `S.union` wWiresA a) `S.isSubsetOf` M.keySet σ
+closedAssertion m σ a = (wiresA a `S.union` wWiresA a) `S.isSubsetOf` M.keysSet σ
 
 
 {-@ inline closedProg @-}
 {-@ closedProg :: m:Nat -> WireValuation p m -> LProg p (Btwn 0 m) -> Bool @-}
 closedProg :: Int -> WireValuation p -> LProg p Int -> Bool
-closedProg m σ pr = (wires pr `S.union` wWires pr) `S.isSubsetOf` M.keySet σ
+closedProg m σ pr = (wires pr `S.union` wWires pr) `S.isSubsetOf` M.keysSet σ
 
 
 {-@ reflect coherent @-}

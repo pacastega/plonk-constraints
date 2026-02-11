@@ -28,7 +28,7 @@ myAssume _ = ()
 
 
 {-@ type MapGE M2 M1 = k:{Int | M.member k M1
-                             && S.isSubsetOf (M.keySet M1) (M.keySet M2)}
+                             && S.isSubsetOf (M.keysSet M1) (M.keysSet M2)}
                     -> { M.lookup' k M1 = M.lookup' k M2 } @-}
 
 
@@ -60,7 +60,7 @@ wgIncr m ρ σ e σ' j = case e of
 
 {-@ coherentEIncr :: m:Nat -> e:LDSL p (Btwn 0 m)
                   -> {σ1:WireValuation p m | closedExpr m σ1 e && coherentE m e σ1}
-                  -> {σ2:WireValuation p m | S.isSubsetOf (M.keySet σ1) (M.keySet σ2)}
+                  -> {σ2:WireValuation p m | S.isSubsetOf (M.keysSet σ1) (M.keysSet σ2)}
                   -> MapGE σ2 σ1
                   -> { coherentE m e σ2 } @-}
 coherentEIncr :: (Eq p, Fractional p) => Int -> LDSL p Int -> WireValuation p

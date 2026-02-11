@@ -37,19 +37,19 @@ extend ρ hints = M.union ρ (hints ρ)
 
 {-@ inline freshE @-}
 freshE :: (Ord i) => LDSL p i -> M.Map i p -> Bool
-freshE e σ = disjoint (wiresE e) (M.keySet σ)
+freshE e σ = disjoint (wiresE e) (M.keysSet σ)
 
 {-@ inline freshA @-}
 freshA :: (Ord i) => LAss p i -> M.Map i p -> Bool
-freshA a σ = disjoint (wiresA a) (M.keySet σ)
+freshA a σ = disjoint (wiresA a) (M.keysSet σ)
 
 {-@ inline freshProgram @-}
 freshProgram :: (Ord i) => LProg p i -> M.Map i p -> Bool
-freshProgram pr σ = disjoint (wires pr) (M.keySet σ)
+freshProgram pr σ = disjoint (wires pr) (M.keysSet σ)
 
 {-@ inline freshPrograms @-}
 freshPrograms :: (Ord i) => [LProg p i] -> M.Map i p -> Bool
-freshPrograms ps σ = disjoint (wiress ps) (M.keySet σ)
+freshPrograms ps σ = disjoint (wiress ps) (M.keysSet σ)
 
 {-@ reflect witnessGen @-}
 {-@ witnessGen :: m:Nat
@@ -66,7 +66,7 @@ witnessGen m programs ρ = witnessGenStar m ρ M.empty programs
                    -> σ:WireValuation p m
                    -> ps:{[LProg p (Btwn 0 m)] | wfs ps && freshPrograms ps σ}
                    -> Maybe ({σ':WireValuation p m |
-                               M.keySet σ' = S.union (M.keySet σ) (wiress ps)}) @-}
+                               M.keysSet σ' = S.union (M.keysSet σ) (wiress ps)}) @-}
 witnessGenStar :: (Eq p, Fractional p) => Int
                -> NameValuation p -> WireValuation p -> [LProg p Int]
                -> Maybe (WireValuation p)
@@ -81,7 +81,7 @@ witnessGenStar m ρ σ programs@(p:ps) = case witnessGen' m ρ σ p of
                 -> NameValuation p -> σ:WireValuation p m
                 -> {pr:LProg p (Btwn 0 m) | wf pr && freshProgram pr σ}
                 -> Maybe ({σ':WireValuation p m |
-                            M.keySet σ' = S.union (M.keySet σ) (wires pr)}) @-}
+                            M.keysSet σ' = S.union (M.keysSet σ) (wires pr)}) @-}
 witnessGen' :: (Eq p, Fractional p) => Int
             -> NameValuation p -> WireValuation p -> LProg p Int
             -> Maybe (WireValuation p)
@@ -93,7 +93,7 @@ witnessGen' m ρ σ (LAss a) = freshA a σ ?? witnessGenA' m ρ σ a
                  -> NameValuation p -> σ:WireValuation p m
                  -> {e:LDSL p (Btwn 0 m) | wfE e && freshE e σ}
                  -> Maybe ({σ':WireValuation p m | closedExpr m σ' e &&
-                             M.keySet σ' = S.union (M.keySet σ) (wiresE e)}) @-}
+                             M.keysSet σ' = S.union (M.keysSet σ) (wiresE e)}) @-}
 witnessGenE' :: (Eq p, Fractional p) => Int
              -> NameValuation p -> WireValuation p -> LDSL p Int
              -> Maybe (WireValuation p)
@@ -158,7 +158,7 @@ witnessGenE' m ρ σ e = case e of
                  -> NameValuation p -> σ:WireValuation p m
                  -> {a:LAss p (Btwn 0 m) | wfA a && freshA a σ}
                  -> Maybe ({σ':WireValuation p m |
-                             M.keySet σ' = S.union (M.keySet σ) (wiresA a)}) @-}
+                             M.keysSet σ' = S.union (M.keysSet σ) (wiresA a)}) @-}
 witnessGenA' :: (Eq p, Fractional p) => Int
              -> NameValuation p -> WireValuation p -> LAss p Int
              -> Maybe (WireValuation p)

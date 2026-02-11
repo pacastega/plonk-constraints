@@ -38,7 +38,7 @@ alter f k (MBin k' v' m)
 
 {-@ reflect insert @-}
 {-@ insert :: key:k -> v -> m:Map k v
-           -> {m':Map k v | keySet m' = S.union (keySet m) (S.singleton key)} @-}
+           -> {m':Map k v | keysSet m' = S.union (keysSet m) (S.singleton key)} @-}
 insert :: k -> v -> Map k v -> Map k v
 insert k v m = MBin k v m
 
@@ -65,17 +65,17 @@ fromList ((k,v):m) = MBin k v (fromList m)
 
 {-@ reflect member @-}
 member :: Ord k => k -> Map k v -> Bool
-member k m = S.member k (keySet m)
+member k m = S.member k (keysSet m)
 
 {-@ reflect keys @-}
 keys :: Map k v -> [k]
 keys MTip         = []
 keys (MBin k v m) = k : keys m
 
-{-@ measure keySet @-}
-keySet :: (Ord k) => Map k v -> S.Set k
-keySet MTip = S.empty
-keySet (MBin k v m) = S.singleton k `S.union` keySet m
+{-@ measure keysSet @-}
+keysSet :: (Ord k) => Map k v -> S.Set k
+keysSet MTip = S.empty
+keysSet (MBin k v m) = S.singleton k `S.union` keysSet m
 
 {-@ reflect elems @-}
 elems :: Map k v -> [v]
