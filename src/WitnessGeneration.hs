@@ -102,7 +102,9 @@ witnessGenE' m ρ σ e = case e of
     Nothing -> Nothing -- wire hasn't appeared before
     Just value -> elemLemmaSet i value σ ?? case τ of
       TF -> Just σ -- no restrictions
-      TBool -> if boolean value then Just σ else Nothing
+      TBool -> if boolean value -- Always true, but that's challenging to prove.
+               then Just σ -- Leave this just to prove the booleanity invariant.
+               else Nothing
   LVAR s τ i -> case M.lookup s ρ of
     Nothing -> Nothing -- variable is not defined in environment
     Just value -> case τ of

@@ -30,7 +30,7 @@ elementLemma k v (M.MBin k' _ m) = if k == k' then () else elementLemma k v m
 -- if lookup returns Just, then the key is in the SET of keys
 {-@ reflect elemLemmaSet @-}
 {-@ elemLemmaSet :: key:k -> val:v -> {m:M.Map k v | M.lookup key m == Just val}
-                 -> { S.isSubsetOf (S.singleton key) (M.keysSet m) } @-}
+                 -> { M.member key m } @-}
 elemLemmaSet :: Ord k => k -> v -> M.Map k v -> Proof
 elemLemmaSet k v (M.MBin k' _ m) = if k == k' then () else elemLemmaSet k v m
 

@@ -284,6 +284,60 @@ wfE (LEQLC e1 _ w i) = wfE e1
   && w /= i
 
 
+-- every output wire of a LWIRE also appears as an output wire of a "real" expression
+{-@ reflect wfLWireE @-}
+wfLWireE :: (Ord i) => LDSL p i -> Bool
+wfLWireE e = wWiresE e `S.isSubsetOf` wiresE e
+
+
+{-@ measure inferType' @-}
+{-@ inferType' :: LDSL p i -> Maybe Ty @-}
+inferType' :: LDSL p i -> Maybe Ty
+inferType' e = case e of
+  LWIRE  τ _ -> Just τ
+  LVAR _ τ _ -> Just τ
+  LCONST _ _ -> Just TF
+
+  LDIV e1 e2 _ _ -> if inferType' e1 == Just TF && inferType' e2 == Just TF
+                    then Just TF else Nothing
+
+  LUN op e1 _ -> case op of
+    ADDC _ -> if inferType' e1 == Just TF then Just TF else Nothing
+    MULC _ -> if inferType' e1 == Just TF then Just TF else Nothing
+
+    NOT       -> if inferType' e1 == Just TBool then Just TBool else Nothing
+    UnsafeNOT -> if inferType' e1 == Just TBool then Just TBool else Nothing
+
+  LBIN op e1 e2 _ -> case op of
+    ADD -> if inferType' e1 == Just TF && inferType' e2 == Just TF then Just TF else Nothing
+    SUB -> if inferType' e1 == Just TF && inferType' e2 == Just TF then Just TF else Nothing
+    MUL -> if inferType' e1 == Just TF && inferType' e2 == Just TF then Just TF else Nothing
+
+    LINCOMB _ _ -> if inferType' e1 == Just TF && inferType' e2 == Just TF then Just TF else Nothing
+
+    AND -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
+    OR  -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
+    XOR -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
+
+    UnsafeAND -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
+    UnsafeOR  -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
+    UnsafeXOR -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
+
+  LEQLC e1 _ _ _ -> if inferType' e1 == Just TF then Just TBool else Nothing
+
+
+{-@ reflect wellTyped' @-}
+wellTyped' :: LDSL p i -> Bool
+wellTyped' e = case inferType' e of
+  Just _ -> True
+  Nothing -> False
+
+
+{-@ reflect booleanE @-}
+booleanE :: LDSL p i -> Bool
+booleanE e = inferType' e == Just TBool
+
+
 data LAss p i =
     LNZERO   (LDSL p i) i
   | LBOOLEAN (LDSL p i)
