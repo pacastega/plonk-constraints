@@ -7,9 +7,7 @@ module Optimizations.RemoveConstants (removeConstants) where
 import Optimizations.Base (Opt)
 import DSL
 import Semantics
-import Utils (any', liftA2', fmap')
-
-import Data.Maybe (isJust)
+import Utils (any', liftA2', fmap', isJust)
 
 import Language.Haskell.Liquid.ProofCombinators
 
@@ -75,8 +73,6 @@ removeConstants (UN op p1) = case op of
 
   _ -> Nothing
 removeConstants _ = Nothing -- any other pattern is not a redex
-
-{-@ reflect isJust @-}
 
 {-@ removeConstantsProof :: ρ:NameValuation p
          -> e1:{TypedDSL p | isJust (eval e1 ρ)}
