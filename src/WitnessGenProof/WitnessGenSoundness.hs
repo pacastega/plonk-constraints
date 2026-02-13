@@ -3,7 +3,7 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 {-@ LIQUID "--fast" @-}
-module WitnessGenProof where
+module WitnessGenProof.WitnessGenSoundness where
 
 import Constraints
 import TypeAliases
@@ -27,25 +27,25 @@ import WitnessGenProof.WitnessGenBase
 import Language.Haskell.Liquid.ProofCombinators
 
 
-{-@ wgSoundE' :: m:Nat
-              -> ρ:NameValuation p
-              -> σ:WireValuation p m
-              -> {e:LDSL p (Btwn 0 m) | wfE e && freshE e σ && wellTyped' e}
-              -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e}
-              -> { coherentE m e σ' } @-}
-wgSoundE' :: (Eq p, Fractional p)
-          => Int -> NameValuation p -> WireValuation p -> LDSL p Int
-          -> WireValuation p -> Proof
-wgSoundE' m ρ σ e σ' = case e of
+{-@ wgSoundE :: m:Nat
+             -> ρ:NameValuation p
+             -> σ:WireValuation p m
+             -> {e:LDSL p (Btwn 0 m) | wfE e && freshE e σ && wellTyped' e}
+             -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e}
+             -> { coherentE m e σ' } @-}
+wgSoundE :: (Eq p, Fractional p)
+         => Int -> NameValuation p -> WireValuation p -> LDSL p Int
+         -> WireValuation p -> Proof
+wgSoundE m ρ σ e σ' = case e of
   LWIRE τ i -> wgSoundWire m ρ σ τ i σ'
   LVAR s τ i -> wgSoundVar m ρ σ s τ i σ'
   LCONST x i -> wgSoundConst m ρ σ x i σ'
 
-  LDIV e1 e2 w i -> wgSoundE' m ρ σ e1 σ1       -- σ1 ⊢ e1 (by IH)
+  LDIV e1 e2 w i -> wgSoundE m ρ σ e1 σ1        -- σ1 ⊢ e1 (by IH)
                   ? coherentEIncr m e1 σ1 σ2 π1 -- σ2 ⊢ e1 (since σ2 ≥ σ1)
                   ? coherentEIncr m e1 σ2 σ' π2 -- σ' ⊢ e1 (since σ' ≥ σ2)
 
-                  ? wgSoundE' m ρ σ1 e2 σ2      -- σ2 ⊢ e2 (by IH)
+                  ? wgSoundE m ρ σ1 e2 σ2       -- σ2 ⊢ e2 (by IH)
                   ? coherentEIncr m e2 σ2 σ' π2 -- σ' ⊢ e2 (since σ' ≥ σ2)
 
                   ? π1 (outputWire e1) -- σ2[i1] == σ1[i1] (since σ2 ≥ σ1)
@@ -77,7 +77,7 @@ wgSoundE' m ρ σ e σ' = case e of
     ADDC k -> proof; MULC k -> proof; UnsafeNOT -> proof;
     NOT -> proof ? wgBoolean m ρ σ e1 σ1;
     where σ1 = case witnessGenE' m ρ σ e1 of Just s -> s
-          proof = wgSoundE' m ρ σ e1 σ1
+          proof = wgSoundE m ρ σ e1 σ1
                 ? coherentEIncr m e1 σ1 σ' (\j -> trivial ? M.member j σ1
                                                           ? M.lookup' j σ')
 
@@ -91,11 +91,11 @@ wgSoundE' m ρ σ e σ' = case e of
     UnsafeXOR -> proof;
     where σ1 = case witnessGenE' m ρ σ  e1 of Just s -> s
           σ2 = case witnessGenE' m ρ σ1 e2 of Just s -> s
-          proof = wgSoundE' m ρ σ e1 σ1       -- σ1 ⊢ e1 (by IH)
+          proof = wgSoundE m ρ σ e1 σ1        -- σ1 ⊢ e1 (by IH)
                 ? coherentEIncr m e1 σ1 σ2 π1 -- σ2 ⊢ e1 (since σ2 ≥ σ1)
                 ? coherentEIncr m e1 σ2 σ' π2 -- σ' ⊢ e1 (since σ' ≥ σ2)
 
-                ? wgSoundE' m ρ σ1 e2 σ2      -- σ2 ⊢ e2 (by IH)
+                ? wgSoundE m ρ σ1 e2 σ2       -- σ2 ⊢ e2 (by IH)
                 ? coherentEIncr m e2 σ2 σ' π2 -- σ' ⊢ e2 (since σ' ≥ σ2)
 
                 ? π1 (outputWire e1) -- σ2[i1] == σ1[i1] (since σ2 ≥ σ1)
@@ -117,7 +117,7 @@ wgSoundE' m ρ σ e σ' = case e of
                        ? liquidAssert (vw == 1/(v1-k))
 
     where σ1 = case witnessGenE' m ρ σ e1 of Just s -> s
-          proof = wgSoundE' m ρ σ e1 σ1
+          proof = wgSoundE m ρ σ e1 σ1
                 ? coherentEIncr m e1 σ1 σ' π
                 ? π (outputWire e1)
 

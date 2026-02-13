@@ -59,7 +59,7 @@ library
       Utils
       Vec
       WitnessGeneration
-      WitnessGenProof
+      WitnessGenProof.WitnessGenSoundness
       WitnessGenProof.WitnessGenBase
       WitnessGenProof.WitnessGenLemmas
   other-modules:
