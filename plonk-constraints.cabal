@@ -60,7 +60,6 @@ library
       Vec
       WitnessGeneration
       WitnessGenProof.WitnessGenSoundness
-      WitnessGenProof.WitnessGenBase
       WitnessGenProof.WitnessGenLemmas
   other-modules:
       Treekz
