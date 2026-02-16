@@ -179,37 +179,37 @@ labelStore (def:ss) nextIndex λ =
            / [size program] @-}
 label' :: (Num p, Ord p) => DSL p -> Int -> LabelEnv p Int
        -> (Int, [LDSL p Int], LabelEnv p Int)
-label' p nextIndex λ = let i = nextIndex in case p of
+label' p i λ = case p of
     VAR s τ -> case M.lookup s λ of
       Nothing -> (i+1, [LVAR s τ i], M.insert s i λ)
-      Just j -> (nextIndex, [LWIRE τ j], λ)
+      Just j -> (i, [LWIRE τ j], λ)
 
     CONST x -> (i+1, [LCONST x i], λ)
-    BOOL False -> label' (CONST zero) nextIndex λ
-    BOOL True  -> label' (CONST one) nextIndex λ
+    BOOL False -> label' (CONST zero) i λ
+    BOOL True  -> label' (CONST one)  i λ
 
     UN op p1 -> case op of
       BoolToF -> label' p1 i λ -- noop
-      ISZERO -> label' (UN (EQLC zero) p1) nextIndex λ
-      EQLC k -> (w'+1, [LEQLC p1' k w' i'], λ')
-        where (i', [p1'], λ') = label' p1 i λ; w' = i'+1
-      _ -> (i'+1, [LUN op p1' i'], λ')
-        where (i', [p1'], λ') = label' p1 i λ
+      ISZERO -> label' (UN (EQLC zero) p1) i λ
+      EQLC k -> (w+1, [LEQLC p1' k w i1], λ1)
+        where (i1, [p1'], λ1) = label' p1 i λ; w = i1+1
+      _ -> (i1+1, [LUN op p1' i1], λ1)
+        where (i1, [p1'], λ1) = label' p1 i λ
 
     BIN op p1 p2 -> case op of
-      DIV -> (w'+1, [LDIV p1' p2' w' i'], λ')
-        where (i'', [p1'], λ'') = label' p1 i   λ
-              (i' , [p2'], λ')  = label' p2 i'' λ''
-              w' = i'+1
-      EQL -> label' (UN ISZERO (BIN SUB p1 p2)) nextIndex λ
-      _ -> (i'+1, [LBIN op p1' p2' i'], λ')
-        where (i'', [p1'], λ'') = label' p1 i   λ
-              (i' , [p2'], λ')  = label' p2 i'' λ''
+      DIV -> (w+1, [LDIV p1' p2' w i2], λ2)
+        where (i1, [p1'], λ1) = label' p1 i  λ
+              (i2, [p2'], λ2) = label' p2 i1 λ1
+              w = i2+1
+      EQL -> label' (UN ISZERO (BIN SUB p1 p2)) i λ
+      _ -> (i2+1, [LBIN op p1' p2' i2], λ2)
+        where (i1, [p1'], λ1) = label' p1 i  λ
+              (i2, [p2'], λ2) = label' p2 i1 λ1
 
     NIL _ -> (i, [], λ)
-    CONS h ts -> (i'', h' ++ ts', λ'')
-      where (i',  h',  λ')  = label' h  i  λ
-            (i'', ts', λ'') = label' ts i' λ'
+    CONS h ts -> (i2, h' ++ ts', λ2)
+      where (i1,  h', λ1) = label' h  i  λ
+            (i2, ts', λ2) = label' ts i1 λ1
 
 
 {-@ reflect labelAssertion @-}
