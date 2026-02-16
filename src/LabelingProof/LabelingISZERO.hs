@@ -92,5 +92,5 @@ labelProofISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1
       where (LEQLC _ _ w i) = e'
             (m1, ps1, λ1) = label' p1 m0 λ
             p1' = case ps1 of [x] -> x
-            σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ p1' σ of Just s -> s
+            σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
             v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
