@@ -22,6 +22,7 @@ import qualified Data.Map as M
 #endif
 
 import WitnessGenProof.WitnessGenLemmas
+import WitnessGenProof.WitnessGenBase
 
 import Language.Haskell.Liquid.ProofCombinators
 
@@ -36,9 +37,9 @@ wgSoundE :: (Eq p, Fractional p)
          => Int -> NameValuation p -> WireValuation p -> LDSL p Int
          -> WireValuation p -> Proof
 wgSoundE m ρ σ e σ' = case e of
-  LWIRE  τ i -> trivial
-  LVAR s τ i -> trivial
-  LCONST x i -> trivial
+  LWIRE τ i -> wgSoundWire m ρ σ τ i σ'
+  LVAR s τ i -> wgSoundVar m ρ σ s τ i σ'
+  LCONST x i -> wgSoundConst m ρ σ x i σ'
 
   LDIV e1 e2 w i -> wgSoundE m ρ σ e1 σ1        -- σ1 ⊢ e1 (by IH)
                   ? coherentEIncr m e1 σ1 σ2 π1 -- σ2 ⊢ e1 (since σ2 ≥ σ1)
