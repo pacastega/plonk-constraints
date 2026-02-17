@@ -61,8 +61,8 @@ library
       Vec
       WitnessGeneration
       WitnessGenProof.CompletenessVar
-      WitnessGenProof.WitnessGenSoundness
-      WitnessGenProof.WitnessGenBase
+      WitnessGenProof.Soundness
+      WitnessGenProof.SoundnessBase
       WitnessGenProof.WitnessGenLemmas
   other-modules:
       Treekz

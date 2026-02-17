@@ -3,7 +3,7 @@
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 {-@ LIQUID "--fast" @-}
-module WitnessGenProof.WitnessGenSoundness where
+module WitnessGenProof.Soundness where
 
 import Constraints
 import TypeAliases

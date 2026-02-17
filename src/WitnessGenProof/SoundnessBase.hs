@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-module WitnessGenProof.WitnessGenBase where
+module WitnessGenProof.SoundnessBase where
 
 import Constraints
 import TypeAliases
