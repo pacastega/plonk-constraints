@@ -23,7 +23,7 @@ import qualified MapFunctions as M
 #endif
 
 import WitnessGenProof.WitnessGenLemmas
-import WitnessGenProof.WitnessGenBase
+import WitnessGenProof.SoundnessBase
 
 import Language.Haskell.Liquid.ProofCombinators
 
