@@ -44,7 +44,7 @@ import Language.Haskell.Liquid.ProofCombinators
                                  && label' (VAR s τ) m0 λ = (m, mkList1 e', λ')}
 
                   -> { isJust (witnessGenE' m ρ σ e') } @-}
-wgCompleteVar :: (Fractional p, Eq p, Ord p)
+wgCompleteVar :: (Fractional p, Ord p)
               => Int -> Int -> Var -> Ty
               -> NameValuation p -> LabelEnv p Int -> WireValuation p
 
@@ -84,7 +84,7 @@ wgCompleteVar m0 m s τ ρ λ σ π λ' e' = case M.lookup s ρ of
                                  && label' (CONST x) m0 λ = (m, mkList1 e', λ')}
 
                     -> { isJust (witnessGenE' m ρ σ e') } @-}
-wgCompleteConst :: (Fractional p, Eq p, Ord p)
+wgCompleteConst :: (Fractional p, Ord p)
                 => Int -> Int -> p
                 -> NameValuation p -> LabelEnv p Int -> WireValuation p
 
@@ -110,7 +110,7 @@ wgCompleteConst m0 m x ρ λ σ π λ' e' = trivial
                                  && label' (BOOL b) m0 λ = (m, mkList1 e', λ')}
 
                    -> { isJust (witnessGenE' m ρ σ e') } @-}
-wgCompleteBool :: (Fractional p, Eq p, Ord p)
+wgCompleteBool :: (Fractional p, Ord p)
                => Int -> Int -> Bool
                -> NameValuation p -> LabelEnv p Int -> WireValuation p
 
