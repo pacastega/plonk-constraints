@@ -27,6 +27,7 @@ import WitnessGeneration
 import Semantics
 
 import LabelingProof.LabelingLemmas
+import LabelingProof.LabelingOps
 import LabelingProof.LabelingEQL
 import LabelingProof.LabelingDIV
 import LabelingProof.LabelingVar
