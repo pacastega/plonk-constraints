@@ -7,6 +7,7 @@ module WitnessGenProof.WitnessGenLemmas where
 import qualified Liquid.Data.Map as M
 #else
 import qualified Data.Map as M
+import qualified MapFunctions as M
 #endif
 
 import qualified Data.Set as S

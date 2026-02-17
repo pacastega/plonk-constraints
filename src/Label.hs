@@ -13,6 +13,7 @@ import PlinkLib
 import qualified Liquid.Data.Map as M
 #else
 import qualified Data.Map as M
+import qualified MapFunctions as M
 #endif
 
 type LabelEnv p i = M.Map String i
