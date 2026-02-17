@@ -6,7 +6,7 @@
 
 {-@ LIQUID "--cores=1" @-}
 
-module WitnessGenProof.CompletenessVar where
+module WitnessGenProof.CompletenessBase where
 
 #if LiquidOn
 import qualified Liquid.Data.Map as M
@@ -69,6 +69,59 @@ wgCompleteVar m0 m s τ ρ λ σ π λ' e' = case M.lookup s ρ of
                 TBool -> if boolean value
                          then witnessGenE' m ρ σ (LWIRE τ j) === Just σ *** QED
                          else error "the value is in {0,1} because eval succeeds"
+
+
+{-@ wgCompleteConst :: m0:Nat -> m:{Nat | m >= m0}
+                    -> x:p
+                    -> ρ:{NameValuation p | isJust (eval (CONST x) ρ)}
+                    -> λ:LabelEnv p (Btwn 0 m0)
+                    -> σ:WireValuation p m0
+
+                    -> Composable ρ λ σ
+
+                    -> λ':LabelEnv p (Btwn 0 m)
+                    -> e':{LDSL p (Btwn 0 m) | freshE e' σ
+                                 && label' (CONST x) m0 λ = (m, mkList1 e', λ')}
+
+                    -> { isJust (witnessGenE' m ρ σ e') } @-}
+wgCompleteConst :: (Fractional p, Eq p, Ord p)
+                => Int -> Int -> p
+                -> NameValuation p -> LabelEnv p Int -> WireValuation p
+
+                -> (Var -> Proof)
+
+                -> LabelEnv p Int
+                -> LDSL p Int
+
+                -> Proof
+wgCompleteConst m0 m x ρ λ σ π λ' e' = trivial
+
+
+{-@ wgCompleteBool :: m0:Nat -> m:{Nat | m >= m0}
+                   -> b:Bool
+                   -> ρ:{NameValuation p | isJust (eval (BOOL b) ρ)}
+                   -> λ:LabelEnv p (Btwn 0 m0)
+                   -> σ:WireValuation p m0
+
+                   -> Composable ρ λ σ
+
+                   -> λ':LabelEnv p (Btwn 0 m)
+                   -> e':{LDSL p (Btwn 0 m) | freshE e' σ
+                                 && label' (BOOL b) m0 λ = (m, mkList1 e', λ')}
+
+                   -> { isJust (witnessGenE' m ρ σ e') } @-}
+wgCompleteBool :: (Fractional p, Eq p, Ord p)
+               => Int -> Int -> Bool
+               -> NameValuation p -> LabelEnv p Int -> WireValuation p
+
+               -> (Var -> Proof)
+
+               -> LabelEnv p Int
+               -> LDSL p Int
+
+               -> Proof
+wgCompleteBool m0 m b ρ λ σ π λ' e' = if b then trivial else trivial
+
 
 -- workarounds to fix "crash: unknown constant" --------------------------------
 

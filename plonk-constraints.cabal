@@ -60,7 +60,7 @@ library
       Utils
       Vec
       WitnessGeneration
-      WitnessGenProof.CompletenessVar
+      WitnessGenProof.CompletenessBase
       WitnessGenProof.Soundness
       WitnessGenProof.SoundnessBase
       WitnessGenProof.WitnessGenLemmas
