@@ -26,6 +26,7 @@ import Semantics
 
 import MapLemmas
 import LabelingProof.LabelingLemmas
+import WitnessGenProof.WitnessGenLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
 

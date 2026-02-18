@@ -24,27 +24,6 @@ import Semantics
 import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
-{-@ wgLemma :: m:Nat -> m':{Nat | m' >= m}
-            -> ρ:NameValuation p -> σ:WireValuation p m
-            -> e:{LDSL p (Btwn 0 m) | wfE e && freshE e σ}
-            -> { witnessGenE' m ρ σ e == witnessGenE' m' ρ σ e } @-}
-wgLemma :: (Eq p, Fractional p) => Int -> Int
-        -> NameValuation p -> WireValuation p -> LDSL p Int -> Proof
-wgLemma m m' ρ σ e = case e of
-  LWIRE {} -> ()
-  LVAR {} -> ()
-  LCONST {} -> ()
-
-  LDIV e1 e2 _ _ -> wgLemma m m' ρ σ e1 ? case witnessGenE' m ρ σ e1 of
-    Nothing -> (); Just σ1 -> wgLemma m m' ρ σ1 e2
-
-  LUN _ e1 _ -> wgLemma m m' ρ σ e1
-  LBIN _ e1 e2 _ -> wgLemma m m' ρ σ e1 ? case witnessGenE' m ρ σ e1 of
-    Nothing -> (); Just σ1 -> wgLemma m m' ρ σ1 e2
-
-  LEQLC e1 _ _ _ -> wgLemma m m' ρ σ e1
-
-
 {-@ label1Inc :: op:UnOp p -> e1:{DSL p | wellTyped (UN op e1)} -> m0:Nat -> λ:LabelEnv p Int
               -> m1:Int -> e1':LDSL p Int -> λ1:{LabelEnv p Int | label' e1 m0 λ = (m1, mkList1 e1', λ1)}
               ->  m:Int ->  e':LDSL p Int -> λ':{LabelEnv p Int | label' (UN op e1) m0 λ = (m, mkList1 e', λ')}
@@ -77,5 +56,3 @@ label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
 {-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)}
                          -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
-
-

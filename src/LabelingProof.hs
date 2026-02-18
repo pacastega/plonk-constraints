@@ -35,6 +35,7 @@ import LabelingProof.LabelingISZERO
 import LabelingProof.LabelingEQLC
 
 import MapLemmas
+import WitnessGenProof.WitnessGenLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 

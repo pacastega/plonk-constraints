@@ -21,6 +21,27 @@ import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 
+{-@ wgLemma :: m:Nat -> m':{Nat | m' >= m}
+            -> ρ:NameValuation p -> σ:WireValuation p m
+            -> e:{LDSL p (Btwn 0 m) | wfE e && freshE e σ}
+            -> { witnessGenE' m ρ σ e == witnessGenE' m' ρ σ e } @-}
+wgLemma :: (Eq p, Fractional p) => Int -> Int
+        -> NameValuation p -> WireValuation p -> LDSL p Int -> Proof
+wgLemma m m' ρ σ e = case e of
+  LWIRE {} -> ()
+  LVAR {} -> ()
+  LCONST {} -> ()
+
+  LDIV e1 e2 _ _ -> wgLemma m m' ρ σ e1 ? case witnessGenE' m ρ σ e1 of
+    Nothing -> (); Just σ1 -> wgLemma m m' ρ σ1 e2
+
+  LUN _ e1 _ -> wgLemma m m' ρ σ e1
+  LBIN _ e1 e2 _ -> wgLemma m m' ρ σ e1 ? case witnessGenE' m ρ σ e1 of
+    Nothing -> (); Just σ1 -> wgLemma m m' ρ σ1 e2
+
+  LEQLC e1 _ _ _ -> wgLemma m m' ρ σ e1
+
+
 {-@ wgBoolean :: m:Nat -> ρ:NameValuation p -> σ:WireValuation p m
               -> {e:LDSL p (Btwn 0 m) | wfE e && freshE e σ && booleanE e}
               -> {σ':WireValuation p m | Just σ' = witnessGenE' m ρ σ e }
