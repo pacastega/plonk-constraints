@@ -38,7 +38,8 @@ label1Inc op _ _ _ _ _ _ _ _ _ = case op of
   EQLC _  -> ()
   _       -> ()
 
-{-@ label2Inc :: op:BinOp p -> e1:DSL p -> e2:{DSL p | wellTyped (BIN op e1 e2)}
+{-@ label2Inc :: op:{BinOp p | desugaredBinOp op || op == DIV}
+              -> e1:DSL p -> e2:{DSL p | wellTyped (BIN op e1 e2)}
               -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
 
               -> m1:Nat -> e1':LDSL p (Btwn 0 m1)
@@ -49,15 +50,18 @@ label1Inc op _ _ _ _ _ _ _ _ _ = case op of
 
               ->  m:Nat ->  e':LDSL p (Btwn 0 m)
               -> λ':{LabelEnv p (Btwn 0 m) | label' (BIN op e1 e2) m0 λ = (m, mkList1 e', λ')}
-              -> {m2 >= m1} @-}
+              -> {m > m2 && m2 >= m1} @-}
 label2Inc :: (Num p, Ord p) => BinOp p -> DSL p -> DSL p -> Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Proof
-label2Inc _op e1 e2 m0 λ m1 _e1' λ1 _m2 _e2' _λ2 _m _e' _λ'
+label2Inc op e1 e2 m0 λ m1 _e1' λ1 m2 _e2' _λ2 m _e' _λ'
   = trivial ? case label' e1 m0 λ  of (m1,_,_) -> m1
             ? case label' e2 m1 λ1 of (m2,_,_) -> m2
+            ? case op of
+                DIV -> liquidAssert (m == m2+2)
+                _   -> liquidAssert (m == m2+1)
 
 
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
