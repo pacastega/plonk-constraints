@@ -76,22 +76,22 @@ labelProofISZERO :: (Fractional p, Eq p, Ord p)
               -> (Proof, Var -> Proof)
 labelProofISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1
  = if v1 == 0
-              then (ih1 ? (eval (UN ISZERO p1) ρ === fmap' (eqlFn (VF 0)) (eval p1 ρ) === Just (eqlFn (VF 0) (VF v1))),
-                   \x -> let j = M.lookup' x λ1
-                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
-                                 ? (M.lookup j σ'
-                                    === M.lookup j (M.insert w zero σ1)
-                                    === M.lookup j σ1))
-                   ? liquidAssert (σ' == M.insert i one (M.insert w zero σ1))
-              else (ih1 ? (eval (UN ISZERO p1) ρ === fmap' (eqlFn (VF 0)) (eval p1 ρ) === Just (eqlFn (VF 0) (VF v1))),
-                   \x -> let j = M.lookup' x λ1
-                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
-                                 ? (M.lookup j σ'
-                                    === M.lookup j (M.insert w (1/v1) σ1)
-                                    === M.lookup j σ1))
-                   ? liquidAssert (σ' == M.insert i zero (M.insert w (1/v1) σ1))
-      where (LEQLC _ _ w i) = e'
-            (m1, ps1, λ1) = label' p1 m0 λ
-            p1' = case ps1 of [x] -> x
-            σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
-            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
+   then (ih1 ? (eval (UN ISZERO p1) ρ === Just (VF (eqlFn 0 v1))),
+        \x -> let j = M.lookup' x λ1
+              in π1 x ? notElemLemma x i λ1 ? notElemLemma x w λ1
+                      ? (M.lookup j σ'
+                         === M.lookup j (M.insert w zero σ1)
+                         === M.lookup j σ1))
+        ? liquidAssert (σ' == M.insert i one (M.insert w zero σ1))
+   else (ih1 ? (eval (UN ISZERO p1) ρ === Just (VF (eqlFn 0 v1))),
+        \x -> let j = M.lookup' x λ1
+              in π1 x ? notElemLemma x i λ1 ? notElemLemma x w λ1
+                      ? (M.lookup j σ'
+                         === M.lookup j (M.insert w (1/v1) σ1)
+                         === M.lookup j σ1))
+        ? liquidAssert (σ' == M.insert i zero (M.insert w (1/v1) σ1))
+   where (LEQLC _ _ w i) = e'
+         (m1, ps1, λ1) = label' p1 m0 λ
+         p1' = case ps1 of [x] -> x
+         σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
+         v1 = case M.lookup (outputWire p1') σ1 of Just v -> v

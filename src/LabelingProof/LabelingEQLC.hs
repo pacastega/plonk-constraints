@@ -76,16 +76,14 @@ labelProofEQLC :: (Fractional p, Eq p, Ord p)
               -> (Proof, Var -> Proof)
 labelProofEQLC _m0 _m1 _m k p1 ρ _λ λ1 _σ _π _λ' _p1' e' σ' σ1 _v v1 ih1 π1
  = if v1 == k
-              then (ih1 ? (eval (UN (EQLC k) p1) ρ === fmap' (eqlFn (VF k)) (eval p1 ρ)
-                                                   === Just (eqlFn (VF k) (VF v1))),
+              then (ih1 ? (eval (UN (EQLC k) p1) ρ === Just (VF (eqlFn k v1))),
                    \x -> let j = M.lookup' x λ1
                          in π1 x ? notElemLemma x i λ1 ? notElemLemma x w λ1
                                  ? (M.lookup j σ'
                                     === M.lookup j (M.insert w 0 σ1)
                                     === M.lookup j σ1))
                    ? liquidAssert (σ' == M.insert i one (M.insert w zero σ1))
-              else (ih1 ? (eval (UN (EQLC k) p1) ρ === fmap' (eqlFn (VF k)) (eval p1 ρ)
-                                                   === Just (eqlFn (VF k) (VF v1))),
+              else (ih1 ? (eval (UN (EQLC k) p1) ρ === Just (VF (eqlFn k v1))),
                    \x -> let j = M.lookup' x λ1
                          in π1 x ? notElemLemma x i λ1 ? notElemLemma x w λ1
                                  ? (M.lookup j σ'
