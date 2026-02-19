@@ -61,6 +61,7 @@ library
       Vec
       WitnessGeneration
       WitnessGenProof.CompletenessBase
+      WitnessGenProof.CompletenessOps
       WitnessGenProof.Soundness
       WitnessGenProof.SoundnessBase
       WitnessGenProof.WitnessGenLemmas
