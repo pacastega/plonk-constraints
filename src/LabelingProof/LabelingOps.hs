@@ -31,7 +31,7 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> λ1:LabelEnv p (Btwn 0 m1)
                   -> σ:M.Map (Btwn 0 m0) p
 
-                  -> Composable ρ λ σ
+                  -> Agree λ ρ σ
 
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
@@ -42,11 +42,11 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> v:p -> v1:{p | M.lookup (outputWire p1') σ1 == Just v1}
 
                   -> ({ eval p1 ρ = Just (VF v1) <=> M.lookup (outputWire p1') σ1 = Just v1 })
-                  -> Composable ρ λ1 σ1
+                  -> Agree λ1 ρ σ1
 
                   -> ({ eval (UN op p1) ρ = Just (VF v) <=>
                       M.lookup (outputWire e') σ' = Just v },
-                    Composable ρ λ' σ') @-}
+                    Agree λ' ρ σ') @-}
 labelProofUn :: (Fractional p, Eq p, Ord p)
               => Int -> Int -> Int -> DSL p -> UnOp p
               -> NameValuation p
@@ -67,11 +67,11 @@ labelProofUn :: (Fractional p, Eq p, Ord p)
 
               -> (Proof, String -> Proof)
 labelProofUn m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1 = case op of
-  ADDC k -> ((), \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
-  MULC k -> ((), \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
+  ADDC k -> ((), \x -> π1 x ? notElemLemma x (outputWire e') λ1)
+  MULC k -> ((), \x -> π1 x ? notElemLemma x (outputWire e') λ1)
 
-  NOT ->       ((), \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
-  UnsafeNOT -> ((), \x -> π1 x ? notElemLemma' x (outputWire e') λ1)
+  NOT ->       ((), \x -> π1 x ? notElemLemma x (outputWire e') λ1)
+  UnsafeNOT -> ((), \x -> π1 x ? notElemLemma x (outputWire e') λ1)
 
 
 {-@ labelProofBin :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
@@ -84,7 +84,7 @@ labelProofUn m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1 = cas
                   -> λ2:LabelEnv p (Btwn 0 m2)
                   -> σ:M.Map (Btwn 0 m0) p
 
-                  -> Composable ρ λ σ
+                  -> Agree λ ρ σ
 
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ  = (m1, mkList1 p1', λ1)}
@@ -100,14 +100,14 @@ labelProofUn m0 m1 m p1 op ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1 = cas
                   -> v2:{p | M.lookup (outputWire p2') σ2 == Just v2}
 
                   -> ({ eval p1 ρ = Just (VF v1) <=> M.lookup (outputWire p1') σ1 = Just v1 })
-                  -> Composable ρ λ1 σ1
+                  -> Agree λ1 ρ σ1
 
                   -> ({ eval p2 ρ = Just (VF v2) <=> M.lookup (outputWire p2') σ2 = Just v2 })
-                  -> Composable ρ λ2 σ2
+                  -> Agree λ2 ρ σ2
 
                   -> ({ eval (BIN op p1 p2) ρ = Just (VF v) <=>
                       M.lookup (outputWire e') σ' = Just v },
-                    Composable ρ λ' σ') @-}
+                    Agree λ' ρ σ') @-}
 labelProofBin :: (Fractional p, Eq p, Ord p)
               => Int -> Int -> Int -> Int -> DSL p -> DSL p -> BinOp p
               -> NameValuation p
@@ -127,13 +127,13 @@ labelProofBin :: (Fractional p, Eq p, Ord p)
 
               -> (Proof, String -> Proof)
 labelProofBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 v v1 v2 ih1 π1 ih2 π2 = case op of
-  ADD           -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-  SUB           -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-  MUL           -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-  LINCOMB k1 k2 -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-  AND -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-  OR  -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-  XOR -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-  UnsafeAND -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-  UnsafeOR  -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
-  UnsafeXOR -> ((), \x -> π2 x ? notElemLemma' x (outputWire e') λ2)
+  ADD           -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)
+  SUB           -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)
+  MUL           -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)
+  LINCOMB k1 k2 -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)
+  AND -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)
+  OR  -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)
+  XOR -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)
+  UnsafeAND -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)
+  UnsafeOR  -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)
+  UnsafeXOR -> ((), \x -> π2 x ? notElemLemma x (outputWire e') λ2)

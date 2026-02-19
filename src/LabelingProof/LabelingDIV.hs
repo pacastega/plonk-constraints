@@ -85,7 +85,7 @@ labelProofDIV :: (Fractional p, Ord p)
 labelProofDIV _m0 _m1 _m2 _m _p1 _p2 _ρ _λ _λ1 λ2 _σ _π _λ' _p1' _p2' e' σ' _σ1 σ2 _v v1 v2 ih1 _π1 ih2 π2
   = (ih1 ? ih2,
            \x -> let j = M.lookup' x λ2
-                 in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
+                 in π2 x ? notElemLemma x i λ2 ? notElemLemma x w λ2
                          ? (M.lookup j σ'
                             === M.lookup j (M.insert i (v1/v2) σ2)
                             === M.lookup j σ2))

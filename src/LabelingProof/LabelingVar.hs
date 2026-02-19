@@ -37,7 +37,7 @@ import Language.Haskell.Liquid.ProofCombinators
                 -> λ:LabelEnv p (Btwn 0 m0)
                 -> σ:M.Map (Btwn 0 m0) p
 
-                -> Composable ρ λ σ
+                -> Agree λ ρ σ
 
                 -> λ':LabelEnv p (Btwn 0 m)
                 -> e':{LDSL p (Btwn 0 m) | label' (VAR s τ) m0 λ = (m, mkList1 e', λ')}
@@ -47,7 +47,7 @@ import Language.Haskell.Liquid.ProofCombinators
 
                 -> ({ eval (VAR s τ) ρ = Just (VF v) <=>
                       M.lookup (outputWire e') σ' = Just v },
-                    Composable ρ λ' σ')
+                    Agree λ' ρ σ')
                  @-}
 labelVar :: (Fractional p, Eq p, Ord p)
             => Int -> Int -> Var -> Ty
@@ -70,10 +70,10 @@ labelVar _m0 _m s τ _ρ λ _σ π λ' e' _σ' _v = case M.lookup s λ of
              \x -> if x == s
                    then trivial
                    else elem' x (M.keys λ')
-                     ?? freshLemma (outputWire e') λ ? π x ? M.lookup' x λ)
+                     ?? π x ? M.lookup' x λ)
       TBool -> (trivial,
                \x -> if x == s
                      then trivial
                      else elem' x (M.keys λ')
-                       ?? freshLemma (outputWire e') λ ? π x ? M.lookup' x λ)
+                       ?? π x ? M.lookup' x λ)
     Just j  -> (elementLemma s j λ ? π s ? lookupLemma s λ, \x -> π x)

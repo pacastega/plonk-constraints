@@ -49,7 +49,7 @@ wgLemma m m' ρ σ e = case e of
 wgBoolean :: (Eq p, Fractional p) => Int -> NameValuation p -> WireValuation p
           -> LDSL p Int -> WireValuation p -> Proof
 wgBoolean m ρ σ e σ' = case e of
-  LWIRE  τ i -> elemLemmaSet i value σ ? lookupLemmaSet i σ
+  LWIRE  τ i -> elementLemma i value σ ? lookupLemma i σ
               ? witnessGenE' m ρ σ (LWIRE τ i)
     where value = case M.lookup i σ of Just v -> v
   LVAR _ _ i -> trivial

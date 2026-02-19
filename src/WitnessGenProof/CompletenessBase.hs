@@ -37,7 +37,7 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> σ:WireValuation p m0
 
-                  -> Composable ρ λ σ
+                  -> Agree λ ρ σ
 
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> e':{LDSL p (Btwn 0 m) | freshE e' σ

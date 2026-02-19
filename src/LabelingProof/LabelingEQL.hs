@@ -88,7 +88,7 @@ labelProofEQL m0 _m1 _m2 m p1 p2 ρ λ _λ1 λ2 σ _π _λ' _p1' _p2' e' σ' _σ
                  ? liquidAssert (M.lookup (outputWire osub) σ3 == Just (v1 - v2))
                  ? (eval (BIN EQL p1 p2) ρ === Just (eqlFn (VF v1) (VF v2))),
                  \x -> let j = M.lookup' x λ2
-                       in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
+                       in π2 x ? notElemLemma x i λ2 ? notElemLemma x w λ2
                                ? (M.lookup j σ'
                                   === M.lookup j (M.insert w zero σ3)
                                   === M.lookup j σ3))
@@ -97,7 +97,7 @@ labelProofEQL m0 _m1 _m2 m p1 p2 ρ λ _λ1 λ2 σ _π _λ' _p1' _p2' e' σ' _σ
                  ? liquidAssert (M.lookup (outputWire osub) σ3 == Just (v1 - v2))
                  ? (eval (BIN EQL p1 p2) ρ === Just (eqlFn (VF v1) (VF v2))),
                  \x -> let j = M.lookup' x λ2
-                       in π2 x ? notElemLemma' x i λ2 ? notElemLemma' x w λ2
+                       in π2 x ? notElemLemma x i λ2 ? notElemLemma x w λ2
                                ? (M.lookup j σ'
                                   === M.lookup j (M.insert w (1/(v1-v2)) σ3)
                                   === M.lookup j σ3))

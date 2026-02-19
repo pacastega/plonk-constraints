@@ -79,7 +79,7 @@ labelProofEQLC _m0 _m1 _m k p1 ρ _λ λ1 _σ _π _λ' _p1' e' σ' σ1 _v v1 ih1
               then (ih1 ? (eval (UN (EQLC k) p1) ρ === fmap' (eqlFn (VF k)) (eval p1 ρ)
                                                    === Just (eqlFn (VF k) (VF v1))),
                    \x -> let j = M.lookup' x λ1
-                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
+                         in π1 x ? notElemLemma x i λ1 ? notElemLemma x w λ1
                                  ? (M.lookup j σ'
                                     === M.lookup j (M.insert w 0 σ1)
                                     === M.lookup j σ1))
@@ -87,7 +87,7 @@ labelProofEQLC _m0 _m1 _m k p1 ρ _λ λ1 _σ _π _λ' _p1' e' σ' σ1 _v v1 ih1
               else (ih1 ? (eval (UN (EQLC k) p1) ρ === fmap' (eqlFn (VF k)) (eval p1 ρ)
                                                    === Just (eqlFn (VF k) (VF v1))),
                    \x -> let j = M.lookup' x λ1
-                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
+                         in π1 x ? notElemLemma x i λ1 ? notElemLemma x w λ1
                                  ? (M.lookup j σ'
                                     === M.lookup j (M.insert w (1/(v1-k)) σ1)
                                     === M.lookup j σ1))
