@@ -61,83 +61,62 @@ eval expr ρ = case expr of
   BOOL True  -> withProof (Just (VF 1)) (boolean 1)
   BOOL False -> withProof (Just (VF 0)) (boolean 0)
 
-  UN op p1 -> case op of
-    ADDC k    -> fmap' (add (VF k))   (eval p1 ρ)
-    MULC k    -> fmap' (mul (VF k))   (eval p1 ρ)
+  UN op p1 -> case eval p1 ρ of
+    Just (VF x) -> case op of
+      ADDC k    -> Just (VF (k + x))
+      MULC k    -> Just (VF (k * x))
 
-    NOT       -> fmap' notFn          (eval p1 ρ)
-    UnsafeNOT -> fmap' notFn          (eval p1 ρ)
+      NOT       -> Just (VF (notFn x))
+      UnsafeNOT -> Just (VF (notFn x))
 
-    ISZERO    -> fmap' (eqlFn (VF 0)) (eval p1 ρ)
-    EQLC k    -> fmap' (eqlFn (VF k)) (eval p1 ρ)
+      ISZERO    -> Just (VF (eqlFn 0 x))
+      EQLC k    -> Just (VF (eqlFn k x))
 
-    BoolToF   -> eval p1 ρ
+      BoolToF   -> Just (VF x)
 
-  BIN op p1 p2 -> case op of
-    ADD -> liftA2' add (eval p1 ρ) (eval p2 ρ)
-    SUB -> liftA2' sub (eval p1 ρ) (eval p2 ρ)
-    MUL -> liftA2' mul (eval p1 ρ) (eval p2 ρ)
-    DIV -> case (eval p1 ρ, eval p2 ρ) of
-      (Just (VF x), Just (VF y)) -> if y /= 0 then Just (VF (x / y)) else Nothing
-      _ -> Nothing
+    _ -> Nothing -- the argument is undefined
 
-    LINCOMB k1 k2 -> liftA2' (linCombFn k1 k2) (eval p1 ρ) (eval p2 ρ)
+  BIN op p1 p2 -> case (eval p1 ρ, eval p2 ρ) of
+    (Just (VF x), Just (VF y)) -> case op of
+      ADD -> Just (VF (x + y))
+      SUB -> Just (VF (x - y))
+      MUL -> Just (VF (x * y))
+      DIV -> if y /= 0 then Just (VF (x / y)) else Nothing
 
-    AND -> liftA2' andFn (eval p1 ρ) (eval p2 ρ)
-    OR  -> liftA2' orFn  (eval p1 ρ) (eval p2 ρ)
-    XOR -> liftA2' xorFn (eval p1 ρ) (eval p2 ρ)
+      LINCOMB k1 k2 -> Just (VF (k1*x + k2*y))
 
-    UnsafeAND -> liftA2' andFn (eval p1 ρ) (eval p2 ρ)
-    UnsafeOR  -> liftA2' orFn  (eval p1 ρ) (eval p2 ρ)
-    UnsafeXOR -> liftA2' xorFn (eval p1 ρ) (eval p2 ρ)
+      AND -> Just (VF (andFn x y))
+      OR  -> Just (VF (orFn  x y))
+      XOR -> Just (VF (xorFn x y))
 
-    EQL -> liftA2' eqlFn (eval p1 ρ) (eval p2 ρ)
+      UnsafeAND -> Just (VF (andFn x y))
+      UnsafeOR  -> Just (VF (orFn  x y))
+      UnsafeXOR -> Just (VF (xorFn x y))
+
+      EQL -> Just (VF (eqlFn x y))
+
+    _ -> Nothing -- at least one of the arguments is undefined
 
   NIL _     -> Just VNil
   CONS h ts -> liftA2' VCons (eval h ρ) (eval ts ρ)
 
 
-{-@ reflect linCombFn @-}
-{-@ linCombFn :: p -> p -> FValue p -> FValue p -> FValue p @-}
-linCombFn :: (Num p) => p -> p -> DSLValue p -> DSLValue p -> DSLValue p
-linCombFn k1 k2 (VF x) (VF y) = VF (k1*x + k2*y)
-
-{-@ reflect add @-}
-{-@ add :: FValue p -> FValue p -> FValue p @-}
-add :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-add (VF x) (VF y) = VF (x + y)
-
-{-@ reflect sub @-}
-{-@ sub :: FValue p -> FValue p -> FValue p @-}
-sub :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-sub (VF x) (VF y) = VF (x - y)
-
-{-@ reflect mul @-}
-{-@ mul :: FValue p -> FValue p -> FValue p @-}
-mul :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-mul (VF x) (VF y) = VF (x * y)
-
 {-@ reflect notFn @-}
-{-@ notFn :: BoolValue p -> BoolValue p @-}
-notFn :: (Num p) => DSLValue p -> DSLValue p
-notFn (VF b) = VF (1 - b)
+notFn :: (Num p) => p -> p
+notFn b = 1 - b
 
 {-@ reflect andFn @-}
-{-@ andFn :: BoolValue p -> BoolValue p -> BoolValue p @-}
-andFn :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-andFn (VF b) (VF c) = VF (b * c)
+andFn :: (Num p) => p -> p -> p
+andFn b c = b * c
 
 {-@ reflect orFn @-}
-{-@ orFn :: BoolValue p -> BoolValue p -> BoolValue p @-}
-orFn :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-orFn  (VF b) (VF c) = VF (b + c - b*c)
+orFn :: (Num p) => p -> p -> p
+orFn b c = b + c - b*c
 
 {-@ reflect xorFn @-}
-{-@ xorFn :: BoolValue p -> BoolValue p -> BoolValue p @-}
-xorFn :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-xorFn (VF b) (VF c) = VF (b + c - 2*b*c)
+xorFn :: (Num p) => p -> p -> p
+xorFn b c = b + c - 2*b*c
 
 {-@ reflect eqlFn @-}
-{-@ eqlFn :: FValue p -> FValue p -> BoolValue p @-}
-eqlFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
-eqlFn (VF b) (VF c) = VF (if b == c then 1 else 0)
+eqlFn :: (Num p, Eq p) => p -> p -> p
+eqlFn b c = if b == c then 1 else 0
