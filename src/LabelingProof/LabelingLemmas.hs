@@ -67,3 +67,6 @@ label2Inc op e1 e2 m0 λ m1 _e1' λ1 m2 _e2' _λ2 m _e' _λ'
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
 {-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)}
                          -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
+
+{-@ type Agree Λ Ρ Σ = var:{String | M.member var Λ}
+                    -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
