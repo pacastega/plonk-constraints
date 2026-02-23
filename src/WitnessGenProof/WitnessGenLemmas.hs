@@ -116,3 +116,12 @@ coherentEIncr m e σ1 σ2 π = case e of
   LBIN op e1 e2 i -> coherentEIncr m e1 σ1 σ2 π ? coherentEIncr m e2 σ1 σ2 π
                    ? π (outputWire e1) ? π (outputWire e2) ? π i
   LEQLC e1 k w i -> coherentEIncr m e1 σ1 σ2 π ? π (outputWire e1) ? π i ? π w
+
+
+{-@ wgPostCond :: m:Nat -> ρ:NameValuation p -> σ:M.Map (Btwn 0 m) p
+               -> e':{LDSL p (Btwn 0 m) | wfE e' && freshE e' σ}
+               -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
+               -> { closedExpr m σ' e' } @-}
+wgPostCond :: (Ord p, Fractional p) => Int -> NameValuation p -> M.Map Int p
+           -> LDSL p Int -> M.Map Int p -> Proof
+wgPostCond m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> ()
