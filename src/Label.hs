@@ -175,7 +175,7 @@ labelStore (def:ss) nextIndex λ =
 {-@ label' :: program:TypedDSL p ->
               m0:Nat -> LabelEnv p (Btwn 0 m0) ->
               (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
-           <\m   -> {l:[LDSL p (Btwn 0 m)] | scalar program => len l = 1},
+           <\m   -> {l:[LDSLI p (Btwn m0 m) (Btwn 0 m) ] | scalar program => len l = 1},
             \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}>
            / [size program] @-}
 label' :: (Num p, Ord p) => DSL p -> Int -> LabelEnv p Int

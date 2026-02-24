@@ -1,13 +1,15 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-@ LIQUID "--reflection" @-}
-{-@ LIQUID "--ple" @-}
+{-@ LIQUID "--ple"                       @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
+{-@ LIQUID "--skip-module"               @-}
 module Optimizations.RemoveConstants (removeConstants) where
 
 import Optimizations.Base (Opt)
 import DSL
 import Semantics
-import Utils (any', liftA2', fmap', isJust)
+import Utils -- (any', liftA2', fmap', isJust)
+import Data.Map 
 
 import Language.Haskell.Liquid.ProofCombinators
 

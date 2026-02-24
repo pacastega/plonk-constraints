@@ -1,0 +1,3 @@
+- Niki
+  - Check error in         `Optimizations.RemoveConstants`
+  - Check memory blowup in `LabelingProof.LabelingEQL` -- check how mul and div are interpreted needs z3 4.15.7

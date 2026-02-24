@@ -213,37 +213,40 @@ data Assertion p =
 {-@ type UnOp'  p = {op:UnOp  p | desugaredUnOp op} @-}
 {-@ type BinOp' p = {op:BinOp p | desugaredBinOp op} @-}
 
+
+type LDSL p i = LDSLI p i i 
+
 -- Labeled DSL
-data LDSL p i =
-    LWIRE      Ty i
+data LDSLI p i j =
+    LWIRE      Ty j
   | LVAR   Var Ty i
   | LCONST p      i
 
-  | LDIV (LDSL p i) (LDSL p i) i i
+  | LDIV (LDSLI p i j) (LDSLI p i j) i i
 
-  | LUN  (UnOp p)  (LDSL p i)            i
-  | LBIN (BinOp p) (LDSL p i) (LDSL p i) i
+  | LUN  (UnOp p)  (LDSLI p i j)            i
+  | LBIN (BinOp p) (LDSLI p i j) (LDSLI p i j) i
 
-  | LEQLC   (LDSL p i) p i i
+  | LEQLC   (LDSLI p i j) p i i
   deriving (Show, Eq)
 
 {-@
-data LDSL p i =
-    LWIRE      ScalarTy i
+data LDSLI p i j =
+    LWIRE      ScalarTy j
   | LVAR   Var ScalarTy i
   | LCONST p            i
 
-  | LDIV   (LDSL p i) (LDSL p i) i i
+  | LDIV   (LDSLI p i j) (LDSLI p i j) i i
 
-  | LUN  (UnOp' p)  (LDSL p i)            i
-  | LBIN (BinOp' p) (LDSL p i) (LDSL p i) i
+  | LUN  (UnOp' p)  (LDSLI p i j)            i
+  | LBIN (BinOp' p) (LDSLI p i j) (LDSLI p i j) i
 
-  | LEQLC   (LDSL p i) p i i
+  | LEQLC   (LDSLI p i j) p i i
 @-}
 
 
 {-@ measure wiresE @-}
-wiresE :: (Ord i) => LDSL p i -> S.Set i
+wiresE :: (Ord i) => LDSLI p i j -> S.Set i
 wiresE (LWIRE {})    = S.empty
 wiresE (LVAR  _ _ i) = S.singleton i
 wiresE (LCONST  _ i) = S.singleton i
@@ -254,7 +257,7 @@ wiresE (LBIN _ e1 e2 i) = wiresE e1 `S.union` wiresE e2 `S.union` S.singleton i
 wiresE (LEQLC e1 _ w i) = wiresE e1 `S.union` S.singleton w `S.union` S.singleton i
 
 {-@ measure wWiresE @-}
-wWiresE :: (Ord i) => LDSL p i -> S.Set i
+wWiresE :: (Ord j) => LDSLI p i j -> S.Set j
 wWiresE (LWIRE _ i)      = S.singleton i
 wWiresE (LVAR {})        = S.empty
 wWiresE (LCONST {})      = S.empty
@@ -270,7 +273,7 @@ wWiresE (LEQLC e1 _ _ _) = wWiresE e1
 -- b. new wires don't clash with subexpressions
 -- c. subexpressions are recursively well-formed
 {-@ measure wfE @-}
-wfE :: (Ord i) => LDSL p i -> Bool
+wfE :: (Ord i, Ord j) => LDSLI p i j -> Bool
 wfE (LWIRE  _ _) = True
 wfE (LVAR _ _ i) = True
 wfE (LCONST _ i) = True
@@ -292,8 +295,8 @@ wfLWireE e = wWiresE e `S.isSubsetOf` wiresE e
 
 
 {-@ measure inferType' @-}
-{-@ inferType' :: LDSL p i -> Maybe Ty @-}
-inferType' :: LDSL p i -> Maybe Ty
+{-@ inferType' :: LDSLI p i j -> Maybe Ty @-}
+inferType' :: LDSLI p i j -> Maybe Ty
 inferType' e = case e of
   LWIRE  τ _ -> Just τ
   LVAR _ τ _ -> Just τ
@@ -393,10 +396,10 @@ wfs (p:ps) = wf p && disjoint (wires p) (wiress ps) && wfs ps
 
 
 -- TODO: this could be avoided by using record syntax
-{-@ measure outputWire @-}
-{-@ outputWire :: e:LDSL p i
+{-@ reflect outputWire @-}
+{-@ outputWire :: e:LDSLI p i i
                -> {v:i | S.member v (S.union (wiresE e) (wWiresE e))} @-}
-outputWire :: LDSL p i -> i
+outputWire :: LDSLI p i i -> i
 outputWire (LWIRE _ i)    = i
 
 outputWire (LVAR _ _ i)   = i
@@ -412,8 +415,8 @@ outputWire (LEQLC _ _ _ i) = i
 
 -- the number of gates needed to compile the program into a circuit
 {-@ measure nGatesE @-}
-{-@ nGatesE :: LDSL p i -> Nat @-}
-nGatesE :: LDSL p i -> Int
+{-@ nGatesE :: LDSLI p i j -> Nat @-}
+nGatesE :: LDSLI p i j -> Int
 nGatesE (LWIRE _ _)      = 0
 
 nGatesE (LVAR _ τ _)     = case τ of TF -> 0; TBool -> 1
