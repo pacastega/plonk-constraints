@@ -100,11 +100,6 @@ vlength (NIL _)     = 0
 vlength (CONS _ ps) = 1 + vlength ps
 vlength _           = 1
 
-{-@ measure isVar @-}
-isVar :: DSL p -> Bool
-isVar VAR {} = True
-isVar _      = False
-
 
 {-@ boolFromIntegral :: a -> BoolDSL p @-}
 boolFromIntegral :: Integral a => a -> DSL p
@@ -242,7 +237,7 @@ data LDSL p i =
 @-}
 
 
-{-@ measure wiresE @-}
+{-@ reflect wiresE @-}
 wiresE :: (Ord i) => LDSL p i -> S.Set i
 wiresE (LWIRE {})    = S.empty
 wiresE (LVAR  _ _ i) = S.singleton i
@@ -253,7 +248,7 @@ wiresE (LUN _ e1 i) = wiresE e1 `S.union` S.singleton i
 wiresE (LBIN _ e1 e2 i) = wiresE e1 `S.union` wiresE e2 `S.union` S.singleton i
 wiresE (LEQLC e1 _ w i) = wiresE e1 `S.union` S.singleton w `S.union` S.singleton i
 
-{-@ measure wWiresE @-}
+{-@ reflect wWiresE @-}
 wWiresE :: (Ord i) => LDSL p i -> S.Set i
 wWiresE (LWIRE _ i)      = S.singleton i
 wWiresE (LVAR {})        = S.empty
@@ -269,7 +264,7 @@ wWiresE (LEQLC e1 _ _ _) = wWiresE e1
 -- a. sibling subexpressions don't have wire clashes between themselves
 -- b. new wires don't clash with subexpressions
 -- c. subexpressions are recursively well-formed
-{-@ measure wfE @-}
+{-@ reflect wfE @-}
 wfE :: (Ord i) => LDSL p i -> Bool
 wfE (LWIRE  _ _) = True
 wfE (LVAR _ _ i) = True
@@ -345,19 +340,19 @@ data LAss p i =
   | LEQA     (LDSL p i) (LDSL p i)
   deriving (Show, Eq)
 
-{-@ measure wiresA @-}
+{-@ reflect wiresA @-}
 wiresA :: (Ord i) => LAss p i -> S.Set i
 wiresA (LNZERO e1 w) = wiresE e1 `S.union` S.singleton w
 wiresA (LBOOLEAN e1) = wiresE e1
 wiresA (LEQA e1 e2)  = wiresE e1 `S.union` wiresE e2
 
-{-@ measure wWiresA @-}
+{-@ reflect wWiresA @-}
 wWiresA :: (Ord i) => LAss p i -> S.Set i
 wWiresA (LNZERO e1 _) = wWiresE e1
 wWiresA (LBOOLEAN e1) = wWiresE e1
 wWiresA (LEQA e1 e2)  = wWiresE e1 `S.union` wWiresE e2
 
-{-@ measure wfA @-}
+{-@ reflect wfA @-}
 wfA :: (Ord i) => LAss p i -> Bool
 wfA (LNZERO e1 w) = wfE e1 && (wiresE e1 `disjoint` S.singleton w)
 wfA (LBOOLEAN e1) = wfE e1
@@ -365,12 +360,12 @@ wfA (LEQA  e1 e2) = wfE e1 && wfE e2 && (wiresE e1 `disjoint` wiresE e2)
 
 data LProg p i = LExpr (LDSL p i) | LAss (LAss p i)
 
-{-@ measure wires @-}
+{-@ reflect wires @-}
 wires :: (Ord i) => LProg p i -> S.Set i
 wires (LExpr e) = wiresE e
 wires (LAss a) = wiresA a
 
-{-@ measure wWires @-}
+{-@ reflect wWires @-}
 wWires :: (Ord i) => LProg p i -> S.Set i
 wWires (LExpr e) = wWiresE e
 wWires (LAss a) = wWiresA a
@@ -380,7 +375,7 @@ wiress :: (Ord i) => [LProg p i] -> S.Set i
 wiress [] = S.empty
 wiress (p:ps) = wires p `S.union` wiress ps
 
-{-@ measure wf @-}
+{-@ reflect wf @-}
 wf :: (Ord i) => LProg p i -> Bool
 wf (LExpr e) = wfE e
 wf (LAss a) = wfA a
