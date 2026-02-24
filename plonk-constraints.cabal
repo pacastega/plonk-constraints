@@ -33,6 +33,7 @@ library
       DSL
       Examples
       Label
+      LabelingProof.AgreeLemma
       LabelingProof.LabelingLemmas
       LabelingProof.LabelingOps
       LabelingProof.LabelingEQL
