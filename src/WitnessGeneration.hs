@@ -36,7 +36,7 @@ extend :: NameValuation p -> (NameValuation p -> NameValuation p)
 extend ρ hints = M.union ρ (hints ρ)
 
 
-{-@ inline freshE @-}
+{-@ reflect freshE @-}
 freshE :: (Ord i) => LDSL p i -> M.Map i p -> Bool
 freshE e σ = disjoint (wiresE e) (M.keysSet σ)
 
