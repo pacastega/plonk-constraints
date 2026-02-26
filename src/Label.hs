@@ -175,8 +175,8 @@ labelStore (def:ss) nextIndex λ =
 {-@ label' :: program:TypedDSL p ->
               m0:Nat -> LabelEnv p (Btwn 0 m0) ->
               (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
-           <\m   -> {l:[LDSLI p (Btwn m0 m) (Btwn 0 m) ] | scalar program => len l = 1},
-            \_ m -> {v:LabelEnv   p (Btwn 0 m)  | true}>
+           <\m   -> {l:[LDSLI p (Btwn m0 m) (Btwn 0 m)] | scalar program => len l = 1},
+            \_ m -> {v:LabelEnv p (Btwn 0 m) | true}>
            / [size program] @-}
 label' :: (Num p, Ord p) => DSL p -> Int -> LabelEnv p Int
        -> (Int, [LDSL p Int], LabelEnv p Int)
@@ -186,26 +186,33 @@ label' p i λ = case p of
       Just j -> (i, [LWIRE τ j], λ)
 
     CONST x -> (i+1, [LCONST x i], λ)
-    BOOL False -> label' (CONST zero) i λ
-    BOOL True  -> label' (CONST one)  i λ
+    BOOL b -> case b of
+      False -> label' (CONST zero) i λ
+      True  -> label' (CONST one)  i λ
 
     UN op p1 -> case op of
       BoolToF -> label' p1 i λ -- noop
       ISZERO -> label' (UN (EQLC zero) p1) i λ
       EQLC k -> (w+1, [LEQLC p1' k w i1], λ1)
-        where (i1, [p1'], λ1) = label' p1 i λ; w = i1+1
+        where (i1, ps1, λ1) = label' p1 i λ; w = i1+1
+              p1' = case ps1 of [x] -> x
       _ -> (i1+1, [LUN op p1' i1], λ1)
-        where (i1, [p1'], λ1) = label' p1 i λ
+        where (i1, ps1, λ1) = label' p1 i λ
+              p1' = case ps1 of [x] -> x
 
     BIN op p1 p2 -> case op of
       DIV -> (w+1, [LDIV p1' p2' w i2], λ2)
-        where (i1, [p1'], λ1) = label' p1 i  λ
-              (i2, [p2'], λ2) = label' p2 i1 λ1
+        where (i1, ps1, λ1) = label' p1 i  λ
+              p1' = case ps1 of [x] -> x
+              (i2, ps2, λ2) = label' p2 i1 λ1
+              p2' = case ps2 of [x] -> x
               w = i2+1
       EQL -> label' (UN ISZERO (BIN SUB p1 p2)) i λ
       _ -> (i2+1, [LBIN op p1' p2' i2], λ2)
-        where (i1, [p1'], λ1) = label' p1 i  λ
-              (i2, [p2'], λ2) = label' p2 i1 λ1
+        where (i1, ps1, λ1) = label' p1 i  λ
+              p1' = case ps1 of [x] -> x
+              (i2, ps2, λ2) = label' p2 i1 λ1
+              p2' = case ps2 of [x] -> x
 
     NIL _ -> (i, [], λ)
     CONS h ts -> (i2, h' ++ ts', λ2)
