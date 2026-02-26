@@ -9,9 +9,14 @@ import Optimizations.Base (Opt)
 import DSL
 import Semantics
 import Utils -- (any', liftA2', fmap', isJust)
-import Data.Map 
+import Data.Map
 
 import Language.Haskell.Liquid.ProofCombinators
+
+--FIXME: temporary fix for crash by avoiding withProof
+{-@ reflect myconst @-}
+myconst :: a -> b -> a
+myconst x _ = x
 
 {-@ reflect removeConstants @-}
 {-@ removeConstants :: Opt p @-}
@@ -20,14 +25,14 @@ removeConstants e@(BIN op arg1 arg2) = case op of
   ADD -> case arg1 of
     -- linear combinations
     UN (MULC k1) p1 -> case arg2 of
-      UN (MULC k2) p2 -> withProof (Just (BIN (LINCOMB k1 k2) p1 p2)) (wellTyped e)
-      p2              -> withProof (Just (BIN (LINCOMB k1 1 ) p1 p2)) (wellTyped e)
+      UN (MULC k2) p2 -> myconst (Just (BIN (LINCOMB k1 k2) p1 p2)) (wellTyped e)
+      p2              -> myconst (Just (BIN (LINCOMB k1 1 ) p1 p2)) (wellTyped e)
 
     CONST 0 -> Just arg2
     CONST k -> Just (UN (ADDC k) arg2)
 
     p1 -> case arg2 of
-      UN (MULC k2) p2 -> withProof (Just (BIN (LINCOMB 1 k2) p1 p2)) (wellTyped e)
+      UN (MULC k2) p2 -> myconst (Just (BIN (LINCOMB 1 k2) p1 p2)) (wellTyped e)
 
       CONST 0 -> Just p1
       CONST k -> Just (UN (ADDC k) arg1)
