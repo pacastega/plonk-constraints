@@ -25,12 +25,6 @@ import qualified MapFunctions as M
 import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
-{-@ reflect updateWith @-}
-updateWith :: Eq p => Maybe p -> Maybe p -> Maybe p
-updateWith Nothing  _        = Nothing
-updateWith (Just x) Nothing  = Just x
-updateWith (Just x) (Just y) = if x == y then Just x else Nothing
-
 extend :: NameValuation p -> (NameValuation p -> NameValuation p)
        -> NameValuation p
 extend ρ hints = M.union ρ (hints ρ)
