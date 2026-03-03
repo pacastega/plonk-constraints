@@ -338,9 +338,9 @@ booleanE e = inferType' e == Just TBool
 
 
 data LAss p i =
-    LNZERO   (LDSL p i) i
-  | LBOOLEAN (LDSL p i)
-  | LEQA     (LDSL p i) (LDSL p i)
+    LNZERO   (LDSLI p i i) i
+  | LBOOLEAN (LDSLI p i i)
+  | LEQA     (LDSLI p i i) (LDSLI p i i)
   deriving (Show, Eq)
 
 {-@ reflect wiresA @-}
