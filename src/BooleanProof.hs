@@ -2,6 +2,7 @@
 {-@ LIQUID "--ple" @-}
 module BooleanProof where
 
+import TypeAliases
 import Utils
 import DSL
 import Semantics

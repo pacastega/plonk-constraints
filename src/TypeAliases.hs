@@ -1,7 +1,14 @@
+{-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 
 module TypeAliases where
 import GHC.Num.Integer (Integer (IS))
+
+#if LiquidOn
+import qualified Liquid.Data.Map as M
+#else
+import qualified Data.Map as M
+#endif
 
 {-@ type Nat1 = {v:Int | v >= 1} @-}
 
@@ -12,3 +19,15 @@ import GHC.Num.Integer (Integer (IS))
 
 {-@ define fromInteger x = (x) @-}
 {-@ define IS x = (x) @-}
+
+-- Valuation & environment aliases ---------------------------------------------
+
+-- σ ~~ valuation for wires (wire index ↦ value)
+type WireValuation p = M.Map Int p
+{-@ type WireValuation p M = M.Map (Btwn 0 M) p @-}
+
+-- ρ ~~ valuation for variables (variable name ↦ value)
+type NameValuation p = M.Map String p
+
+-- Λ ~~ labeling environment (variable name ↦ wire index)
+type LabelEnv p i = M.Map String i

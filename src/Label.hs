@@ -16,9 +16,6 @@ import qualified Data.Map as M
 import qualified MapFunctions as M
 #endif
 
-type LabelEnv p i = M.Map String i
-
-
 {-@ measure size @-}
 {-@ size :: DSL p -> Nat @-}
 size :: DSL p -> Int

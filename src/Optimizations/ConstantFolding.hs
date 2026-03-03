@@ -4,6 +4,7 @@
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 module Optimizations.ConstantFolding (constantFolding) where
 
+import TypeAliases
 import Optimizations.Base
 import DSL
 import Semantics

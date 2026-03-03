@@ -4,6 +4,7 @@
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 module Semantics where
 
+import TypeAliases
 import DSL
 import Utils
 import Vec
@@ -19,8 +20,6 @@ import Language.Haskell.Liquid.ProofCombinators (withProof)
 
 data DSLValue p = VF p | VNil | VCons (DSLValue p) (DSLValue p)
   deriving Eq
-
-type NameValuation p = M.Map String p
 
 {-@ measure valSize @-}
 valSize :: DSLValue p -> Int

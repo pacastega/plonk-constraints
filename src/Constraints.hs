@@ -38,11 +38,6 @@ realGate _ ([a,b,c], [qL,qR,qO,qM,qC]) = (isWire a || qL == 0 && qM == 0)
                                       && (isWire b || qR == 0 && qM == 0)
                                       && (isWire c || qO == 0)
 
-
-type WireValuation p = M.Map Int p
-{-@ type WireValuation p M = M.Map (Btwn 0 M) p @-}
-
-
 {-@ reflect closedGate @-}
 {-@ closedGate :: m:Nat -> WireValuation p m -> Gate p m -> Bool @-}
 closedGate :: Int -> WireValuation p -> Gate p -> Bool

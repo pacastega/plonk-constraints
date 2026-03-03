@@ -3,9 +3,9 @@
 {-@ LIQUID "--ple" @-}
 module PlinkST where
 
+import TypeAliases
 import DSL
 import WitnessGeneration
-import Semantics (NameValuation)
 
 #if LiquidOn
 import qualified Liquid.Data.Map as M

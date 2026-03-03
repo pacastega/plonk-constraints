@@ -3,7 +3,6 @@
 module Liquid.Data.Map where
 
 import Prelude hiding (lookup)
-import Utils (elem')
 
 import qualified Data.Set as S
 

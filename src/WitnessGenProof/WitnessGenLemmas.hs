@@ -12,8 +12,8 @@ import qualified MapFunctions as M
 
 import qualified Data.Set as S
 
+import TypeAliases
 import Utils
-import Constraints
 import DSL
 import Semantics
 import WitnessGeneration

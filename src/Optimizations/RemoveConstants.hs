@@ -5,6 +5,7 @@
 {-@ LIQUID "--skip-module"               @-}
 module Optimizations.RemoveConstants (removeConstants) where
 
+import TypeAliases
 import Optimizations.Base (Opt)
 import DSL
 import Semantics

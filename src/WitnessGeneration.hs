@@ -6,12 +6,10 @@ module WitnessGeneration where
 
 import Prelude hiding (flip)
 
-import Constraints
-import Data.Foldable (foldlM)
+import TypeAliases
 import Utils
 import Vec
 import DSL
-import Semantics
 
 import qualified Data.Set as S
 
