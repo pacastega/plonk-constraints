@@ -77,7 +77,7 @@ wgCompleteVar m0 m s τ ρ λ σ π λ' e' = case M.lookup s ρ of
                     -> λ:LabelEnv p (Btwn 0 m0)
                     -> σ:WireValuation p m0
 
-                    -> Composable ρ λ σ
+                    -> Agree λ ρ σ
 
                     -> λ':LabelEnv p (Btwn 0 m)
                     -> e':{LDSL p (Btwn 0 m) | freshE e' σ
@@ -103,7 +103,7 @@ wgCompleteConst m0 m x ρ λ σ π λ' e' = trivial
                    -> λ:LabelEnv p (Btwn 0 m0)
                    -> σ:WireValuation p m0
 
-                   -> Composable ρ λ σ
+                   -> Agree λ ρ σ
 
                    -> λ':LabelEnv p (Btwn 0 m)
                    -> e':{LDSL p (Btwn 0 m) | freshE e' σ
