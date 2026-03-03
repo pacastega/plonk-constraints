@@ -169,9 +169,9 @@ labelStore (def:ss) nextIndex λ =
 
 
 {-@ reflect label' @-}
-{-@ label' :: program:TypedDSL p ->
-              m0:Nat -> LabelEnv p (Btwn 0 m0) ->
-              (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
+{-@ label' :: program:TypedDSL p
+           -> m0:Nat -> LabelEnv p (Btwn 0 m0)
+           -> (m:{Int | m >= m0}, [LDSL p Int], LabelEnv p Int)
            <\m   -> {l:[LDSLI p (Btwn m0 m) (Btwn 0 m)] | scalar program => len l = 1},
             \_ m -> {v:LabelEnv p (Btwn 0 m) | true}>
            / [size program] @-}
@@ -218,11 +218,11 @@ label' p i λ = case p of
 
 
 {-@ reflect labelAssertion @-}
-{-@ labelAssertion :: assertion:(Assertion p) ->
-                   m0:Nat -> LabelEnv p (Btwn 0 m0) ->
-                   (m:{Int | m >= m0}, [LAss p Int], LabelEnv p Int)
-             <\m   -> {l:[LAss p (Btwn 0 m)] | true},
-              \_ m -> {v:LabelEnv p (Btwn 0 m) | true}> @-}
+{-@ labelAssertion :: assertion:(Assertion p)
+                   -> m0:Nat -> LabelEnv p (Btwn 0 m0)
+                   -> (m:{Int | m >= m0}, [LAss p Int], LabelEnv p Int)
+                        <\m   -> {l:[LAss p (Btwn 0 m)] | true},
+                         \_ m -> {v:LabelEnv p (Btwn 0 m) | true}> @-}
 labelAssertion :: (Num p, Ord p) => Assertion p -> Int -> LabelEnv p Int
             -> (Int, [LAss p Int], LabelEnv p Int)
 labelAssertion assertion nextIndex λ = let i = nextIndex in case assertion of
