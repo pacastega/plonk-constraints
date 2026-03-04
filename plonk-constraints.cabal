@@ -56,6 +56,7 @@ library
       Poseidon2.BLS12
       Poseidon2.Goldilocks
       Semantics
+      SetLemmas
       SHA256
       TypeAliases
       Utils

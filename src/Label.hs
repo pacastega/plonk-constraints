@@ -212,7 +212,7 @@ label' p i λ = case p of
               p2' = case ps2 of [x] -> x
 
     NIL _ -> (i, [], λ)
-    CONS h ts -> (i2, h' ++ ts', λ2)
+    CONS h ts -> (i2, append' h' ts', λ2)
       where (i1,  h', λ1) = label' h  i  λ
             (i2, ts', λ2) = label' ts i1 λ1
 

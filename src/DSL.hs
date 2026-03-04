@@ -251,6 +251,11 @@ wiresE (LUN _ e1 i) = wiresE e1 `S.union` S.singleton i
 wiresE (LBIN _ e1 e2 i) = wiresE e1 `S.union` wiresE e2 `S.union` S.singleton i
 wiresE (LEQLC e1 _ w i) = wiresE e1 `S.union` S.singleton w `S.union` S.singleton i
 
+{-@ reflect wiresEs @-}
+wiresEs :: (Ord i) => [LDSLI p i j] -> S.Set i
+wiresEs [] = S.empty
+wiresEs (e:es) = wiresE e `S.union` wiresEs es
+
 {-@ reflect wWiresE @-}
 wWiresE :: (Ord j) => LDSLI p i j -> S.Set j
 wWiresE (LWIRE _ i)      = S.singleton i
@@ -281,6 +286,11 @@ wfE (LBIN _ e1 e2 i) = wfE e1 && wfE e2 && (wiresE e1 `disjoint` wiresE e2)
 wfE (LEQLC e1 _ w i) = wfE e1
   && (wiresE e1) `disjoint` (S.singleton w `S.union` S.singleton i)
   && w /= i
+
+{-@ reflect wfEs @-}
+wfEs :: (Ord i) => [LDSL p i] -> Bool
+wfEs [] = True
+wfEs (e:es) = wfE e && wfEs es && disjoint (wiresE e) (wiresEs es)
 
 
 -- every output wire of a LWIRE also appears as an output wire of a "real" expression
