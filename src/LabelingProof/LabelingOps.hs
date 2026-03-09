@@ -29,13 +29,13 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> λ1:LabelEnv p (Btwn 0 m1)
-                  -> σ:M.Map (Btwn 0 m0) p
+                  -> σ:WireValuation p m0
 
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
                   -> e':{LDSL p (Btwn 0 m) | label' (UN op p1) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
-                  -> σ1:{M.Map (Btwn 0 m) p | Just σ1 = witnessGenE' m ρ σ p1'}
+                  -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
+                  -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ p1'}
 
                   -> Agree λ1 ρ σ1
 
@@ -45,13 +45,13 @@ agreeLemmaUn :: (Fractional p, Eq p, Ord p)
              -> NameValuation p
              -> LabelEnv p Int
              -> LabelEnv p Int
-             -> M.Map Int p
+             -> WireValuation p
 
              -> LabelEnv p Int
              -> LDSL p Int
              -> LDSL p Int
-             -> M.Map Int p
-             -> M.Map Int p
+             -> WireValuation p
+             -> WireValuation p
 
              -> (String -> Proof)
 
@@ -72,7 +72,7 @@ agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 = case op of
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> λ1:LabelEnv p (Btwn 0 m1)
                   -> λ2:LabelEnv p (Btwn 0 m2)
-                  -> σ:M.Map (Btwn 0 m0) p
+                  -> σ:WireValuation p m0
 
                   -> Agree λ ρ σ
 
@@ -81,9 +81,9 @@ agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 = case op of
                   -> p2':{LDSL p (Btwn 0 m2) | label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
 
                   -> e':{LDSL p (Btwn 0 m) | label' (BIN op p1 p2) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ  e'}
-                  -> σ1:{M.Map (Btwn 0 m) p | Just σ1 = witnessGenE' m ρ σ  p1'}
-                  -> σ2:{M.Map (Btwn 0 m) p | Just σ2 = witnessGenE' m ρ σ1 p2'}
+                  -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ  e'}
+                  -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ  p1'}
+                  -> σ2:{WireValuation p m | Just σ2 = witnessGenE' m ρ σ1 p2'}
 
                   -> Agree λ2 ρ σ2
 
@@ -92,13 +92,13 @@ agreeLemmaBin :: (Fractional p, Eq p, Ord p)
               => Int -> Int -> Int -> Int -> DSL p -> DSL p -> BinOp p
               -> NameValuation p
               -> LabelEnv p Int -> LabelEnv p Int -> LabelEnv p Int
-              -> M.Map Int p
+              -> WireValuation p
 
               -> (String -> Proof)
 
               -> LabelEnv p Int
               -> LDSL p Int -> LDSL p Int -> LDSL p Int
-              -> M.Map Int p -> M.Map Int p -> M.Map Int p
+              -> WireValuation p -> WireValuation p -> WireValuation p
 
               -> (String -> Proof)
 

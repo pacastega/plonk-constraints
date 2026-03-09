@@ -35,26 +35,26 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> τ:ScalarTy
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
-                  -> σ:M.Map (Btwn 0 m0) p
+                  -> σ:WireValuation p m0
 
                   -> Agree λ ρ σ
 
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> e':{LDSL p (Btwn 0 m) | label' (VAR s τ) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
+                  -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
 
                   -> Agree λ' ρ σ' @-}
 agreeLemmaVar :: (Fractional p, Eq p, Ord p)
               => Int -> Int -> Var -> Ty
               -> NameValuation p
               -> LabelEnv p Int
-              -> M.Map Int p
+              -> WireValuation p
 
               -> (Var -> Proof)
 
               -> LabelEnv p Int
               -> LDSL p Int
-              -> M.Map Int p
+              -> WireValuation p
 
               -> (Var -> Proof)
 agreeLemmaVar m0 m s τ ρ λ σ π λ' e' σ' = case M.lookup s λ of

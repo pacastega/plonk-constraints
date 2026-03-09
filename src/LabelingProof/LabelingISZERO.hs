@@ -35,7 +35,7 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> λ1:LabelEnv p (Btwn 0 m1)
-                  -> σ:M.Map (Btwn 0 m0) p
+                  -> σ:WireValuation p m0
 
                   -> Agree λ ρ σ
 
@@ -46,8 +46,8 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> e':{LDSL p (Btwn 0 m) | wfE e'
                                         && freshE e' σ
                                         && label' (UN ISZERO p1) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
-                  -> σ1:{M.Map (Btwn 0 m) p | Just σ1 = witnessGenE' m ρ σ p1'}
+                  -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
+                  -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ p1'}
 
                   -> Agree λ1 ρ σ1
 
@@ -57,15 +57,15 @@ agreeLemmaISZERO :: (Fractional p, Eq p, Ord p)
               -> NameValuation p
               -> LabelEnv p Int
               -> LabelEnv p Int
-              -> M.Map Int p
+              -> WireValuation p
 
               -> (Var -> Proof)
 
               -> LabelEnv p Int
               -> LDSL p Int
               -> LDSL p Int
-              -> M.Map Int p
-              -> M.Map Int p
+              -> WireValuation p
+              -> WireValuation p
 
               -> (Var -> Proof)
 
