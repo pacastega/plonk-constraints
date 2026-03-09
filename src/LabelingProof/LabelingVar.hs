@@ -30,50 +30,39 @@ import LabelingProof.LabelingLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 
-{-@ labelVar :: m0:Nat -> m:{Nat | m >= m0}
-                -> s:Var
-                -> τ:ScalarTy
-                -> ρ:NameValuation p
-                -> λ:LabelEnv p (Btwn 0 m0)
-                -> σ:M.Map (Btwn 0 m0) p
+{-@ agreeLemmaVar :: m0:Nat -> m:{Nat | m >= m0}
+                  -> s:Var
+                  -> τ:ScalarTy
+                  -> ρ:NameValuation p
+                  -> λ:LabelEnv p (Btwn 0 m0)
+                  -> σ:M.Map (Btwn 0 m0) p
 
-                -> Agree λ ρ σ
+                  -> Agree λ ρ σ
 
-                -> λ':LabelEnv p (Btwn 0 m)
-                -> e':{LDSL p (Btwn 0 m) | label' (VAR s τ) m0 λ = (m, mkList1 e', λ')}
-                -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
+                  -> λ':LabelEnv p (Btwn 0 m)
+                  -> e':{LDSL p (Btwn 0 m) | label' (VAR s τ) m0 λ = (m, mkList1 e', λ')}
+                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
 
-                -> v:p
+                  -> Agree λ' ρ σ' @-}
+agreeLemmaVar :: (Fractional p, Eq p, Ord p)
+              => Int -> Int -> Var -> Ty
+              -> NameValuation p
+              -> LabelEnv p Int
+              -> M.Map Int p
 
-                -> ({ eval (VAR s τ) ρ = Just (VF v) <=>
-                      M.lookup (outputWire e') σ' = Just v },
-                    Agree λ' ρ σ')
-                 @-}
-labelVar :: (Fractional p, Eq p, Ord p)
-            => Int -> Int -> Var -> Ty
-            -> NameValuation p
-            -> LabelEnv p Int
-            -> M.Map Int p
+              -> (Var -> Proof)
 
-            -> (Var -> Proof)
+              -> LabelEnv p Int
+              -> LDSL p Int
+              -> M.Map Int p
 
-            -> LabelEnv p Int
-            -> LDSL p Int
-            -> M.Map Int p
-
-            -> p
-
-            -> (Proof, Var -> Proof)
-labelVar _m0 _m s τ _ρ λ _σ π λ' e' _σ' _v = case M.lookup s λ of
-    Nothing -> case τ of
-      TF -> (trivial,
-             \x -> if x == s
-                   then trivial
-                   else elem' x (M.keys λ')
-                     ?? π x ? M.lookup' x λ)
-      TBool -> (trivial,
-               \x -> if x == s
-                     then trivial
-                     else elem' x (M.keys λ')
-                       ?? π x ? M.lookup' x λ)
-    Just j  -> (elementLemma s j λ ? π s ? lookupLemma s λ, \x -> π x)
+              -> (Var -> Proof)
+agreeLemmaVar m0 m s τ ρ λ σ π λ' e' σ' = case M.lookup s λ of
+  Just j -> π
+  Nothing -> case τ of
+    TF -> (\x -> if x == s
+                 then trivial
+                 else π x ? M.lookup' x λ)
+    TBool -> (\x -> if x == s
+                    then trivial
+                    else π x ? M.lookup' x λ)

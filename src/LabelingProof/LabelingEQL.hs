@@ -2,9 +2,11 @@
 {-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection"    @-}
 {-@ LIQUID "--ple"           @-}
-{-@ LIQUID "--eliminate=all" @-}
 {-@ LIQUID "--linear"        @-}
-{-@ LIQUID "--cores=1"       @-}
+{-@ LIQUID "--eliminate=all" @-}
+
+{-@ LIQUID "--cores=1" @-}
+-- {-@ LIQUID "--fast"          @-}
 
 module LabelingProof.LabelingEQL where
 
@@ -26,85 +28,51 @@ import Semantics
 
 import MapLemmas
 import LabelingProof.LabelingLemmas
+import LabelingProof.LabelingEQLC
 import WitnessGenProof.WitnessGenLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
 
-{-@ labelProofEQL :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
+{-@ agreeLemmaEQL :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
                   -> p1:ScalarDSL p
                   -> p2:{ScalarDSL p | wellTyped (BIN EQL p1 p2)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
-                  -> λ1:LabelEnv p (Btwn 0 m1)
-                  -> λ2:LabelEnv p (Btwn 0 m2)
                   -> σ:M.Map (Btwn 0 m0) p
 
-                  -> Composable ρ λ σ
+                  -> λ1:LabelEnv p (Btwn 0 m1)
+                  -> λ2:LabelEnv p (Btwn 0 m2)
+
+                  -> p1':{LDSL p (Btwn 0 m1) | wfE p1' && freshE p1' σ
+                                            && label' p1 m0 λ  = (m1, mkList1 p1', λ1)}
+                  -> σ1:{M.Map (Btwn 0 m) p | Just σ1 = witnessGenE' m ρ σ  p1'}
+
+                  -> p2':{LDSL p (Btwn 0 m2) | wfE p2' && freshE p2' σ1
+                                            && label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
+                  -> σ2:{M.Map (Btwn 0 m) p | Just σ2 = witnessGenE' m ρ σ1 p2'}
 
                   -> λ':LabelEnv p (Btwn 0 m)
-                  -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ  = (m1, mkList1 p1', λ1)}
-                  -> p2':{LDSL p (Btwn 0 m2) | label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
                   -> e':{LDSL p (Btwn 0 m) | label' (BIN EQL p1 p2) m0 λ = (m, mkList1 e', λ')}
                   -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
-                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = witnessGenE' m ρ σ p1'}
-                  -> σ2:{M.Map (Btwn 0 m2) p | Just σ2 = witnessGenE' m ρ σ1 p2'}
 
-
-                  -> v:p
-                  -> v1:{p | M.lookup (outputWire p1') σ1 == Just v1}
-                  -> v2:{p | M.lookup (outputWire p2') σ2 == Just v2}
-
-                  -> ({ eval p1 ρ = Just (VF v1) <=> M.lookup (outputWire p1') σ1 = Just v1 })
-                  -> Composable ρ λ1 σ1
-
-                  -> ({ eval p2 ρ = Just (VF v2) <=> M.lookup (outputWire p2') σ2 = Just v2 })
-                  -> Composable ρ λ2 σ2
-
-
-
-                  -> ({ eval (BIN EQL p1 p2) ρ = Just (VF v) <=>
-                      M.lookup (outputWire e') σ' = Just v }, Composable ρ λ' σ')
- @-}
-labelProofEQL :: (Fractional p, Ord p)
+                  -> Agree λ2 ρ σ2
+                  -> Agree λ' ρ σ' @-}
+agreeLemmaEQL :: (Fractional p, Ord p)
               => Int -> Int -> Int -> Int -> DSL p -> DSL p
               -> NameValuation p
-              -> LabelEnv p Int -> LabelEnv p Int -> LabelEnv p Int
+              -> LabelEnv p Int
               -> M.Map Int p
 
+              -> LabelEnv p Int -> LabelEnv p Int
+              -> LDSL p Int -> M.Map Int p -> LDSL p Int -> M.Map Int p
+              -> LabelEnv p Int -> LDSL p Int -> M.Map Int p
+
               -> (Var -> Proof)
-
-              -> LabelEnv p Int
-              -> LDSL p Int -> LDSL p Int -> LDSL p Int
-              -> M.Map Int p -> M.Map Int p -> M.Map Int p
-
-              -> p -> p -> p
-
-              -> Proof -> (Var -> Proof)
-              -> Proof -> (Var -> Proof)
-
-              -> (Proof, Var -> Proof)
-labelProofEQL m0 _m1 _m2 m p1 p2 ρ λ _λ1 λ2 σ _π _λ' _p1' _p2' e' σ' _σ1 _σ2 _v v1 v2 ih1 _π1 ih2 π2 = if v1 == v2
-      then (ih1 ? ih2 ? h3
-                 ? liquidAssert (M.lookup (outputWire osub) σ3 == Just (v1 - v2))
-                 ? (eval (BIN EQL p1 p2) ρ === Just (VF (eqlFn v1 v2))),
-                 \x -> let j = M.lookup' x λ2
-                       in π2 x ? notElemLemma x i λ2 ? notElemLemma x w λ2
-                               ? (M.lookup j σ'
-                                  === M.lookup j (M.insert w zero σ3)
-                                  === M.lookup j σ3))
-                ? liquidAssert (σ' == M.insert i one (M.insert w zero σ3))
-           else (ih1 ? ih2 ? h3
-                 ? liquidAssert (M.lookup (outputWire osub) σ3 == Just (v1 - v2))
-                 ? (eval (BIN EQL p1 p2) ρ === Just (VF (eqlFn v1 v2))),
-                 \x -> let j = M.lookup' x λ2
-                       in π2 x ? notElemLemma x i λ2 ? notElemLemma x w λ2
-                               ? (M.lookup j σ'
-                                  === M.lookup j (M.insert w (1/(v1-v2)) σ3)
-                                  === M.lookup j σ3))
-                ? liquidAssert (σ' == M.insert i zero (M.insert w (1/(v1-v2)) σ3))
-    where (m3, sub', _) = label' (BIN SUB p1 p2) m0 λ
-          (LEQLC _ _ w i) = e'
-          osub = case sub' of [x] -> x
-          σ3 = case witnessGenE' m3 ρ σ osub  ? wgLemma m3 m ρ σ osub  of Just s -> s
-          h3 =   eval (BIN EQL p1 p2) ρ ? ih1 ? ih2
-             === Just (VF (eqlFn v1 v2))
+              -> (Var -> Proof)
+agreeLemmaEQL m0 _m1 m2 m p1 p2 ρ λ σ _λ1 λ2 p1' σ1 p2' σ2 λ' e' σ' π2 =
+  agreeLemmaEQLC m0 (m2+1) m 0 (BIN SUB p1 p2) ρ λ λ2 σ λ' (LBIN SUB p1' p2' m2)
+                 e' σ' (M.insert m2 (v1-v2) σ2)
+                 (\y -> notElemLemma y m2 λ2 ?? π2 y)
+  where (LEQLC _ _ w i) = e'
+        v1 = wgPostCond m ρ σ  p1' σ1 ?? M.lookup' (outputWire p1') σ1
+        v2 = wgPostCond m ρ σ1 p2' σ2 ?? M.lookup' (outputWire p2') σ2
