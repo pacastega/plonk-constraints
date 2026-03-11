@@ -281,14 +281,14 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x = case op of
                -> e:ScalarDSL p
                -> ρ:NameValuation p
                -> λ:LabelEnv p (Btwn 0 m0)
-               -> σ:M.Map (Btwn 0 m0) p
+               -> σ:WireValuation p m0
 
                -> Agree λ ρ σ
 
                -> λ':LabelEnv p (Btwn 0 m)
                -> e':{LDSL p (Btwn 0 m) | freshE e' σ
                                        && label' e m0 λ = (m, mkList1 e', λ')}
-               -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
+               -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
 
                -> Agree λ' ρ σ'
                / [size e, 1] @-}
@@ -296,13 +296,13 @@ agreeLemma :: (Fractional p, Eq p, Ord p)
            => Int -> Int -> DSL p
            -> NameValuation p
            -> LabelEnv p Int
-           -> M.Map Int p
+           -> WireValuation p
 
            -> (Var -> Proof)
 
            -> LabelEnv p Int
            -> LDSL p Int
-           -> M.Map Int p
+           -> WireValuation p
 
            -> (Var -> Proof)
 agreeLemma m0 m e ρ λ σ π λ' e' σ' x = labelWF e m0 λ m [e'] λ' ?? case e of
