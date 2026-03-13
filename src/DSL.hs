@@ -344,21 +344,21 @@ inferType' e = case e of
              | otherwise -> Nothing
 
 {-@ reflect wellTyped' @-}
-wellTyped' :: LDSL p i -> Bool
+wellTyped' :: LDSLI p i i -> Bool
 wellTyped' e = case inferType' e of
   Just _ -> True
   Nothing -> False
 
-{-@ type TypedLDSL p i = {e:LDSL p i | wellTyped' e} @-}
+{-@ type TypedLDSL p i = {e:LDSLI p i i | wellTyped' e} @-}
 
 
 {-@ reflect booleanE @-}
-booleanE :: LDSL p i -> Bool
+booleanE :: LDSLI p i i -> Bool
 booleanE e = inferType' e == Just TBool
 
 
 {-@ reflect scalarE @-}
-scalarE :: LDSL p i -> Bool
+scalarE :: LDSLI p i i -> Bool
 scalarE e = case inferType' e of
   Nothing -> False
   Just (TVec _) -> False
@@ -510,7 +510,7 @@ nGates (LAss a) = nGatesA a
 
 {-@ reflect compileE @-}
 {-@ compileE :: m:Nat -> e:TypedLDSL p (Btwn 0 m) -> Circuit p (nGatesE e) m @-}
-compileE :: (Fractional p, Eq p) => Int -> LDSL p Int -> Circuit p
+compileE :: (Fractional p, Eq p) => Int -> LDSLI p Int Int -> Circuit p
 compileE m (LWIRE _ _)    = emptyCircuit m
 compileE m (LVAR _ τ i)   = case τ of
   TF     -> emptyCircuit m
