@@ -223,6 +223,9 @@ data LDSLI p i j =
   | LBIN (BinOp p) (LDSLI p i j) (LDSLI p i j) i
 
   | LEQLC   (LDSLI p i j) p i i
+
+  | LNIL Ty
+  | LCONS (LDSLI p i j) (LDSLI p i j)
   deriving (Show, Eq)
 
 {-@
@@ -237,6 +240,9 @@ data LDSLI p i j =
   | LBIN (BinOp' p) (LDSLI p i j) (LDSLI p i j) i
 
   | LEQLC   (LDSLI p i j) p i i
+
+  | LNIL Ty
+  | LCONS (LDSLI p i j) (LDSLI p i j)
 @-}
 
 
@@ -251,10 +257,8 @@ wiresE (LUN _ e1 i) = wiresE e1 `S.union` S.singleton i
 wiresE (LBIN _ e1 e2 i) = wiresE e1 `S.union` wiresE e2 `S.union` S.singleton i
 wiresE (LEQLC e1 _ w i) = wiresE e1 `S.union` S.singleton w `S.union` S.singleton i
 
-{-@ reflect wiresEs @-}
-wiresEs :: (Ord i) => [LDSLI p i j] -> S.Set i
-wiresEs [] = S.empty
-wiresEs (e:es) = wiresE e `S.union` wiresEs es
+wiresE (LNIL _) = S.empty
+wiresE (LCONS e es) = wiresE e `S.union` wiresE es
 
 {-@ reflect wWiresE @-}
 wWiresE :: (Ord j) => LDSLI p i j -> S.Set j
@@ -265,7 +269,8 @@ wWiresE (LDIV e1 e2 _ _) = wWiresE e1 `S.union` wWiresE e2
 wWiresE (LUN _ e1 _)     = wWiresE e1
 wWiresE (LBIN _ e1 e2 _) = wWiresE e1 `S.union` wWiresE e2
 wWiresE (LEQLC e1 _ _ _) = wWiresE e1
-
+wWiresE (LNIL _)         = S.empty
+wWiresE (LCONS e es)     = wWiresE e  `S.union` wWiresE es
 
 --FIXME: a LWIRE on its own isn't well-formed, so that case should be False
 -- A labeled expression is well-formed when
@@ -286,11 +291,8 @@ wfE (LBIN _ e1 e2 i) = wfE e1 && wfE e2 && (wiresE e1 `disjoint` wiresE e2)
 wfE (LEQLC e1 _ w i) = wfE e1
   && (wiresE e1) `disjoint` (S.singleton w `S.union` S.singleton i)
   && w /= i
-
-{-@ reflect wfEs @-}
-wfEs :: (Ord i) => [LDSL p i] -> Bool
-wfEs [] = True
-wfEs (e:es) = wfE e && wfEs es && disjoint (wiresE e) (wiresEs es)
+wfE (LNIL _) = True
+wfE (LCONS e es) = wfE e && wfE es && disjoint (wiresE e) (wiresE es)
 
 
 -- every output wire of a LWIRE also appears as an output wire of a "real" expression
@@ -299,7 +301,7 @@ wfLWireE :: (Ord i) => LDSL p i -> Bool
 wfLWireE e = wWiresE e `S.isSubsetOf` wiresE e
 
 
-{-@ measure inferType' @-}
+{-@ reflect inferType' @-}
 {-@ inferType' :: LDSLI p i j -> Maybe Ty @-}
 inferType' :: LDSLI p i j -> Maybe Ty
 inferType' e = case e of
@@ -334,6 +336,12 @@ inferType' e = case e of
 
   LEQLC e1 _ _ _ -> if inferType' e1 == Just TF then Just TBool else Nothing
 
+  LNIL τ -> Just (TVec τ)
+  LCONS e es | Just τ' <- inferType' e
+             , Just (TVec τ) <- inferType' es
+             , τ' == τ
+             -> Just (TVec τ)
+             | otherwise -> Nothing
 
 {-@ reflect wellTyped' @-}
 wellTyped' :: LDSL p i -> Bool
@@ -341,10 +349,20 @@ wellTyped' e = case inferType' e of
   Just _ -> True
   Nothing -> False
 
+{-@ type TypedLDSL p i = {e:LDSL p i | wellTyped' e} @-}
+
 
 {-@ reflect booleanE @-}
 booleanE :: LDSL p i -> Bool
 booleanE e = inferType' e == Just TBool
+
+
+{-@ reflect scalarE @-}
+scalarE :: LDSL p i -> Bool
+scalarE e = case inferType' e of
+  Nothing -> False
+  Just (TVec _) -> False
+  Just _ ->  True
 
 
 data LAss p i =
@@ -383,6 +401,7 @@ wWires :: (Ord i) => LProg p i -> S.Set i
 wWires (LExpr e) = wWiresE e
 wWires (LAss a) = wWiresA a
 
+--TODO: not sure if this is _really_ needed
 {-@ reflect wiress @-}
 wiress :: (Ord i) => [LProg p i] -> S.Set i
 wiress [] = S.empty
@@ -400,9 +419,25 @@ wfs [] = True
 wfs (p:ps) = wf p && disjoint (wires p) (wiress ps) && wfs ps
 
 
--- TODO: this could be avoided by using record syntax
+data WireBundle i = W i | WNil | WCons (WireBundle i) (WireBundle i)
+
+{-@ reflect wfBundle @-}
+wfBundle :: LDSLI p i i -> WireBundle i -> Bool
+wfBundle (LNIL _) wb = case wb of
+  WNil -> True; _ -> False
+wfBundle (LCONS e es) wb = case wb of
+  WCons wb1 wb2 -> wfBundle e wb1 && wfBundle es wb2; _ -> False
+wfBundle _ wb = case wb of
+  W _ -> True; _ -> False
+
+{-@ reflect bundleSet @-}
+bundleSet :: (Ord i) => WireBundle i -> S.Set i
+bundleSet (W i) = S.singleton i
+bundleSet (WNil) = S.empty
+bundleSet (WCons wb1 wb2) = bundleSet wb1 `S.union` bundleSet wb2
+
 {-@ reflect outputWire @-}
-{-@ outputWire :: e:LDSLI p i i
+{-@ outputWire :: e:{LDSLI p i i | scalarE e}
                -> {v:i | S.member v (S.union (wiresE e) (wWiresE e))} @-}
 outputWire :: LDSLI p i i -> i
 outputWire (LWIRE _ i)    = i
@@ -416,6 +451,17 @@ outputWire (LUN _ _ i)    = i
 outputWire (LBIN _ _ _ i) = i
 
 outputWire (LEQLC _ _ _ i) = i
+
+
+{-@ reflect outputWires @-}
+{-@ outputWires :: e:TypedLDSL p i
+                -> {wb:WireBundle i | wfBundle e wb
+                          && S.isSubsetOf (bundleSet wb)
+                                          (S.union (wiresE e) (wWiresE e)) } @-}
+outputWires :: LDSLI p i i -> WireBundle i
+outputWires (LNIL _)      = WNil
+outputWires (LCONS e es)  = WCons (outputWires e) (outputWires es)
+outputWires e             = W (outputWire e)
 
 
 -- the number of gates needed to compile the program into a circuit
@@ -438,6 +484,9 @@ nGatesE (LBIN op p1 p2 _) = nGatesE p1 + nGatesE p2 + case op of
 
 nGatesE (LEQLC p1 _ _ _) = 2 + nGatesE p1
 
+nGatesE (LNIL _) = 0
+nGatesE (LCONS p ps) = nGatesE p + nGatesE ps
+
 {-@ measure nGatesA @-}
 {-@ nGatesA :: LAss p i -> Nat @-}
 nGatesA :: LAss p i -> Int
@@ -453,14 +502,14 @@ nGates (LAss a) = nGatesA a
 
 
 -- compile the program into a circuit including the output wire index
-{-@ reflect compile @-}
-{-@ compile :: m:Nat -> pr:LProg p (Btwn 0 m) -> Circuit p (nGates pr) m @-}
-compile :: (Fractional p, Eq p) => Int -> LProg p Int -> Circuit p
-compile m (LExpr e) = compileE m e
-compile m (LAss a) = compileA m a
+-- {-@ reflect compile @-}
+-- {-@ compile :: m:Nat -> pr:LProg p (Btwn 0 m) -> Circuit p (nGates pr) m @-}
+-- compile :: (Fractional p, Eq p) => Int -> LProg p Int -> Circuit p
+-- compile m (LExpr e) = compileE m e
+-- compile m (LAss a) = compileA m a
 
 {-@ reflect compileE @-}
-{-@ compileE :: m:Nat -> e:LDSL p (Btwn 0 m) -> Circuit p (nGatesE e) m @-}
+{-@ compileE :: m:Nat -> e:TypedLDSL p (Btwn 0 m) -> Circuit p (nGatesE e) m @-}
 compileE :: (Fractional p, Eq p) => Int -> LDSL p Int -> Circuit p
 compileE m (LWIRE _ _)    = emptyCircuit m
 compileE m (LVAR _ τ i)   = case τ of
@@ -508,6 +557,9 @@ compileE m (LEQLC p1 k w i) = c
     i1 = outputWire p1
     c = append' (isEqlCGate m k [i1, w, i]) c1
 
+compileE m (LNIL _) = emptyCircuit m
+compileE m (LCONS p ps) = append' (compileE m p) (compileE m ps)
+
 {-@ reflect compileA @-}
 {-@ compileA :: m:Nat -> a:LAss p (Btwn 0 m) -> Circuit p (nGatesA a) m @-}
 compileA :: (Fractional p, Eq p) => Int -> LAss p Int -> Circuit p
@@ -547,83 +599,93 @@ closedProg :: Int -> WireValuation p -> LProg p Int -> Bool
 closedProg m σ pr = (wires pr `S.union` wWires pr) `S.isSubsetOf` M.keysSet σ
 
 
-{-@ reflect coherent @-}
-{-@ coherent :: m:Nat -> pr:LProg p (Btwn 0 m)
-             -> {σ:WireValuation p m | closedProg m σ pr} -> Bool @-}
-coherent :: (Eq p, Fractional p) => Int -> LProg p Int -> WireValuation p -> Bool
-coherent m (LExpr e) σ = coherentE m e σ
-coherent m (LAss a) σ = coherentA m a σ
+-- {-@ reflect coherent @-}
+-- {-@ coherent :: m:Nat -> pr:LProg p (Btwn 0 m)
+--              -> {σ:WireValuation p m | closedProg m σ pr} -> Bool @-}
+-- coherent :: (Eq p, Fractional p) => Int -> LProg p Int -> WireValuation p -> Bool
+-- coherent m (LExpr e) σ = coherentE m e σ
+-- coherent m (LAss a) σ = coherentA m a σ
 
-{-@ reflect coherentE @-}
-{-@ coherentE :: m:Nat -> e:LDSL p (Btwn 0 m)
-              -> {σ:WireValuation p m | closedExpr m σ e} -> Bool @-}
-coherentE :: (Eq p, Fractional p) => Int -> LDSL p Int -> WireValuation p -> Bool
-coherentE m e σ = case e of
-  LWIRE _ i -> True
-  LVAR _ τ i -> case τ of
-    TF -> True          -- field-typed variables don't have restrictions
-    TBool -> boolean vi -- bool-typed variables must be boolean
-      where vi = M.lookup' i σ
-  LCONST x i -> vi == x
-    where vi = M.lookup' i σ
+-- {-@ reflect coherentE @-}
+-- {-@ coherentE :: m:Nat -> e:LDSL p (Btwn 0 m)
+--               -> {σ:WireValuation p m | closedExpr m σ e} -> Bool @-}
+-- coherentE :: (Eq p, Fractional p) => Int -> LDSL p Int -> WireValuation p -> Bool
+-- coherentE m e σ = case e of
+--   LWIRE _ i -> True
+--   LVAR _ τ i -> case τ of
+--     TF -> True          -- field-typed variables don't have restrictions
+--     TBool -> boolean vi -- bool-typed variables must be boolean
+--       where vi = M.lookup' i σ
+--   LCONST x i -> vi == x
+--     where vi = M.lookup' i σ
 
-  LDIV e1 e2 w i -> coherentE m e1 σ && coherentE m e2 σ
-                 && vw * v2 == 1
-                 && if v2 /= 0 then vi == v1 / v2 else True
-    where vi = M.lookup' i σ
-          vw = M.lookup' w σ
-          v1 = M.lookup' (outputWire e1) σ
-          v2 = M.lookup' (outputWire e2) σ
+--   LDIV e1 e2 w i -> coherentE m e1 σ && coherentE m e2 σ
+--                  && vw * v2 == 1
+--                  && if v2 /= 0 then vi == v1 / v2 else True
+--     where vi = M.lookup' i σ
+--           vw = M.lookup' w σ
+--           W i1 = outputWires e1
+--           W i2 = outputWires e2
+--           v1 = M.lookup' i1 σ
+--           v2 = M.lookup' i2 σ
 
-  LUN op e1 i -> case op of
-      ADDC k -> c1 && vi == v1 + k
-      MULC k -> c1 && vi == v1 * k
-      NOT    -> c1 && (vi == if v1 == 1 then 0 else 1) && boolean v1
-      UnsafeNOT -> c1 && (vi == 1 - v1)
-    where c1 = coherentE m e1 σ
-          vi = M.lookup' i σ
-          v1 = M.lookup' (outputWire e1) σ
+--   LUN op e1 i -> case op of
+--       ADDC k -> c1 && vi == v1 + k
+--       MULC k -> c1 && vi == v1 * k
+--       NOT    -> c1 && (vi == if v1 == 1 then 0 else 1) && boolean v1
+--       UnsafeNOT -> c1 && (vi == 1 - v1)
+--     where c1 = coherentE m e1 σ
+--           vi = M.lookup' i σ
+--           W i1 = outputWires e1
+--           v1 = M.lookup' i1 σ
 
-  LBIN op e1 e2 i -> case op of
-      ADD -> c1 && c2 && vi == v1 + v2
-      SUB -> c1 && c2 && vi == v1 - v2
-      MUL -> c1 && c2 && vi == v1 * v2
-      LINCOMB k1 k2 -> c1 && c2 && vi == k1*v1 + k2*v2
-      AND -> c1 && c2 && boolean v1 && boolean v2
-          && (vi == if v1 == 0 || v2 == 0 then 0 else 1)
-      OR  -> c1 && c2 && boolean v1 && boolean v2
-          && (vi == if v1 == 1 || v2 == 1 then 1 else 0)
-      XOR -> c1 && c2 && boolean v1 && boolean v2
-          && (vi == if v1 /= v2 then 1 else 0)
-      UnsafeAND -> c1 && c2 && (vi == v1 * v2)
-      UnsafeOR  -> c1 && c2 && (vi == v1 + v2 - v1*v2)
-      UnsafeXOR -> c1 && c2 && (vi == v1 + v2 - 2*v1*v2)
-    where c1 = coherentE m e1 σ
-          c2 = coherentE m e2 σ
-          vi = M.lookup' i σ
-          v1 = M.lookup' (outputWire e1) σ
-          v2 = M.lookup' (outputWire e2) σ
+--   LBIN op e1 e2 i -> case op of
+--       ADD -> c1 && c2 && vi == v1 + v2
+--       SUB -> c1 && c2 && vi == v1 - v2
+--       MUL -> c1 && c2 && vi == v1 * v2
+--       LINCOMB k1 k2 -> c1 && c2 && vi == k1*v1 + k2*v2
+--       AND -> c1 && c2 && boolean v1 && boolean v2
+--           && (vi == if v1 == 0 || v2 == 0 then 0 else 1)
+--       OR  -> c1 && c2 && boolean v1 && boolean v2
+--           && (vi == if v1 == 1 || v2 == 1 then 1 else 0)
+--       XOR -> c1 && c2 && boolean v1 && boolean v2
+--           && (vi == if v1 /= v2 then 1 else 0)
+--       UnsafeAND -> c1 && c2 && (vi == v1 * v2)
+--       UnsafeOR  -> c1 && c2 && (vi == v1 + v2 - v1*v2)
+--       UnsafeXOR -> c1 && c2 && (vi == v1 + v2 - 2*v1*v2)
+--     where c1 = coherentE m e1 σ
+--           c2 = coherentE m e2 σ
+--           vi = M.lookup' i σ
+--           W i1 = outputWires e1
+--           W i2 = outputWires e2
+--           v1 = M.lookup' i1 σ
+--           v2 = M.lookup' i2 σ
 
-  LEQLC e1 k w i -> coherentE m e1 σ && boolean vi
-                 && ((v1 - k) * vi == 0)
-                 && (if v1 == k then vi == 1 else vi == 0 && vw * (v1 - k) == 1)
-    where vi = M.lookup' i σ
-          vw = M.lookup' w σ
-          v1 = M.lookup' (outputWire e1) σ
+--   LEQLC e1 k w i -> coherentE m e1 σ && boolean vi
+--                  && ((v1 - k) * vi == 0)
+--                  && (if v1 == k then vi == 1 else vi == 0 && vw * (v1 - k) == 1)
+--     where vi = M.lookup' i σ
+--           vw = M.lookup' w σ
+--           W i1 = outputWires e1
+--           v1 = M.lookup' i1 σ
 
-{-@ reflect coherentA @-}
-{-@ coherentA :: m:Nat -> a:LAss p (Btwn 0 m)
-              -> {σ:WireValuation p m | closedAssertion m σ a} -> Bool @-}
-coherentA :: (Eq p, Fractional p) => Int -> LAss p Int -> WireValuation p -> Bool
-coherentA m a σ = case a of
-  LNZERO e1 w -> coherentE m e1 σ && (v1 * vw == 1)
-    where vw = M.lookup' w σ
-          v1 = M.lookup' (outputWire e1) σ
-  LBOOLEAN e1 -> coherentE m e1 σ && boolean v1
-    where v1 = M.lookup' (outputWire e1) σ
-  LEQA e1 e2 -> coherentE m e1 σ && coherentE m e2 σ && v1 == v2
-    where v1 = M.lookup' (outputWire e1) σ
-          v2 = M.lookup' (outputWire e2) σ
+-- {-@ reflect coherentA @-}
+-- {-@ coherentA :: m:Nat -> a:LAss p (Btwn 0 m)
+--               -> {σ:WireValuation p m | closedAssertion m σ a} -> Bool @-}
+-- coherentA :: (Eq p, Fractional p) => Int -> LAss p Int -> WireValuation p -> Bool
+-- coherentA m a σ = case a of
+--   LNZERO e1 w -> coherentE m e1 σ && (v1 * vw == 1)
+--     where vw = M.lookup' w σ
+--           W i1 = outputWires e1
+--           v1 = M.lookup' i1 σ
+--   LBOOLEAN e1 -> coherentE m e1 σ && boolean v1
+--     where W i1 = outputWires e1
+--           v1 = M.lookup' i1 σ
+--   LEQA e1 e2 -> coherentE m e1 σ && coherentE m e2 σ && v1 == v2
+--     where W i1 = outputWires e1
+--           W i2 = outputWires e2
+--           v1 = M.lookup' i1 σ
+--           v2 = M.lookup' i2 σ
 
 
 {-# NOINLINE counter #-}
