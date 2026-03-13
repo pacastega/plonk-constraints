@@ -13,7 +13,7 @@ import TypeAliases
                Circuit p 1 m @-} -- 1 gate, m wires
 addGate :: Num p => Int -> [Int] -> Circuit p
 addGate _ [a, b, c] = [(v, q)] where
-  v = [W a, W b, W c]
+  v = [Wire a, Wire b, Wire c]
   q = [1, 1, -1, 0, 0]
   -- a+b == c <=> a + b - c + 0*m + 0 == 0
 
@@ -24,7 +24,7 @@ addGate _ [a, b, c] = [(v, q)] where
                     Circuit p 1 m @-} -- 1 gate, m wires
 addGateConst :: Num p => Int -> p -> [Int] -> Circuit p
 addGateConst _ k [a, c] = [(v, q)] where
-  v = [W a, Free, W c]
+  v = [Wire a, Free, Wire c]
   q = [1, 0, -1, 0, k]
   -- a+k == c <=> a + 0 - c + 0*m + k == 0
 
@@ -45,7 +45,7 @@ linCombGate m [k1, k2] indices = affCombGate m [k1, k2, 0] indices
                    Circuit p 1 m @-} -- 1 gate, m wires
 affCombGate :: Num p => Int -> [p] -> [Int] -> Circuit p
 affCombGate _ [k1, k2, k] [a, b, c] = [(v, q)] where
-  v = [W a, W b, W c]
+  v = [Wire a, Wire b, Wire c]
   q = [k1, k2, -1, 0, k]
   -- k1*a + k2*b + k == c <=> k1*a + k2*b - c + 0*m + k == 0
 
@@ -55,7 +55,7 @@ affCombGate _ [k1, k2, k] [a, b, c] = [(v, q)] where
                Circuit p 1 m @-} -- 1 gate, m wires
 mulGate :: Num p => Int -> [Int] -> Circuit p
 mulGate _ [a, b, c] = [(v, q)] where
-  v = [W a, W b, W c]
+  v = [Wire a, Wire b, Wire c]
   q = [0, 0, -1, 1, 0]
   -- a*b == c <=> 0 + 0 - c + a*b + 0 == 0
 
@@ -66,7 +66,7 @@ mulGate _ [a, b, c] = [(v, q)] where
                     Circuit p 1 m @-} -- 1 gate, m wires
 mulGateConst :: Num p => Int -> p -> [Int] -> Circuit p
 mulGateConst _ k [a, c] = [(v, q)] where
-  v = [W a, Free, W c]
+  v = [Wire a, Free, Wire c]
   q = [k, 0, -1, 0, 0]
   -- a*k == c <=> k*a + 0 - c + 0*m + 0 == 0
 
@@ -76,8 +76,8 @@ mulGateConst _ k [a, c] = [(v, q)] where
                Circuit p 2 m @-}
 divGate :: Num p => Int -> [Int] -> Circuit p
 divGate _ [a, b, c, w] =
-  [([W b, W c, W a],  [ 0,  0, -1,  1,  0]), -- 1.
-   ([W b, W w, Free], [ 0,  0,  0,  1, -1])] -- 2.
+  [([Wire b, Wire c, Wire a], [ 0,  0, -1,  1,  0]), -- 1.
+   ([Wire b, Wire w, Free],   [ 0,  0,  0,  1, -1])] -- 2.
 
   -- Gate 1. a/b == c <=> 0 + 0 - a + b*c + 0 == 0
   -- Gate 2. b*w == 1 (b is non-zero)
@@ -89,8 +89,8 @@ divGate _ [a, b, c, w] =
                   Circuit p 2 m @-} -- 2 gate, m wires
 isEqlCGate :: Num p => Int -> p -> [Int] -> Circuit p
 isEqlCGate _ k [a, w, c] =
-  [([W a, W w, W c],  [ 0,  k, -1, -1,  1]), -- 1.
-   ([W a, W c, Free], [ 0,  k,  0, -1,  0])] -- 2.
+  [([Wire a, Wire w, Wire c], [ 0,  k, -1, -1,  1]), -- 1.
+   ([Wire a, Wire c, Free],   [ 0,  k,  0, -1,  0])] -- 2.
 
   -- Gate 1. 1 - (a-k)*w == c <=> 0 + k*w - c - a*w + 1 == 0
   -- Gate 2. (a-k)*c == 0 (a is k, or c is false)
@@ -100,7 +100,7 @@ isEqlCGate _ k [a, w, c] =
                    ListN (Btwn 0 m) 2 ->
                    Circuit p 1 m @-} -- 1 gate, m wires
 nonZeroGate :: Num p => Int -> [Int] -> Circuit p
-nonZeroGate _ [a, w] = [([W a, W w, Free], [0, 0, 0, 1, -1])]
+nonZeroGate _ [a, w] = [([Wire a, Wire w, Free], [0, 0, 0, 1, -1])]
   -- a /= 0 <=> ∃w. a*w == 1 <=> 0 + 0 + 0 + a*w - 1 == 0
 
 {-@ reflect boolGate @-}
@@ -108,7 +108,7 @@ nonZeroGate _ [a, w] = [([W a, W w, Free], [0, 0, 0, 1, -1])]
                 Btwn 0 m ->
                 Circuit p 1 m @-} -- 1 gate, m wires
 boolGate :: Num p => Int -> Int -> Circuit p
-boolGate _ a = [([W a, W a, Free], [-1, 0, 0, 1, 0])]
+boolGate _ a = [([Wire a, Wire a, Free], [-1, 0, 0, 1, 0])]
   -- a ∈ {0,1} <=> a*(a-1) == 0 <=> -a + 0 + 0 + a*a + 0 == 0
 
 {-@ reflect equalGate @-}
@@ -116,5 +116,5 @@ boolGate _ a = [([W a, W a, Free], [-1, 0, 0, 1, 0])]
                  ListN (Btwn 0 m) 2 ->
                  Circuit p 1 m @-} -- 1 gate, m wires
 equalGate :: Num p => Int -> [Int] -> Circuit p
-equalGate _ [a, b] = [([W a, W b, Free], [1, -1, 0, 0, 0])]
+equalGate _ [a, b] = [([Wire a, Wire b, Free], [1, -1, 0, 0, 0])]
   -- a == b <=> a-b == 0

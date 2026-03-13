@@ -17,11 +17,11 @@ import TypeAliases
 -- n == # gates
 -- m == # wires
 
-data Wire i = W i | Free
+data Wire i = Wire i | Free
 
 {-@ measure isWire @-}
 isWire :: Wire i -> Bool
-isWire (W _) = True
+isWire (Wire _) = True
 isWire Free  = False
 
 {-@ type Gate p M = (ListN (Wire (Btwn 0 M)) 3, ListN p 5) @-}
@@ -46,7 +46,7 @@ closedGate m σ ([a,b,c], _) = boundWire σ a && boundWire σ b && boundWire σ 
 {-@ reflect boundWire @-}
 boundWire :: WireValuation p -> Wire Int -> Bool
 boundWire σ Free  = True
-boundWire σ (W i) = M.member i σ
+boundWire σ (Wire i) = M.member i σ
 
 {-@ reflect closedCirc @-}
 {-@ closedCirc :: n:Nat -> m:Nat -> WireValuation p m -> Circuit p n m -> Bool @-}
@@ -68,7 +68,7 @@ checkGate m σ ([a,b,c], [qL,qR,qO,qM,qC]) =
 wireValue :: (Eq p, Num p) => Int -> WireValuation p -> Wire Int -> p
 -- since any 'free' wire doesn't contribute, we arbitrarily map it to 0
 wireValue _ σ Free = 0
-wireValue _ σ (W i) = M.lookup' i σ
+wireValue _ σ (Wire i) = M.lookup' i σ
 
 
 {-@ reflect satisfies @-}
