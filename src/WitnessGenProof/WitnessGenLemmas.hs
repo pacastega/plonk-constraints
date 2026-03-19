@@ -136,10 +136,10 @@ coherentEIncr m e σ1 σ2 π = case e of
   LCONS e1 e2 -> coherentEIncr m e1 σ1 σ2 π ? coherentEIncr m e2 σ1 σ2 π
 
 
-{-@ wgPostCond :: m:Nat -> ρ:NameValuation p -> σ:M.Map (Btwn 0 m) p
+{-@ wgClosed :: m:Nat -> ρ:NameValuation p -> σ:M.Map (Btwn 0 m) p
                -> e':{TypedLDSL p (Btwn 0 m) | wfE e' && freshE e' σ}
                -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGenE' m ρ σ e'}
                -> { closedExpr m σ' e' } @-}
-wgPostCond :: (Ord p, Fractional p) => Int -> NameValuation p -> M.Map Int p
+wgClosed :: (Ord p, Fractional p) => Int -> NameValuation p -> M.Map Int p
            -> LDSL p Int -> M.Map Int p -> Proof
-wgPostCond m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
+wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial

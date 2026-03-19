@@ -74,5 +74,5 @@ agreeLemmaEQL m0 _m1 m2 m p1 p2 ρ λ σ _λ1 λ2 p1' σ1 p2' σ2 λ' e' σ' π2
                  e' σ' (M.insert m2 (v1-v2) σ2)
                  (\y -> notElemLemma y m2 λ2 ?? π2 y)
   where (LEQLC _ _ w i) = e'
-        v1 = wgPostCond m ρ σ  p1' σ1 ?? M.lookup' (outputWire p1') σ1
-        v2 = wgPostCond m ρ σ1 p2' σ2 ?? M.lookup' (outputWire p2') σ2
+        v1 = wgClosed m ρ σ  p1' σ1 ?? M.lookup' (outputWire p1') σ1
+        v2 = wgClosed m ρ σ1 p2' σ2 ?? M.lookup' (outputWire p2') σ2
