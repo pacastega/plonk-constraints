@@ -38,7 +38,7 @@ compileProof m (LExpr e) σ = compileProofE m e σ
 compileProof m (LAss a) σ = compileProofA m a σ
 
 {-@ compileProofE :: m:Nat
-                  -> e:LDSL p (Btwn 0 m)
+                  -> e:TypedLDSL p (Btwn 0 m)
                   -> {σ:WireValuation p m | closedExpr m σ e}
                   -> { coherentE m e σ <=>
                        satisfies (nGatesE e) m σ (compileE m e) } @-}
@@ -77,6 +77,10 @@ compileProofE m e σ = case e of
   LEQLC e1 k w i -> compileProofE m e1 σ
                   ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
 
+  LNIL _ -> trivial
+  LCONS e1 e2 -> compileProofE m e1 σ ? compileProofE m e2 σ
+               ? satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
+    where n1 = nGatesE e1; n2 = nGatesE e2
 
 {-@ compileProofA :: m:Nat
                   -> a:LAss p (Btwn 0 m)
@@ -86,11 +90,12 @@ compileProofE m e σ = case e of
 compileProofA :: (Eq p, Fractional p)
               => Int -> LAss p Int -> WireValuation p -> Proof
 compileProofA m a σ = case a of
-  LNZERO e1 w -> compileProofE m e1 σ
+  LNZERO e1 w -> scalar' e1 ?? compileProofE m e1 σ
                ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
-  LBOOLEAN e1 -> compileProofE m e1 σ
+  LBOOLEAN e1 -> scalar' e1 ?? compileProofE m e1 σ
                ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
-  LEQA e1 e2  -> compileProofE m e1 σ ? compileProofE m e2 σ
+  LEQA e1 e2  -> scalar' e1 ?? compileProofE m e1 σ
+               ? scalar' e2 ?? compileProofE m e2 σ
                ? satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
                ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
                ? closedExpr m σ e2 ?? M.lookup' (outputWire e2) σ

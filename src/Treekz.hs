@@ -74,6 +74,12 @@ parseE = \case
 
   LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parseE p1]
 
+  LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parseE p1]
+  LNIL _ -> N "" []
+  LCONS p1 p2 -> N "VEC" (p1' : p2') where
+    p1' = parseE p1
+    N _ p2' = parseE p2
+
 parseA :: (Show p, Show i) => LAss p i -> Tree String
 parseA = \case
   LNZERO   p1 w  -> N ("$\\neq 0$" ++ wire [w]) [parseE p1]

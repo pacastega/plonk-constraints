@@ -84,7 +84,7 @@ witnessGen' m ρ σ (LAss a) = freshA a σ ?? witnessGenA' m ρ σ a
 {-@ reflect witnessGenE' @-}
 {-@ witnessGenE' :: m:Nat
                  -> NameValuation p -> σ:WireValuation p m
-                 -> {e:LDSL p (Btwn 0 m) | wfE e && freshE e σ}
+                 -> {e:TypedLDSL p (Btwn 0 m) | wfE e && freshE e σ}
                  -> Maybe ({σ':WireValuation p m | closedExpr m σ' e &&
                              M.keysSet σ' = S.union (M.keysSet σ) (wiresE e)}) @-}
 witnessGenE' :: (Eq p, Fractional p) => Int
@@ -148,6 +148,11 @@ witnessGenE' m ρ σ e = case e of
             value = if x1 == k then one else zero -- think True or False
             witness = if x1 == k then zero else 1/(x1-k)
 
+  LNIL _ -> Just σ
+  LCONS p1 p2 -> case witnessGenE' m ρ σ p1 of
+    Nothing -> Nothing
+    Just σ1 -> witnessGenE' m ρ σ1 p2
+
 {-@ reflect witnessGenA' @-}
 {-@ witnessGenA' :: m:Nat
                  -> NameValuation p -> σ:WireValuation p m
@@ -158,15 +163,11 @@ witnessGenA' :: (Eq p, Fractional p) => Int
              -> NameValuation p -> WireValuation p -> LAss p Int
              -> Maybe (WireValuation p)
 witnessGenA' m ρ σ a = case a of
-  LNZERO p1 w -> case witnessGenE' m ρ σ p1 of
+  LNZERO p1 w -> scalar' p1 ?? case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 ->
-      let i1 = outputWire p1
-      in case M.lookup i1 σ1
-      of Just x1 -> if x1 /= 0 then Just (M.insert w (1/x1) σ1)
-                    else Nothing
-         _       -> Nothing
-  LBOOLEAN p1 -> witnessGenE' m ρ σ p1
-  LEQA p1 p2 -> case witnessGenE' m ρ σ p1 of
+    Just σ1 -> if x1 /= 0 then Just (M.insert w (1/x1) σ1) else Nothing
+      where x1 = M.lookup' (outputWire p1) σ1
+  LBOOLEAN p1 -> scalar' p1 ?? witnessGenE' m ρ σ p1
+  LEQA p1 p2 -> case scalar' p1 ?? witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 -> witnessGenE' m ρ σ1 p2
+    Just σ1 -> scalar' p2 ?? witnessGenE' m ρ σ1 p2
