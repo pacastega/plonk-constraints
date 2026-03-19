@@ -183,12 +183,11 @@ label' p i λ = case p of
       Just j -> (i, LWIRE τ j, λ)
 
     CONST x -> (i+1, LCONST x i, λ)
-    BOOL b -> case b of
-      False -> label' (CONST zero) i λ
-      True  -> label' (CONST one)  i λ
+    BOOL b -> (i+1, LBOOL b i, λ)
 
     UN op p1 -> case op of
-      BoolToF -> label' p1 i λ -- noop
+      BoolToF -> (i1, LBoolToF p1', λ1)
+        where (i1, p1', λ1) = label' p1 i λ
       ISZERO -> label' (UN (EQLC zero) p1) i λ
       EQLC k -> (w+1, LEQLC p1' k w i1, λ1)
         where (i1, p1', λ1) = label' p1 i λ; w = i1+1

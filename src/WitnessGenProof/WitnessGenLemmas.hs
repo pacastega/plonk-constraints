@@ -31,6 +31,7 @@ wgLemma m m' ρ σ e = case e of
   LWIRE {} -> ()
   LVAR {} -> ()
   LCONST {} -> ()
+  LBOOL  {} -> ()
 
   LDIV e1 e2 _ _ -> wgLemma m m' ρ σ e1 ? case witnessGenE' m ρ σ e1 of
     Nothing -> (); Just σ1 -> wgLemma m m' ρ σ1 e2
@@ -39,6 +40,7 @@ wgLemma m m' ρ σ e = case e of
   LBIN _ e1 e2 _ -> wgLemma m m' ρ σ e1 ? case witnessGenE' m ρ σ e1 of
     Nothing -> (); Just σ1 -> wgLemma m m' ρ σ1 e2
 
+  LBoolToF e1 -> wgLemma m m' ρ σ e1
   LEQLC e1 _ _ _ -> wgLemma m m' ρ σ e1
 
   LNIL _ ->  ()
@@ -57,6 +59,7 @@ wgBoolean m ρ σ e σ' = case e of
               ? witnessGenE' m ρ σ (LWIRE τ i)
     where value = case M.lookup i σ of Just v -> v
   LVAR _ _ i -> trivial
+  LBOOL  {} -> trivial
 
   LUN _ e1 _ -> wgBoolean m ρ σ e1 σ1
     where σ1 = case witnessGenE' m ρ σ e1 of Just s -> s
@@ -64,6 +67,7 @@ wgBoolean m ρ σ e σ' = case e of
     where σ1 = case witnessGenE' m ρ σ  e1 of Just s -> s
           σ2 = case witnessGenE' m ρ σ1 e2 of Just s -> s
 
+  LBoolToF e1 -> wgBoolean m ρ σ e1 σ'
   LEQLC e1 k _ i -> if M.lookup' (outputWire e1) σ1 == k
                    then trivial else trivial
     where σ1 = case witnessGenE' m ρ σ e1 of Just s -> s
@@ -88,6 +92,7 @@ wgIncr m ρ σ e σ' j = case e of
     TF -> trivial
     TBool -> trivial
   LCONST x i -> trivial
+  LBOOL  b i -> trivial
   LDIV e1 e2 w i -> wgIncr m ρ σ  e1 σ1 j ? wgIncr m ρ σ1 e2 σ2 j
     where σ1 = case witnessGenE' m ρ σ  e1 of Just s -> s
           σ2 = case witnessGenE' m ρ σ1 e2 of Just s -> s
@@ -96,6 +101,7 @@ wgIncr m ρ σ e σ' j = case e of
   LBIN op e1 e2 i -> wgIncr m ρ σ  e1 σ1 j ? wgIncr m ρ σ1 e2 σ2 j
     where σ1 = case witnessGenE' m ρ σ  e1 of Just s -> s
           σ2 = case witnessGenE' m ρ σ1 e2 of Just s -> s
+  LBoolToF e1 -> wgIncr m ρ σ e1 σ' j
   LEQLC e1 k w i -> wgIncr m ρ σ  e1 σ1 j
     where σ1 = case witnessGenE' m ρ σ e1 of Just s -> s
   LNIL _ -> trivial
@@ -117,12 +123,14 @@ coherentEIncr m e σ1 σ2 π = case e of
     TF -> trivial
     TBool -> π i
   LCONST _ i -> π i
+  LBOOL  _ i -> π i
 
   LDIV e1 e2  w i -> coherentEIncr m e1 σ1 σ2 π ? coherentEIncr m e2 σ1 σ2 π
                    ? π (outputWire e1) ? π (outputWire e2) ? π i ? π w
   LUN  op e1    i -> coherentEIncr m e1 σ1 σ2 π ? π (outputWire e1) ? π i
   LBIN op e1 e2 i -> coherentEIncr m e1 σ1 σ2 π ? coherentEIncr m e2 σ1 σ2 π
                    ? π (outputWire e1) ? π (outputWire e2) ? π i
+  LBoolToF e1 -> coherentEIncr m e1 σ1 σ2 π
   LEQLC e1 k w i -> coherentEIncr m e1 σ1 σ2 π ? π (outputWire e1) ? π i ? π w
   LNIL _ -> trivial
   LCONS e1 e2 -> coherentEIncr m e1 σ1 σ2 π ? coherentEIncr m e2 σ1 σ2 π

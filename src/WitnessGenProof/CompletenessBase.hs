@@ -41,7 +41,7 @@ import Language.Haskell.Liquid.ProofCombinators
 
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> e':{LDSL p (Btwn 0 m) | freshE e' σ
-                                 && label' (VAR s τ) m0 λ = (m, mkList1 e', λ')}
+                                 && label' (VAR s τ) m0 λ = (m, e', λ')}
 
                   -> { isJust (witnessGenE' m ρ σ e') } @-}
 wgCompleteVar :: (Fractional p, Ord p)
@@ -81,7 +81,7 @@ wgCompleteVar m0 m s τ ρ λ σ π λ' e' = case M.lookup s ρ of
 
                     -> λ':LabelEnv p (Btwn 0 m)
                     -> e':{LDSL p (Btwn 0 m) | freshE e' σ
-                                 && label' (CONST x) m0 λ = (m, mkList1 e', λ')}
+                                 && label' (CONST x) m0 λ = (m, e', λ')}
 
                     -> { isJust (witnessGenE' m ρ σ e') } @-}
 wgCompleteConst :: (Fractional p, Ord p)
@@ -107,7 +107,7 @@ wgCompleteConst m0 m x ρ λ σ π λ' e' = trivial
 
                    -> λ':LabelEnv p (Btwn 0 m)
                    -> e':{LDSL p (Btwn 0 m) | freshE e' σ
-                                 && label' (BOOL b) m0 λ = (m, mkList1 e', λ')}
+                                 && label' (BOOL b) m0 λ = (m, e', λ')}
 
                    -> { isJust (witnessGenE' m ρ σ e') } @-}
 wgCompleteBool :: (Fractional p, Ord p)

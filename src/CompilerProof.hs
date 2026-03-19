@@ -50,6 +50,7 @@ compileProofE m e σ = case e of
     TF -> trivial
     TBool -> trivial
   LCONST x i -> trivial
+  LBOOL  b i -> trivial
   LDIV e1 e2 w i -> compileProofE m e1 σ ? compileProofE m e2 σ
                   ? satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
                   ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
@@ -74,6 +75,7 @@ compileProofE m e σ = case e of
                 ? closedExpr m σ e2 ?? M.lookup' (outputWire e2) σ
           n1 = nGatesE e1; n2 = nGatesE e2
 
+  LBoolToF e1 -> compileProofE m e1 σ
   LEQLC e1 k w i -> compileProofE m e1 σ
                   ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
 

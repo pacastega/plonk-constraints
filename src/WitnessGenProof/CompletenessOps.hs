@@ -44,16 +44,16 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> σ1:WireValuation p m1
 
                   -> e1':{LDSL p (Btwn 0 m1) | freshE e1' σ && wfE e1'
-                                      && label' e1 m0 λ = (m1, mkList1 e1', λ1)
+                                      && label' e1 m0 λ = (m1, e1', λ1)
                                       && witnessGenE' m ρ σ e1' = Just σ1}
 
                   -> e2':{LDSL p (Btwn 0 m2) | freshE e2' σ1 && wfE e2'
-                                      && label' e2 m1 λ1 = (m2, mkList1 e2', λ2)
+                                      && label' e2 m1 λ1 = (m2, e2', λ2)
                                       && isJust (witnessGenE' m ρ σ1 e2')}
 
                   -> λ':LabelEnv p (Btwn 0 m)
                   -> e':{LDSL p (Btwn 0 m) | freshE e' σ && wfE e'
-                        && label' (BIN op e1 e2) m0 λ = (m, mkList1 e', λ')}
+                        && label' (BIN op e1 e2) m0 λ = (m, e', λ')}
 
                   -> { isJust (witnessGenE' m ρ σ e') } @-}
 

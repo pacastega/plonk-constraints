@@ -48,6 +48,7 @@ parseE = \case
 
   LVAR s _ i     -> N ("$" ++ s ++ "$" ++ wire [i])         []
   LCONST x i     -> N (show x ++ wire [i])      []
+  LBOOL  b i     -> N (show b ++ wire [i])      []
 
   LDIV p1 p2 _ i -> N ("$/$" ++ wire [i])       [parseE p1, parseE p2]
 
@@ -72,8 +73,7 @@ parseE = \case
     UnsafeOR  -> N ("$\\hat\\vee$" ++ wire [i])   [parseE p1, parseE p2]
     UnsafeXOR -> N ("$\\hat\\oplus$" ++ wire [i]) [parseE p1, parseE p2]
 
-  LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parseE p1]
-
+  LBoolToF p1 -> parseE p1
   LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parseE p1]
   LNIL _ -> N "" []
   LCONS p1 p2 -> N "VEC" (p1' : p2') where

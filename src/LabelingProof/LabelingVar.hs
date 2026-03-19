@@ -40,7 +40,7 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> Agree λ ρ σ
 
                   -> λ':LabelEnv p (Btwn 0 m)
-                  -> e':{LDSL p (Btwn 0 m) | label' (VAR s τ) m0 λ = (m, mkList1 e', λ')}
+                  -> e':{LDSL p (Btwn 0 m) | label' (VAR s τ) m0 λ = (m, e', λ')}
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
 
                   -> Agree λ' ρ σ' @-}

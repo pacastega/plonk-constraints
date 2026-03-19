@@ -104,6 +104,7 @@ witnessGenE' m ρ σ e = case e of
       TF -> Just (M.insert i value σ)
       TBool -> if boolean value then Just (M.insert i value σ) else Nothing
   LCONST x i -> Just (M.insert i x σ)
+  LBOOL  b i -> Just (M.insert i (if b then 1 else 0) σ)
   LDIV p1 p2 w i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
     Just σ1 -> case witnessGenE' m ρ σ1 p2 of
@@ -141,6 +142,7 @@ witnessGenE' m ρ σ e = case e of
                 UnsafeOR  -> x1 + x2 -   x1*x2
                 UnsafeXOR -> x1 + x2 - 2*x1*x2
 
+  LBoolToF p1 -> witnessGenE' m ρ σ p1
   LEQLC p1 k w i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
     Just σ1 -> Just (M.insert i value (M.insert w witness σ1))

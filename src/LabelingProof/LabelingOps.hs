@@ -32,8 +32,8 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> σ:WireValuation p m0
 
                   -> λ':LabelEnv p (Btwn 0 m)
-                  -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
-                  -> e':{LDSL p (Btwn 0 m) | label' (UN op p1) m0 λ = (m, mkList1 e', λ')}
+                  -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, p1', λ1)}
+                  -> e':{LDSL p (Btwn 0 m) | label' (UN op p1) m0 λ = (m, e', λ')}
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
                   -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ p1'}
 
@@ -56,7 +56,8 @@ agreeLemmaUn :: (Fractional p, Eq p, Ord p)
              -> (String -> Proof)
 
              -> (String -> Proof)
-agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 = case op of
+agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 =
+  labelTyped (UN op p1) m0 λ m e' λ' ?? case op of
   ADDC k -> \x -> π1 x ? notElemLemma x (outputWire e') λ1
   MULC k -> \x -> π1 x ? notElemLemma x (outputWire e') λ1
 
@@ -77,10 +78,10 @@ agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 = case op of
                   -> Agree λ ρ σ
 
                   -> λ':LabelEnv p (Btwn 0 m)
-                  -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ  = (m1, mkList1 p1', λ1)}
-                  -> p2':{LDSL p (Btwn 0 m2) | label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
+                  -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ  = (m1, p1', λ1)}
+                  -> p2':{LDSL p (Btwn 0 m2) | label' p2 m1 λ1 = (m2, p2', λ2)}
 
-                  -> e':{LDSL p (Btwn 0 m) | label' (BIN op p1 p2) m0 λ = (m, mkList1 e', λ')}
+                  -> e':{LDSL p (Btwn 0 m) | label' (BIN op p1 p2) m0 λ = (m, e', λ')}
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ  e'}
                   -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ  p1'}
                   -> σ2:{WireValuation p m | Just σ2 = witnessGenE' m ρ σ1 p2'}
@@ -103,7 +104,8 @@ agreeLemmaBin :: (Fractional p, Eq p, Ord p)
               -> (String -> Proof)
 
               -> (String -> Proof)
-agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 = case op of
+agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 =
+  labelTyped (BIN op p1 p2) m0 λ m e' λ' ?? case op of
   ADD           -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
   SUB           -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
   MUL           -> \x -> π2 x ? notElemLemma x (outputWire e') λ2

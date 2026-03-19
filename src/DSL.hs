@@ -216,12 +216,14 @@ data LDSLI p i j =
     LWIRE      Ty j
   | LVAR   Var Ty i
   | LCONST p      i
+  | LBOOL  Bool   i
 
   | LDIV (LDSLI p i j) (LDSLI p i j) i i
 
   | LUN  (UnOp p)  (LDSLI p i j)            i
   | LBIN (BinOp p) (LDSLI p i j) (LDSLI p i j) i
 
+  | LBoolToF (LDSLI p i j)
   | LEQLC   (LDSLI p i j) p i i
 
   | LNIL Ty
@@ -233,12 +235,14 @@ data LDSLI p i j =
     LWIRE      ScalarTy j
   | LVAR   Var ScalarTy i
   | LCONST p            i
+  | LBOOL  Bool         i
 
   | LDIV   (LDSLI p i j) (LDSLI p i j) i i
 
   | LUN  (UnOp' p)  (LDSLI p i j)            i
   | LBIN (BinOp' p) (LDSLI p i j) (LDSLI p i j) i
 
+  | LBoolToF (LDSLI p i j)
   | LEQLC   (LDSLI p i j) p i i
 
   | LNIL Ty
@@ -251,10 +255,12 @@ wiresE :: (Ord i) => LDSLI p i j -> S.Set i
 wiresE (LWIRE {})    = S.empty
 wiresE (LVAR  _ _ i) = S.singleton i
 wiresE (LCONST  _ i) = S.singleton i
+wiresE (LBOOL   _ i) = S.singleton i
 wiresE (LDIV e1 e2 w i) = wiresE e1 `S.union` wiresE e2 `S.union`
                          S.singleton w `S.union` S.singleton i
 wiresE (LUN _ e1 i) = wiresE e1 `S.union` S.singleton i
 wiresE (LBIN _ e1 e2 i) = wiresE e1 `S.union` wiresE e2 `S.union` S.singleton i
+wiresE (LBoolToF e1) = wiresE e1
 wiresE (LEQLC e1 _ w i) = wiresE e1 `S.union` S.singleton w `S.union` S.singleton i
 
 wiresE (LNIL _) = S.empty
@@ -265,9 +271,11 @@ wWiresE :: (Ord j) => LDSLI p i j -> S.Set j
 wWiresE (LWIRE _ i)      = S.singleton i
 wWiresE (LVAR {})        = S.empty
 wWiresE (LCONST {})      = S.empty
+wWiresE (LBOOL {})       = S.empty
 wWiresE (LDIV e1 e2 _ _) = wWiresE e1 `S.union` wWiresE e2
 wWiresE (LUN _ e1 _)     = wWiresE e1
 wWiresE (LBIN _ e1 e2 _) = wWiresE e1 `S.union` wWiresE e2
+wWiresE (LBoolToF e1)    = wWiresE e1
 wWiresE (LEQLC e1 _ _ _) = wWiresE e1
 wWiresE (LNIL _)         = S.empty
 wWiresE (LCONS e es)     = wWiresE e  `S.union` wWiresE es
@@ -282,12 +290,14 @@ wfE :: (Ord i) => LDSLI p i j -> Bool
 wfE (LWIRE  _ _) = True
 wfE (LVAR _ _ i) = True
 wfE (LCONST _ i) = True
+wfE (LBOOL _ i)  = True
 wfE (LDIV e1 e2 w i ) = wfE e1 && wfE e2 && (wiresE e1 `disjoint` wiresE e2)
   && (wiresE e1 `S.union` wiresE e2) `disjoint` (S.singleton w `S.union` S.singleton i)
   && w /= i
 wfE (LUN _ e1 i) = wfE e1 && (wiresE e1 `disjoint` S.singleton i)
 wfE (LBIN _ e1 e2 i) = wfE e1 && wfE e2 && (wiresE e1 `disjoint` wiresE e2)
   && (wiresE e1 `S.union` wiresE e2) `disjoint` (S.singleton i)
+wfE (LBoolToF e1) = wfE e1
 wfE (LEQLC e1 _ w i) = wfE e1
   && (wiresE e1) `disjoint` (S.singleton w `S.union` S.singleton i)
   && w /= i
@@ -308,6 +318,7 @@ inferType' e = case e of
   LWIRE  τ _ -> Just τ
   LVAR _ τ _ -> Just τ
   LCONST _ _ -> Just TF
+  LBOOL  _ _ -> Just TBool
 
   LDIV e1 e2 _ _ -> if inferType' e1 == Just TF && inferType' e2 == Just TF
                     then Just TF else Nothing
@@ -334,6 +345,7 @@ inferType' e = case e of
     UnsafeOR  -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
     UnsafeXOR -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
 
+  LBoolToF e1 -> if inferType' e1 == Just TBool then Just TF else Nothing
   LEQLC e1 _ _ _ -> if inferType' e1 == Just TF then Just TBool else Nothing
 
   LNIL τ -> Just (TVec τ)
@@ -435,12 +447,14 @@ outputWire (LWIRE _ i)    = i
 
 outputWire (LVAR _ _ i)   = i
 outputWire (LCONST _ i)   = i
+outputWire (LBOOL _ i)    = i
 
 outputWire (LDIV _ _ _ i) = i
 
 outputWire (LUN _ _ i)    = i
 outputWire (LBIN _ _ _ i) = i
 
+outputWire (LBoolToF e)    = outputWire e
 outputWire (LEQLC _ _ _ i) = i
 
 
@@ -452,6 +466,7 @@ nGatesE (LWIRE _ _)      = 0
 
 nGatesE (LVAR _ τ _)     = case τ of TF -> 0; TBool -> 1
 nGatesE (LCONST _ _)     = 1
+nGatesE (LBOOL  _ _)     = 1
 
 nGatesE (LDIV p1 p2 _ _) = 2 + nGatesE p1 + nGatesE p2
 
@@ -462,6 +477,7 @@ nGatesE (LBIN op p1 p2 _) = nGatesE p1 + nGatesE p2 + case op of
   AND -> 3; OR  -> 3; XOR -> 3
   UnsafeAND -> 1; UnsafeOR -> 1; UnsafeXOR -> 1
 
+nGatesE (LBoolToF p1) = nGatesE p1
 nGatesE (LEQLC p1 _ _ _) = 2 + nGatesE p1
 
 nGatesE (LNIL _) = 0
@@ -497,6 +513,7 @@ compileE m (LVAR _ τ i)   = case τ of
   TBool  -> boolGate m i
   TVec τ -> error "Vector variables have been unfolded by now"
 compileE m (LCONST x i)   = constGate m x i
+compileE m (LBOOL b i)    = constGate m (if b then 1 else 0) i
 
 compileE m (LDIV p1 p2 w i) = append' (divGate m [i1, i2, i, w]) c'
   where
@@ -531,6 +548,7 @@ compileE m (LBIN op p1 p2 i) = case op of
     i1 = outputWire p1; i2 = outputWire p2
     c' = append' c1 c2
 
+compileE m (LBoolToF p1) = compileE m p1
 compileE m (LEQLC p1 k w i) = c
   where
     c1 = compileE m p1
@@ -598,6 +616,8 @@ coherentE m e σ = case e of
       where vi = M.lookup' i σ
   LCONST x i -> vi == x
     where vi = M.lookup' i σ
+  LBOOL b i -> vi == if b then 1 else 0
+    where vi = M.lookup' i σ
 
   LDIV e1 e2 w i -> coherentE m e1 σ && coherentE m e2 σ
                  && vw * v2 == 1
@@ -636,6 +656,7 @@ coherentE m e σ = case e of
           v1 = M.lookup' (outputWire e1) σ
           v2 = M.lookup' (outputWire e2) σ
 
+  LBoolToF e1 -> coherentE m e1 σ
   LEQLC e1 k w i -> coherentE m e1 σ && boolean vi
                  && ((v1 - k) * vi == 0)
                  && (if v1 == k then vi == 1 else vi == 0 && vw * (v1 - k) == 1)
