@@ -28,24 +28,24 @@ import Language.Haskell.Liquid.ProofCombinators
 wgLemma :: (Eq p, Fractional p) => Int -> Int
         -> NameValuation p -> WireValuation p -> LDSL p Int -> Proof
 wgLemma m m' ρ σ e = case e of
-  LWIRE {} -> ()
-  LVAR {} -> ()
-  LCONST {} -> ()
-  LBOOL  {} -> ()
+  LWIRE {} -> trivial
+  LVAR {} -> trivial
+  LCONST {} -> trivial
+  LBOOL  {} -> trivial
 
   LDIV e1 e2 _ _ -> wgLemma m m' ρ σ e1 ? case witnessGenE' m ρ σ e1 of
-    Nothing -> (); Just σ1 -> wgLemma m m' ρ σ1 e2
+    Nothing -> trivial; Just σ1 -> wgLemma m m' ρ σ1 e2
 
   LUN _ e1 _ -> wgLemma m m' ρ σ e1
   LBIN _ e1 e2 _ -> wgLemma m m' ρ σ e1 ? case witnessGenE' m ρ σ e1 of
-    Nothing -> (); Just σ1 -> wgLemma m m' ρ σ1 e2
+    Nothing -> trivial; Just σ1 -> wgLemma m m' ρ σ1 e2
 
   LBoolToF e1 -> wgLemma m m' ρ σ e1
   LEQLC e1 _ _ _ -> wgLemma m m' ρ σ e1
 
-  LNIL _ ->  ()
+  LNIL _ ->  trivial
   LCONS e1 e2 -> wgLemma m m' ρ σ e1 ? case witnessGenE' m ρ σ e1 of
-    Nothing -> (); Just σ1 -> wgLemma m m' ρ σ1 e2
+    Nothing -> trivial; Just σ1 -> wgLemma m m' ρ σ1 e2
 
 
 {-@ wgBoolean :: m:Nat -> ρ:NameValuation p -> σ:WireValuation p m
@@ -142,4 +142,4 @@ coherentEIncr m e σ1 σ2 π = case e of
                -> { closedExpr m σ' e' } @-}
 wgPostCond :: (Ord p, Fractional p) => Int -> NameValuation p -> M.Map Int p
            -> LDSL p Int -> M.Map Int p -> Proof
-wgPostCond m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> ()
+wgPostCond m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
