@@ -116,31 +116,15 @@ witnessGenE' m ρ σ e = case e of
               x2 = M.lookup' (outputWire p2) σ2
   LUN op p1 i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 -> Just (M.insert i value σ1)
+    Just σ1 -> Just (M.insert i (valueUnOp op x1) σ1)
       where x1 = M.lookup' (outputWire p1) σ1
-            value = case op of
-              ADDC k1 -> k1 + x1
-              MULC k1 -> k1 * x1
-              NOT -> 1 - x1
-              UnsafeNOT -> 1 - x1
   LBIN op p1 p2 i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
     Just σ1 -> case witnessGenE' m ρ σ1 p2 of
       Nothing -> Nothing
-      Just σ2 -> Just (M.insert i value σ2)
+      Just σ2 -> Just (M.insert i (valueBinOp op x1 x2) σ2)
         where x1 = M.lookup' (outputWire p1) σ1
               x2 = M.lookup' (outputWire p2) σ2
-              value = case op of
-                ADD -> x1 + x2
-                SUB -> x1 - x2
-                MUL -> x1 * x2
-                LINCOMB k1 k2 -> k1*x1 + k2*x2
-                AND -> x1 * x2
-                OR  -> x1 + x2 -   x1*x2
-                XOR -> x1 + x2 - 2*x1*x2
-                UnsafeAND -> x1 * x2
-                UnsafeOR  -> x1 + x2 -   x1*x2
-                UnsafeXOR -> x1 + x2 - 2*x1*x2
 
   LBoolToF p1 -> witnessGenE' m ρ σ p1
   LEQLC p1 k w i -> case witnessGenE' m ρ σ p1 of
@@ -154,6 +138,30 @@ witnessGenE' m ρ σ e = case e of
   LCONS p1 p2 -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
     Just σ1 -> witnessGenE' m ρ σ1 p2
+
+{-@ reflect valueUnOp @-}
+{-@ valueUnOp :: UnOp' p -> p -> p @-}
+valueUnOp :: (Eq p, Fractional p) => UnOp p -> p -> p
+valueUnOp op x1 = case op of
+   ADDC k1 -> k1 + x1
+   MULC k1 -> k1 * x1
+   NOT -> 1 - x1
+   UnsafeNOT -> 1 - x1
+
+{-@ reflect valueBinOp @-}
+{-@ valueBinOp :: BinOp' p -> p -> p -> p @-}
+valueBinOp :: (Eq p, Fractional p) => BinOp p -> p -> p -> p
+valueBinOp op x1 x2 = case op of
+   ADD -> x1 + x2
+   SUB -> x1 - x2
+   MUL -> x1 * x2
+   LINCOMB k1 k2 -> k1*x1 + k2*x2
+   AND -> x1 * x2
+   OR  -> x1 + x2 -   x1*x2
+   XOR -> x1 + x2 - 2*x1*x2
+   UnsafeAND -> x1 * x2
+   UnsafeOR  -> x1 + x2 -   x1*x2
+   UnsafeXOR -> x1 + x2 - 2*x1*x2
 
 {-@ reflect witnessGenA' @-}
 {-@ witnessGenA' :: m:Nat
