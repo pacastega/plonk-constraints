@@ -3,10 +3,6 @@
 {-@ LIQUID "--reflection"    @-}
 {-@ LIQUID "--ple"           @-}
 {-@ LIQUID "--linear"        @-}
-{-@ LIQUID "--eliminate=all" @-}
-
-{-@ LIQUID "--cores=1" @-}
--- {-@ LIQUID "--fast"          @-}
 
 module LabelingProof.LabelingEQL where
 
@@ -44,15 +40,15 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> λ2:LabelEnv p (Btwn 0 m2)
 
                   -> p1':{LDSL p (Btwn 0 m1) | wfE p1' && freshE p1' σ
-                                            && label' p1 m0 λ  = (m1, mkList1 p1', λ1)}
+                                            && label' p1 m0 λ  = (m1, p1', λ1)}
                   -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ  p1'}
 
                   -> p2':{LDSL p (Btwn 0 m2) | wfE p2' && freshE p2' σ1
-                                            && label' p2 m1 λ1 = (m2, mkList1 p2', λ2)}
+                                            && label' p2 m1 λ1 = (m2, p2', λ2)}
                   -> σ2:{WireValuation p m | Just σ2 = witnessGenE' m ρ σ1 p2'}
 
                   -> λ':LabelEnv p (Btwn 0 m)
-                  -> e':{LDSL p (Btwn 0 m) | label' (BIN EQL p1 p2) m0 λ = (m, mkList1 e', λ')}
+                  -> e':{LDSL p (Btwn 0 m) | label' (BIN EQL p1 p2) m0 λ = (m, e', λ')}
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
 
                   -> Agree λ2 ρ σ2
@@ -69,10 +65,9 @@ agreeLemmaEQL :: (Fractional p, Ord p)
 
               -> (Var -> Proof)
               -> (Var -> Proof)
-agreeLemmaEQL m0 _m1 m2 m p1 p2 ρ λ σ _λ1 λ2 p1' σ1 p2' σ2 λ' e' σ' π2 =
+agreeLemmaEQL m0 m1 m2 m p1 p2 ρ λ σ λ1 λ2 p1' σ1 p2' σ2 λ' e' σ' π2 =
   agreeLemmaEQLC m0 (m2+1) m 0 (BIN SUB p1 p2) ρ λ λ2 σ λ' (LBIN SUB p1' p2' m2)
                  e' σ' (M.insert m2 (v1-v2) σ2)
                  (\y -> notElemLemma y m2 λ2 ?? π2 y)
-  where (LEQLC _ _ w i) = e'
-        v1 = wgClosed m ρ σ  p1' σ1 ?? M.lookup' (outputWire p1') σ1
-        v2 = wgClosed m ρ σ1 p2' σ2 ?? M.lookup' (outputWire p2') σ2
+  where v1 = labelTyped p1 m0 λ  m1 p1' λ1 ?? wgClosed m ρ σ  p1' σ1 ?? M.lookup' (outputWire p1') σ1
+        v2 = labelTyped p2 m1 λ1 m2 p2' λ2 ?? wgClosed m ρ σ1 p2' σ2 ?? M.lookup' (outputWire p2') σ2

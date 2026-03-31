@@ -40,8 +40,8 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> σ:WireValuation p m0
 
                   -> λ':LabelEnv p (Btwn 0 m)
-                  -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
-                  -> e':{LDSL p (Btwn 0 m) | label' (UN (EQLC k) p1) m0 λ = (m, mkList1 e', λ')}
+                  -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, p1', λ1)}
+                  -> e':{LDSL p (Btwn 0 m) | label' (UN (EQLC k) p1) m0 λ = (m, e', λ')}
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
                   -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ p1'}
 
