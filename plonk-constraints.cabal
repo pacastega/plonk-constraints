@@ -41,6 +41,7 @@ library
       LabelingProof.LabelingVar
       LabelingProof.LabelingISZERO
       LabelingProof.LabelingEQLC
+      LabelingProof.RecursiveLemmas
       LogicGates
       MapLemmas
       MapFunctions

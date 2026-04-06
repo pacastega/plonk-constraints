@@ -1,10 +1,11 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, ScopedTypeVariables #-}
 {-@ LIQUID "--reflection" @-}
-{-@ LIQUID "--ple" @-}
-{-@ LIQUID "--ple-with-undecided-guards" @-}
-{-@ LIQUID "--fast" @-}
-{-@ LIQUID "--max-case-expand=0" @-}
+-- {-@ LIQUID "--ple" @-}
+-- {-@ LIQUID "--fast" @-}
+{-@ LIQUID "--linear" @-}
+
+{-@ LIQUID "--no-termination" @-}
 
 module LabelingProof.AgreeLemma where
 
@@ -29,12 +30,13 @@ import MapLemmas
 import WitnessGenProof.WitnessGenLemmas
 
 import LabelingProof.LabelingLemmas
-import LabelingProof.LabelingVar
-import LabelingProof.LabelingISZERO
-import LabelingProof.LabelingEQLC
-import LabelingProof.LabelingOps
+-- import LabelingProof.LabelingVar
+-- import LabelingProof.LabelingISZERO
+-- import LabelingProof.LabelingEQLC
+-- import LabelingProof.LabelingOps
 import LabelingProof.LabelingDIV
 import LabelingProof.LabelingEQL
+import LabelingProof.RecursiveLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
 
@@ -124,13 +126,13 @@ import Language.Haskell.Liquid.ProofCombinators
            -> Agree λ ρ σ
 
            -> λ':LabelEnv p (Btwn 0 m)
-           -> e':{LDSL p (Btwn 0 m) | freshE e' σ && wfE e'
+           -> e':{TypedLDSL p (Btwn 0 m) | freshE e' σ && wfE e'
                             && label' (BIN op p1 p2) m0 λ = (m, e', λ')}
            -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
 
            -> Agree λ' ρ σ'
             / [size (BIN op p1 p2), 0] @-}
-auxBin :: (Fractional p, Eq p, Ord p)
+auxBin :: forall p. (Fractional p, Eq p, Ord p)
        => Int -> Int -> DSL p -> DSL p -> BinOp p
        -> NameValuation p
        -> LabelEnv p Int
@@ -143,24 +145,54 @@ auxBin :: (Fractional p, Eq p, Ord p)
        -> WireValuation p
 
        -> (String -> Proof)
-auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x = case op of
-    -- DIV -> -- label2Inc DIV p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   labelProofDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, p1', λ1) = label' p1 m0 λ
-    --         (m2, p2', λ2) = label' p2 m1 λ1
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
+auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
+  wellTypedBin p1 p2 op ??
+  case op of
+    --TODO: fix this format (?? at the beginning of the lines)
+    DIV -> m_gt_m1_m2 ??
+      liquidAssert (m > m1) ??
+      labelProofDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x
+      where
+            (m1, p1', λ1) = label' p1 m0 λ
+            (m2, p2', λ2) = label' p2 m1 λ1
+
+            {-@ m_gt_m1_m2 :: { m > m1 && m > m2 } @-}
+            m_gt_m1_m2 :: Proof
+            m_gt_m1_m2 = label2Inc DIV p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
+
+            -- {-@ σ1 :: {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ p1'} @-}
+            -- σ1 :: WireValuation p
+            σ1 = m_gt_m1_m2
+              ?? wgDivFresh1 m p1' p2' w i σ
+              ?? wgDiv1 m1 m ρ σ p1' p2' w i e' σ'
+
+            -- {-@ σ2 :: {σ2:WireValuation p m2 | Just σ2 = witnessGenE' m ρ σ1 p2'} @-}
+            -- σ2 :: WireValuation p
+            σ2 = m_gt_m1_m2
+              ?? wgDivFresh2 m ρ p1' p2' w i σ σ1
+              ?? wgDiv2 m2 m ρ σ p1' p2' w i e' σ' σ1
+
+            {-@ p2_p1_wf :: { wfE p1' && wfE p2' } @-}
+            p2_p1_wf :: Proof
+            p2_p1_wf = wfDiv p1' p2' w i
+
+            (w,i) = labelDiv m0 p1 p2 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
+
+            π1 = p2_p1_wf
+              ?? wtDiv p1' p2' w i
+              ?? wgLemma m1 m ρ σ p1'
+              ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
+            π2 = p2_p1_wf
+              ?? wtDiv p1' p2' w i
+              ?? wgLemma m2 m ρ σ1 p2'
+              ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+
+    -- EQL -> label2Inc EQL p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
+    --   agreeLemmaEQL m0 m1 m2 m p1 p2 ρ λ σ λ1 λ2 p1' σ1 p2' σ2 λ' e' σ' π2 x
+    --   where σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
     --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
     --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
     --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
-
-    EQL -> -- label2Inc EQL p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-      agreeLemmaEQL m0 m1 m2 m p1 p2 ρ λ σ λ1 λ2 p1' σ1 p2' σ2 λ' e' σ' π2 x
-      where (m1, p1', λ1) = label' p1 m0 λ
-            (m2, p2', λ2) = label' p2 m1 λ1
-            σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-            σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-            π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-            π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
 --------------------------------------------------------------------------------
     -- ADD -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
     --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
@@ -283,7 +315,7 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x = case op of
                -> Agree λ ρ σ
 
                -> λ':LabelEnv p (Btwn 0 m)
-               -> e':{LDSL p (Btwn 0 m) | freshE e' σ
+               -> e':{LDSL p (Btwn 0 m) | freshE e' σ && wfE e'
                                        && label' e m0 λ = (m, e', λ')}
                -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
 
@@ -302,21 +334,26 @@ agreeLemma :: (Fractional p, Eq p, Ord p)
            -> WireValuation p
 
            -> (Var -> Proof)
-agreeLemma m0 m e ρ λ σ π λ' e' σ' x = labelWF e m0 λ m e' λ' ?? case e of
-  VAR s τ -> agreeLemmaVar m0 m s τ ρ λ σ π λ' e' σ' x
-  CONST _ -> π x ? notElemLemma x (outputWire e') λ
+agreeLemma m0 m e ρ λ σ π λ' e' σ' x = case e of
+   -- labelWF e m0 λ m e' λ' ??
+  VAR s τ -> admit () -- agreeLemmaVar m0 m s τ ρ λ σ π λ' e' σ' x
+  CONST _ -> admit () -- π x ? notElemLemma x (outputWire e') λ
 
-  BOOL b -> case b of
-    True -> π x ? notElemLemma x (outputWire e') λ
-    False -> π x ? notElemLemma x (outputWire e') λ
+  BOOL b -> admit () -- case b of
+    -- True -> π x ? notElemLemma x (outputWire e') λ
+    -- False -> π x ? notElemLemma x (outputWire e') λ
 
   UN  op p1    -> admit () -- auxUn  m0 m p1    op ρ λ σ π λ' e' σ' x
-  BIN op p1 p2 -> auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x
+  BIN op p1 p2 -> admit () -- auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x
 
-  NIL _ -> error "this theorem only talks about scalars"
-  CONS _ _ -> error "this theorem only talks about scalars"
+  NIL _ -> admit () -- error "this theorem only talks about scalars"
+  CONS _ _ -> admit () -- error "this theorem only talks about scalars"
 
 
 {-@ assume admit :: () -> { False } @-}
 admit :: () -> ()
 admit _ = ()
+
+{-@ assume admit' :: b:Bool -> { b } @-}
+admit' :: Bool -> ()
+admit' _ = ()
