@@ -57,7 +57,7 @@ agreeLemmaUn :: (Fractional p, Eq p, Ord p)
 
              -> (String -> Proof)
 agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 =
-  labelTyped (UN op p1) m0 λ m e' λ' ?? case op of
+  labelType (UN op p1) m0 λ m e' λ' ?? case op of
   ADDC k -> \x -> π1 x ? notElemLemma x (outputWire e') λ1
   MULC k -> \x -> π1 x ? notElemLemma x (outputWire e') λ1
 
@@ -105,7 +105,7 @@ agreeLemmaBin :: (Fractional p, Eq p, Ord p)
 
               -> (String -> Proof)
 agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 =
-  labelTyped (BIN op p1 p2) m0 λ m e' λ' ?? case op of
+  labelType (BIN op p1 p2) m0 λ m e' λ' ?? case op of
   ADD           -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
   SUB           -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
   MUL           -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
