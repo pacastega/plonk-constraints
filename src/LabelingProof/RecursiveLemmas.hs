@@ -26,7 +26,7 @@ import Language.Haskell.Liquid.ProofCombinators
 wellTypedBin :: DSL p -> DSL p -> BinOp p -> Proof
 wellTypedBin e1 e2 op = trivial
 
-{-@ wgDiv1 :: m1:Nat -> m:{Nat | m >= m1}
+{-@ σ1Div :: m1:Nat -> m:{Nat | m >= m1}
           -> ρ:NameValuation p -> σ:WireValuation p m1
           -> e1:LDSL p (Btwn 0 m1) -> e2:LDSL p (Btwn 0 m)
           -> w:Btwn 0 m -> i:Btwn 0 m
@@ -34,16 +34,16 @@ wellTypedBin e1 e2 op = trivial
                                       && wfE e && freshE e σ}
           -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
           -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-wgDiv1 :: (Ord p, Fractional p) => Int -> Int
+σ1Div :: (Ord p, Fractional p) => Int -> Int
       -> NameValuation p -> WireValuation p
       -> LDSL p Int -> LDSL p Int -> Int -> Int
       -> LDSL p Int -> WireValuation p
       -> WireValuation p
-wgDiv1 m1 m ρ σ e1 _e2 _w _i _e _σ' = wgLemma m1 m ρ σ e1 ??
+σ1Div m1 m ρ σ e1 _e2 _w _i _e _σ' = wgLemma m1 m ρ σ e1 ??
   case witnessGenE' m1 ρ σ e1 of Just σ1 -> σ1
 
 
-{-@ wgDiv2 :: m2:Nat -> m:{Nat | m >= m2}
+{-@ σ2Div :: m2:Nat -> m:{Nat | m >= m2}
           -> ρ:NameValuation p -> σ:WireValuation p m2
           -> e1:LDSL p (Btwn 0 m2) -> e2:LDSL p (Btwn 0 m2)
           -> w:Btwn 0 m -> i:Btwn 0 m
@@ -52,12 +52,12 @@ wgDiv1 m1 m ρ σ e1 _e2 _w _i _e _σ' = wgLemma m1 m ρ σ e1 ??
           -> {σ':WireValuation p m  | Just σ' = witnessGenE' m  ρ σ  e}
           -> {σ1:WireValuation p m2 | Just σ1 = witnessGenE' m  ρ σ  e1}
           -> {σ2:WireValuation p m2 | Just σ2 = witnessGenE' m  ρ σ1 e2} @-}
-wgDiv2 :: (Ord p, Fractional p) => Int -> Int
+σ2Div :: (Ord p, Fractional p) => Int -> Int
       -> NameValuation p -> WireValuation p
       -> LDSL p Int -> LDSL p Int -> Int -> Int
       -> LDSL p Int -> WireValuation p -> WireValuation p
       -> WireValuation p
-wgDiv2 m2 m ρ σ e1 e2 _w _i _e _σ' _σ1 =
+σ2Div m2 m ρ σ e1 e2 _w _i _e _σ' _σ1 =
   wgLemma m2 m ρ σ e1 ?? case witnessGenE' m2 ρ σ e1 of
     Just σ1 -> wgLemma m2 m ρ σ1 e2 ?? case witnessGenE' m2 ρ σ1 e2 of
       Just σ2 -> σ2
@@ -90,17 +90,11 @@ wgDivFresh2 m ρ e1 e2 w i σ σ1 = case witnessGenE' m ρ σ e1 of
   Just _ -> trivial
 
 
-{-@ wfDiv :: e1:LDSL p Int -> e2:LDSL p Int
-          -> w:Int -> i:{Int | wfE (LDIV e1 e2 w i)}
-          -> { wfE e1 && wfE e2} @-}
+{-@ wfDiv :: e1:LDSL p Int -> e2:LDSL p Int -> w:Int
+          -> i:{Int | wfE (LDIV e1 e2 w i) && wellTyped' (LDIV e1 e2 w i)}
+          -> { wfE e1 && wfE e2 && wellTyped' e1 && wellTyped' e2 } @-}
 wfDiv :: LDSL p Int -> LDSL p Int -> Int -> Int -> Proof
 wfDiv e1 e2 w i = trivial
-
-{-@ wtDiv :: e1:LDSL p Int -> e2:LDSL p Int
-          -> w:Int -> i:{Int | wellTyped' (LDIV e1 e2 w i)}
-          -> { wellTyped' e1 && wellTyped' e2} @-}
-wtDiv :: LDSL p Int -> LDSL p Int -> Int -> Int -> Proof
-wtDiv e1 e2 w i = trivial
 
 
 {-@ labelDiv :: m0:Nat -> e1:DSL p -> e2:DSL p -> λ:LabelEnv p (Btwn 0 m0)

@@ -117,7 +117,7 @@ import Language.Haskell.Liquid.ProofCombinators
 
 
 {-@ auxBin :: m0:Nat -> m:{Nat | m >= m0}
-           -> p1:ScalarDSL p -> p2:ScalarDSL p
+           -> p1:TypedDSL p -> p2:TypedDSL p
            -> op:{BinOp p | wellTyped (BIN op p1 p2)}
            -> ρ:NameValuation p
            -> λ:LabelEnv p (Btwn 0 m0)
@@ -146,46 +146,28 @@ auxBin :: forall p. (Fractional p, Eq p, Ord p)
 
        -> (String -> Proof)
 auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
-  wellTypedBin p1 p2 op ??
   case op of
-    --TODO: fix this format (?? at the beginning of the lines)
-    DIV -> m_gt_m1_m2 ??
-      liquidAssert (m > m1) ??
-      labelProofDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x
-      where
-            (m1, p1', λ1) = label' p1 m0 λ
+    DIV -> labelProofDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x
+      where (m1, p1', λ1) = label' p1 m0 λ
             (m2, p2', λ2) = label' p2 m1 λ1
 
             {-@ m_gt_m1_m2 :: { m > m1 && m > m2 } @-}
-            m_gt_m1_m2 :: Proof
             m_gt_m1_m2 = label2Inc DIV p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
 
-            -- {-@ σ1 :: {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ p1'} @-}
-            -- σ1 :: WireValuation p
-            σ1 = m_gt_m1_m2
-              ?? wgDivFresh1 m p1' p2' w i σ
-              ?? wgDiv1 m1 m ρ σ p1' p2' w i e' σ'
-
-            -- {-@ σ2 :: {σ2:WireValuation p m2 | Just σ2 = witnessGenE' m ρ σ1 p2'} @-}
-            -- σ2 :: WireValuation p
-            σ2 = m_gt_m1_m2
-              ?? wgDivFresh2 m ρ p1' p2' w i σ σ1
-              ?? wgDiv2 m2 m ρ σ p1' p2' w i e' σ' σ1
-
-            {-@ p2_p1_wf :: { wfE p1' && wfE p2' } @-}
-            p2_p1_wf :: Proof
-            p2_p1_wf = wfDiv p1' p2' w i
+            σ1 = m_gt_m1_m2 ?? σ1Div m1 m ρ σ p1' p2' w i e' σ'
+            σ2 = m_gt_m1_m2 ?? σ2Div m2 m ρ σ p1' p2' w i e' σ' σ1
 
             (w,i) = labelDiv m0 p1 p2 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
 
-            π1 = p2_p1_wf
-              ?? wtDiv p1' p2' w i
-              ?? wgLemma m1 m ρ σ p1'
-              ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-            π2 = p2_p1_wf
-              ?? wtDiv p1' p2' w i
-              ?? wgLemma m2 m ρ σ1 p2'
-              ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+            π1 = wfDiv p1' p2' w i           -- p1' is well typed and well formed
+              ?? wgDivFresh1 m p1' p2' w i σ -- p1' is fresh w.r.t. σ
+              ?? wgLemma m1 m ρ σ p1'        -- using m and m1 yield the same output
+              ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 -- IH 1
+
+            π2 = wfDiv p1' p2' w i                -- p2' is well typed and well formed
+              ?? wgDivFresh2 m ρ p1' p2' w i σ σ1 -- p2' is fresh w.r.t. σ1
+              ?? wgLemma m2 m ρ σ1 p2'            -- using m and m2 yield the same result
+              ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 -- IH 2
 
     -- EQL -> label2Inc EQL p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
     --   agreeLemmaEQL m0 m1 m2 m p1 p2 ρ λ σ λ1 λ2 p1' σ1 p2' σ2 λ' e' σ' π2 x
@@ -307,7 +289,7 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
     _ -> admit ()
 
 {-@ agreeLemma :: m0:Nat -> m:{Nat | m >= m0}
-               -> e:ScalarDSL p
+               -> e:TypedDSL p
                -> ρ:NameValuation p
                -> λ:LabelEnv p (Btwn 0 m0)
                -> σ:WireValuation p m0
@@ -344,7 +326,11 @@ agreeLemma m0 m e ρ λ σ π λ' e' σ' x = case e of
     -- False -> π x ? notElemLemma x (outputWire e') λ
 
   UN  op p1    -> admit () -- auxUn  m0 m p1    op ρ λ σ π λ' e' σ' x
-  BIN op p1 p2 -> admit () -- auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x
+  BIN op p1 p2 ->
+                  -- wellTypedBin p1 p2 op
+               -- ?? labelTyped e m0 λ m e' λ'
+               -- ?? auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x
+               admit ()
 
   NIL _ -> admit () -- error "this theorem only talks about scalars"
   CONS _ _ -> admit () -- error "this theorem only talks about scalars"
