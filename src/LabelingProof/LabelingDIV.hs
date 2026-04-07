@@ -30,8 +30,8 @@ import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 {-@ labelProofDIV :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
-                  -> p1:ScalarDSL p
-                  -> p2:{ScalarDSL p | wellTyped (BIN DIV p1 p2)}
+                  -> p1:DSL p
+                  -> p2:{DSL p | wellTyped (BIN DIV p1 p2)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> λ1:LabelEnv p (Btwn 0 m1)
