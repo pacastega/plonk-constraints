@@ -189,3 +189,14 @@ labelType :: (Num p, Ord p) => DSL p -> Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int
           -> Proof
 labelType e m0 λ _ _ _ = case label' e m0 λ of (_, e', _) -> trivial
+
+
+{-@ labelTyped :: e:TypedDSL p -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
+               -> m:Int -> e':LDSL p Int
+               -> λ':{LabelEnv p Int | label' e m0 λ = (m, e', λ')}
+               -> { wellTyped' e' } @-}
+labelTyped :: (Num p, Ord p) => DSL p -> Int -> LabelEnv p Int
+           -> Int -> LDSL p Int -> LabelEnv p Int
+           -> Proof
+labelTyped e m0 λ m e' λ' = case inferType e of
+  Just _ -> labelType e m0 λ m e' λ'
