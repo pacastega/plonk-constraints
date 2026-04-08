@@ -33,7 +33,7 @@ import LabelingProof.LabelingLemmas
 -- import LabelingProof.LabelingVar
 -- import LabelingProof.LabelingISZERO
 -- import LabelingProof.LabelingEQLC
--- import LabelingProof.LabelingOps
+import LabelingProof.LabelingOps
 import LabelingProof.LabelingDIV
 import LabelingProof.LabelingEQL
 import LabelingProof.RecursiveLemmas
@@ -146,17 +146,16 @@ auxBin :: forall p. (Fractional p, Eq p, Ord p)
 
        -> (String -> Proof)
 auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
-  case op of
+  let (m1, p1', λ1) = label' p1 m0 λ
+      (m2, p2', λ2) = label' p2 m1 λ1
+      m_gt_m1_m2 = label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
+
+  in case op of
     DIV -> labelProofDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x
-      where (m1, p1', λ1) = label' p1 m0 λ
-            (m2, p2', λ2) = label' p2 m1 λ1
-
-            {-@ m_gt_m1_m2 :: { m > m1 && m > m2 } @-}
-            m_gt_m1_m2 = label2Inc DIV p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
-
-            σ1 = m_gt_m1_m2 ?? σ1Div m1 m ρ σ p1' p2' w i e' σ'
+      where σ1 = m_gt_m1_m2 ?? σ1Div m1 m ρ σ p1' p2' w i e' σ'
             σ2 = m_gt_m1_m2 ?? σ2Div m2 m ρ σ p1' p2' w i e' σ' σ1
 
+            -- e' == LDIV p1' p2' w i
             (w,i) = labelDiv m0 p1 p2 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
 
             π1 = wfDiv p1' p2' w i           -- p1' is well typed and well formed
@@ -169,124 +168,40 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
               ?? wgLemma m2 m ρ σ1 p2'            -- using m and m2 yield the same result
               ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 -- IH 2
 
-    -- EQL -> label2Inc EQL p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaEQL m0 m1 m2 m p1 p2 ρ λ σ λ1 λ2 p1' σ1 p2' σ2 λ' e' σ' π2 x
-    --   where σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
---------------------------------------------------------------------------------
-    -- ADD -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+    EQL -> agreeLemmaEQL m0 m1 m2 m p1 p2 ρ λ σ λ1 λ2 p1' σ1 p2' σ2 λ' e' σ' π2 x
+      where σ1 = m_gt_m1_m2 ?? σ1Eql m1 m ρ σ p1' p2' d w i e' σ'
+            σ2 = m_gt_m1_m2 ?? σ2Eql m2 m ρ σ p1' p2' d w i e' σ' σ1
 
-    -- SUB -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+            -- e' == EQLC (LBIN SUB p1' p2' d) 0 w i
+            (d,w,i) = labelEql m0 p1 p2 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
 
-    -- MUL -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+            π1 = wfEql p1' p2' d w i
+              ?? wgEqlFresh1 m p1' p2' d w i σ
+              ?? wgLemma m1 m ρ σ p1'
+              ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
 
-    -- LINCOMB _ _ -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+            π2 = wfEql p1' p2' d w i
+              ?? wgEqlFresh2 m ρ p1' p2' d w i σ σ1
+              ?? wgLemma m2 m ρ σ1 p2'
+              ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
 
-    -- AND -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+    _ -> agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
+      where σ1 = m_gt_m1_m2 ?? σ1Bin m1 m ρ σ p1' p2' op i e' σ'
+            σ2 = m_gt_m1_m2 ?? σ2Bin m2 m ρ σ p1' p2' op i e' σ' σ1
 
-    -- OR  -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+            -- e' = LBIN op p1' p2' i
+            i = labelBin m0 p1 p2 λ op m1 p1' λ1 m2 p2' λ2 m e' λ'
 
-    -- XOR -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+            π1 = wfBin p1' p2' op i
+              ?? wgBinFresh1 m p1' p2' op i σ
+              ?? wgLemma m1 m ρ σ p1'
+              ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
 
-    -- UnsafeAND -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+            π2 = wfBin p1' p2' op i
+              ?? wgBinFresh2 m ρ p1' p2' op i σ σ1
+              ?? wgLemma m2 m ρ σ1 p2'
+              ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
 
-    -- UnsafeOR  -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
-
-    -- UnsafeXOR -> -- label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ' ??
-    --   agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
-    --   where (m1, ps1, λ1) = label' p1 m0 λ
-    --         (m2, ps2, λ2) = label' p2 m1 λ1
-    --         p1' = case ps1 of [x] -> x
-    --         p2' = case ps2 of [x] -> x
-    --         σ1 = case witnessGenE' m1 ρ σ  p1' ? wgLemma m1 m ρ σ  p1' of Just s -> s
-    --         σ2 = case witnessGenE' m2 ρ σ1 p2' ? wgLemma m2 m ρ σ1 p2' of Just s -> s
-    --         π1 = agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
-    --         π2 = agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
-
-    _ -> admit ()
 
 {-@ agreeLemma :: m0:Nat -> m:{Nat | m >= m0}
                -> e:TypedDSL p
@@ -326,11 +241,9 @@ agreeLemma m0 m e ρ λ σ π λ' e' σ' x = case e of
     -- False -> π x ? notElemLemma x (outputWire e') λ
 
   UN  op p1    -> admit () -- auxUn  m0 m p1    op ρ λ σ π λ' e' σ' x
-  BIN op p1 p2 ->
-                  -- wellTypedBin p1 p2 op
-               -- ?? labelTyped e m0 λ m e' λ'
-               -- ?? auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x
-               admit ()
+  BIN op p1 p2 -> wellTypedBin p1 p2 op
+               ?? labelTyped e m0 λ m e' λ'
+               ?? auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x
 
   NIL _ -> admit () -- error "this theorem only talks about scalars"
   CONS _ _ -> admit () -- error "this theorem only talks about scalars"
