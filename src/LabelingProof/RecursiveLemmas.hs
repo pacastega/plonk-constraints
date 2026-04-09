@@ -20,6 +20,8 @@ import WitnessGenProof.WitnessGenLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
 
+-- well-typedness is propagated to the arguments -------------------------------
+
 {-@ wellTypedUn :: e1:DSL p -> op:{UnOp p | wellTyped (UN op e1)}
                 -> { wellTyped e1 } @-}
 wellTypedUn :: DSL p -> UnOp p -> Proof
@@ -31,6 +33,20 @@ wellTypedUn e1 op = trivial
                  -> { wellTyped e1 && wellTyped e2 } @-}
 wellTypedBin :: DSL p -> DSL p -> BinOp p -> Proof
 wellTypedBin e1 e2 op = trivial
+
+
+-- subexpressions are smaller --------------------------------------------------
+
+{-@ sizeUn :: e1:DSL p -> op:UnOp p -> { size e1 < size (UN op e1) } @-}
+sizeUn :: DSL p -> UnOp p -> Proof
+sizeUn e1 op = trivial
+
+
+{-@ sizeBin :: e1:DSL p -> e2:DSL p -> op:BinOp p
+            -> { size e1 < size (BIN op e1 e2) &&
+                 size e2 < size (BIN op e1 e2) } @-}
+sizeBin :: DSL p -> DSL p -> BinOp p -> Proof
+sizeBin e1 e2 op = trivial
 
 
 -- workarounds to fix "crash: unknown constant"

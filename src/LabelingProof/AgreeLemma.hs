@@ -5,8 +5,6 @@
 -- {-@ LIQUID "--fast" @-}
 {-@ LIQUID "--linear" @-}
 
-{-@ LIQUID "--no-termination" @-}
-
 module LabelingProof.AgreeLemma where
 
 #if LiquidOn
@@ -74,7 +72,7 @@ auxUn :: (Fractional p, Eq p, Ord p)
 auxUn m0 m p1 op ρ λ σ π λ' e' σ' x =
   let (m1, p1', λ1) = label' p1 m0 λ
       m_gt_m1 = label1Inc op p1 m0 λ m1 p1' λ1 m e' λ'
-  in case op of
+  in sizeUn p1 op ?? case op of
   ISZERO -> agreeLemmaISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 π1 x
     where σ1 = m_gt_m1 ?? σ1Is0 m1 m ρ σ p1' w i e' σ'
 
@@ -154,7 +152,7 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
       (m2, p2', λ2) = label' p2 m1 λ1
       m_gt_m1_m2 = label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
 
-  in case op of
+  in sizeBin p1 p2 op ?? case op of
     DIV -> labelProofDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x
       where σ1 = m_gt_m1_m2 ?? σ1Div m1 m ρ σ p1' p2' w i e' σ'
             σ2 = m_gt_m1_m2 ?? σ2Div m2 m ρ σ p1' p2' w i e' σ' σ1
