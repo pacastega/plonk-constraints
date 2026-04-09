@@ -43,7 +43,7 @@ import Language.Haskell.Liquid.ProofCombinators
   case witnessGenE' m1 ρ σ e1 of Just σ1 -> σ1
 
 
--- if fresh(e1==0, σ), then also fresh(e1,σ)
+-- if fresh(e1==0, σ), then also fresh(e1,σ) -----------------------------------
 {-@ wgUnFresh1 :: m:Nat
                -> e1:LDSL p (Btwn 0 m) -> op:UnOp' p
                -> i:Btwn 0 m
