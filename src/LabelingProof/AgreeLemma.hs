@@ -1,8 +1,6 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE CPP, ScopedTypeVariables #-}
+{-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
--- {-@ LIQUID "--ple" @-}
--- {-@ LIQUID "--fast" @-}
 {-@ LIQUID "--linear" @-}
 
 module LabelingProof.AgreeLemma where
@@ -134,7 +132,7 @@ auxUn m0 m p1 op ρ λ σ π λ' e' σ' x =
 
            -> Agree λ' ρ σ'
             / [size (BIN op p1 p2), 0] @-}
-auxBin :: forall p. (Fractional p, Eq p, Ord p)
+auxBin :: (Fractional p, Eq p, Ord p)
        => Int -> Int -> DSL p -> DSL p -> BinOp p
        -> NameValuation p
        -> LabelEnv p Int
