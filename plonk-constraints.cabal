@@ -38,7 +38,7 @@ library
       LabelingProof.LabelingOps
       LabelingProof.LabelingEQL
       LabelingProof.LabelingDIV
-      LabelingProof.LabelingVar
+      LabelingProof.LabelingBase
       LabelingProof.LabelingISZERO
       LabelingProof.LabelingEQLC
       LabelingProof.LabelingCast

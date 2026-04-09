@@ -26,7 +26,7 @@ import MapLemmas
 import WitnessGenProof.WitnessGenLemmas
 
 import LabelingProof.LabelingLemmas
--- import LabelingProof.LabelingVar
+import LabelingProof.LabelingBase
 import LabelingProof.LabelingISZERO
 import LabelingProof.LabelingEQLC
 import LabelingProof.LabelingOps
@@ -232,13 +232,10 @@ agreeLemma :: (Fractional p, Eq p, Ord p)
 
            -> (Var -> Proof)
 agreeLemma m0 m e ρ λ σ π λ' e' σ' x = case e of
-   -- labelWF e m0 λ m e' λ' ??
-  VAR s τ -> admit () -- agreeLemmaVar m0 m s τ ρ λ σ π λ' e' σ' x
-  CONST _ -> admit () -- π x ? notElemLemma x (outputWire e') λ
+  VAR s τ -> agreeLemmaVar m0 m s τ ρ λ σ π λ' e' σ' x
+  CONST k -> agreeLemmaConst m0 m k ρ λ σ π λ' e' σ' x
 
-  BOOL b -> admit () -- case b of
-    -- True -> π x ? notElemLemma x (outputWire e') λ
-    -- False -> π x ? notElemLemma x (outputWire e') λ
+  BOOL b -> agreeLemmaConst m0 m b ρ λ σ π λ' e' σ' x
 
   UN  op p1    -> wellTypedUn p1 op
                ?? labelTyped e m0 λ m e' λ'
