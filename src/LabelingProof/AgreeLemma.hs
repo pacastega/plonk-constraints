@@ -153,7 +153,7 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
       m_gt_m1_m2 = label2Inc op p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
 
   in sizeBin p1 p2 op ?? case op of
-    DIV -> labelProofDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x
+    DIV -> agreeLemmaDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x
       where σ1 = m_gt_m1_m2 ?? σ1Div m1 m ρ σ p1' p2' w i e' σ'
             σ2 = m_gt_m1_m2 ?? σ2Div m2 m ρ σ p1' p2' w i e' σ' σ1
 

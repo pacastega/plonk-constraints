@@ -128,7 +128,7 @@ labelDiv m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 _m e' _λ' = case e' of
 
 
 -- if agree_Λ2(ρ,σ2) then also agree_Λ'(ρ,σ') ----------------------------------
-{-@ labelProofDIV :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
+{-@ agreeLemmaDIV :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
                   -> p1:DSL p
                   -> p2:{DSL p | wellTyped (BIN DIV p1 p2)}
                   -> ρ:NameValuation p
@@ -148,7 +148,7 @@ labelDiv m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 _m e' _λ' = case e' of
                   -> Agree λ2 ρ σ2
 
                   -> Agree λ' ρ σ' @-}
-labelProofDIV :: (Fractional p, Ord p)
+agreeLemmaDIV :: (Fractional p, Ord p)
               => Int -> Int -> Int -> Int -> DSL p -> DSL p
               -> NameValuation p
               -> LabelEnv p Int -> LabelEnv p Int -> LabelEnv p Int
@@ -161,6 +161,6 @@ labelProofDIV :: (Fractional p, Ord p)
               -> (Var -> Proof)
 
               -> Var -> Proof
-labelProofDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x =
+agreeLemmaDIV m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ λ' p1' p2' e' σ' σ1 σ2 π2 x =
   π2 x ? notElemLemma x i λ2 ? notElemLemma x w λ2
   where (LDIV _ _ w i) = e'
