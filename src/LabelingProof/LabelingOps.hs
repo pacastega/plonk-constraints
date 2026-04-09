@@ -26,9 +26,68 @@ import Language.Haskell.Liquid.ProofCombinators
 
 -- UNARY OPERATORS =============================================================
 
+-- if witnessGen succeeds for □e1, it also succeeds for e1 ---------------------
+{-@ σ1Un :: m1:Nat -> m:{Nat | m >= m1}
+         -> ρ:NameValuation p -> σ:WireValuation p m1
+         -> e1:LDSL p (Btwn 0 m1) -> op:UnOp' p
+         -> i:Btwn 0 m
+         -> e:{TypedLDSL p (Btwn 0 m) | e = LUN op e1 i && wfE e && freshE e σ}
+         -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
+         -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
+σ1Un     :: (Ord p, Fractional p) => Int -> Int
+     -> NameValuation p -> WireValuation p
+     -> LDSL p Int -> UnOp p -> Int
+     -> LDSL p Int -> WireValuation p
+     -> WireValuation p
+σ1Un m1 m ρ σ e1 op _i _e _σ' = wgLemma m1 m ρ σ e1 ??
+  case witnessGenE' m1 ρ σ e1 of Just σ1 -> σ1
+
+
+-- if fresh(e1==0, σ), then also fresh(e1,σ)
+{-@ wgUnFresh1 :: m:Nat
+               -> e1:LDSL p (Btwn 0 m) -> op:UnOp' p
+               -> i:Btwn 0 m
+               -> σ:{WireValuation p m | freshE (LUN op e1 i) σ}
+               -> { freshE e1 σ } @-}
+wgUnFresh1 :: (Ord p, Fractional p)
+           => Int -> LDSL p Int -> UnOp p -> Int -> WireValuation p -> Proof
+wgUnFresh1 m e1 op i σ = trivial
+
+
+-- if □e1 is well-typed and well-formed, then so is e1 -------------------------
+{-@ wfUn :: e1:LDSL p Int -> op:UnOp' p
+         -> i:{Int | wfE (LUN op e1 i) && wellTyped' (LUN op e1 i)}
+         -> { wfE e1 && wellTyped' e1 } @-}
+wfUn :: (Num p) => LDSL p Int -> UnOp p -> Int -> Proof
+wfUn e1 op i = trivial
+
+
+-- if e1↝e1' and □e1↝e' then ∃w,i . e' = LUN □ e1' i ---------------------------
+{-@ labelUn :: m0:Nat -> e1:DSL p -> λ:LabelEnv p (Btwn 0 m0) -> op:UnOp' p
+
+            -> m1:{Int | m1 >= m0}
+            -> e1':LDSL p (Btwn 0 m1)
+            -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, e1', λ1)}
+
+            -> m:{Int | m >= m1}
+            -> e':LDSL p (Btwn 0 m)
+            -> λ':{LabelEnv p (Btwn 0 m) |
+                            label' (UN op e1) m0 λ = (m, e', λ')}
+            -> i:{Btwn 0 m | e' = LUN op e1' i} @-}
+labelUn :: (Num p, Ord p) => Int -> DSL p -> LabelEnv p Int -> UnOp p
+        -> Int -> LDSL p Int -> LabelEnv p Int
+        -> Int -> LDSL p Int -> LabelEnv p Int
+        -> Int
+labelUn m0 e1 λ op m1 e1' λ1 _m e' _λ' = case op of
+  EQLC _  -> error "impossible"
+  ISZERO  -> error "impossible"
+  BoolToF -> error "impossible"
+  _ -> case e' of LUN _ _ i -> i
+
+
 -- if agree_Λ1(ρ,σ1) then also agree_Λ'(ρ,σ1) ----------------------------------
 {-@ agreeLemmaUn  :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
-                  -> p1:ScalarDSL p
+                  -> p1:DSL p
                   -> op:{UnOp' p | wellTyped (UN op p1)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
@@ -224,7 +283,8 @@ agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2
   UnsafeOR  -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
   UnsafeXOR -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
 
--- workarounds to fix "crash: unknown constant" --------------------------------
+
+-- workarounds to fix "crash: unknown constant" ================================
 
 {-@ reflect barOp @-}
 barOp :: BinOp Int -> Int

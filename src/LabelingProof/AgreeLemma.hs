@@ -31,89 +31,93 @@ import WitnessGenProof.WitnessGenLemmas
 
 import LabelingProof.LabelingLemmas
 -- import LabelingProof.LabelingVar
--- import LabelingProof.LabelingISZERO
--- import LabelingProof.LabelingEQLC
+import LabelingProof.LabelingISZERO
+import LabelingProof.LabelingEQLC
 import LabelingProof.LabelingOps
 import LabelingProof.LabelingDIV
 import LabelingProof.LabelingEQL
+import LabelingProof.LabelingCast
 import LabelingProof.RecursiveLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
 
 
--- {-@ auxUn :: m0:Nat -> m:{Nat | m >= m0}
---           -> p1:ScalarDSL p
---           -> op:{UnOp p | wellTyped (UN op p1)}
---           -> ρ:NameValuation p
---           -> λ:LabelEnv p (Btwn 0 m0)
---           -> σ:WireValuation p m0
+{-@ auxUn :: m0:Nat -> m:{Nat | m >= m0}
+          -> p1:TypedDSL p
+          -> op:{UnOp p | wellTyped (UN op p1)}
+          -> ρ:NameValuation p
+          -> λ:LabelEnv p (Btwn 0 m0)
+          -> σ:WireValuation p m0
 
---           -> Agree λ ρ σ
+          -> Agree λ ρ σ
 
---           -> λ':LabelEnv p (Btwn 0 m)
---           -> e':{LDSL p (Btwn 0 m) | freshE e' σ && wfE e'
---                                && label' (UN op p1) m0 λ = (m, e', λ')}
---           -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
+          -> λ':LabelEnv p (Btwn 0 m)
+          -> e':{TypedLDSL p (Btwn 0 m) | freshE e' σ && wfE e'
+                               && label' (UN op p1) m0 λ = (m, e', λ')}
+          -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
 
---           -> Agree λ' ρ σ'
---            / [size (UN op p1), 0] @-}
--- auxUn :: (Fractional p, Eq p, Ord p)
---       => Int -> Int -> DSL p -> UnOp p
---       -> NameValuation p
---       -> LabelEnv p Int
---       -> WireValuation p
+          -> Agree λ' ρ σ'
+           / [size (UN op p1), 0] @-}
+auxUn :: (Fractional p, Eq p, Ord p)
+      => Int -> Int -> DSL p -> UnOp p
+      -> NameValuation p
+      -> LabelEnv p Int
+      -> WireValuation p
 
---       -> (Var -> Proof)
+      -> (Var -> Proof)
 
---       -> LabelEnv p Int
---       -> LDSL p Int
---       -> WireValuation p
+      -> LabelEnv p Int
+      -> LDSL p Int
+      -> WireValuation p
 
---       -> (String -> Proof)
--- auxUn m0 m p1 op ρ λ σ π λ' e' σ' x = case op of
---   ISZERO -> agreeLemmaISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 π1 x
---     where (m1, ps1, λ1) = label' p1 m0 λ
---           p1' = case ps1 of [x] -> x
---           σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
---           π1 = agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
---           (LEQLC _ _ w i) = e'
+      -> (String -> Proof)
+auxUn m0 m p1 op ρ λ σ π λ' e' σ' x =
+  let (m1, p1', λ1) = label' p1 m0 λ
+      m_gt_m1 = label1Inc op p1 m0 λ m1 p1' λ1 m e' λ'
+  in case op of
+  ISZERO -> agreeLemmaISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 π1 x
+    where σ1 = m_gt_m1 ?? σ1Is0 m1 m ρ σ p1' w i e' σ'
 
---   EQLC k -> agreeLemmaEQLC m0 m1 m k p1 ρ λ λ1 σ λ' p1' e' σ' σ1 π1 x
---     where (m1, ps1, λ1) = label' p1 m0 λ
---           p1' = case ps1 of [x] -> x
---           σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
---           π1 = agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
+          -- e' == EQLC p1' 0 w i
+          (w,i) = labelIs0 m0 p1 λ m1 p1' λ1 m e' λ'
 
---   BoolToF -> π1 x
---     where (m1, ps1, λ1) = label' p1 m0 λ
---           p1' = case ps1 of [x] -> x
---           σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
---           π1 = agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
+          π1 = wfIs0 p1' w i
+            ?? wgIs0Fresh1 m p1' w i σ
+            ?? wgLemma m1 m ρ σ p1'
+            ?? agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
 
---   ADDC k -> agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 x
---     where (m1, ps1, λ1) = label' p1 m0 λ
---           p1' = case ps1 of [x] -> x
---           σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
---           π1 = agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
+  EQLC k -> agreeLemmaEQLC m0 m1 m k p1 ρ λ λ1 σ λ' p1' e' σ' σ1 π1 x
+    where σ1 = m_gt_m1 ?? σ1Isk m1 m ρ σ p1' k w i e' σ'
 
---   MULC k -> agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 x
---     where (m1, ps1, λ1) = label' p1 m0 λ
---           p1' = case ps1 of [x] -> x
---           σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
---           π1 = agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
+          -- e' == EQLC p1' k w i
+          (w,i) = labelIsk m0 p1 λ k m1 p1' λ1 m e' λ'
 
---   NOT -> agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 x
---     where (m1, ps1, λ1) = label' p1 m0 λ
---           p1' = case ps1 of [x] -> x
---           σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
---           π1 = agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
+          π1 = wfIsk p1' k w i
+            ?? wgIskFresh1 m p1' k w i σ
+            ?? wgLemma m1 m ρ σ p1'
+            ?? agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
 
---   UnsafeNOT -> agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 x
---     where (m1, ps1, λ1) = label' p1 m0 λ
---           p1' = case ps1 of [x] -> x
---           σ1 = case witnessGenE' m1 ρ σ p1' ? wgLemma m1 m ρ σ p1' of Just s -> s
---           π1 = agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
+  BoolToF -> agreeLemmaCast m0 m1 m p1 ρ λ λ1 σ λ' p1' e' σ' σ1 π1 x
+    where σ1 = m_gt_m1 ?? is_LBoolToF ?? σ1Cast m1 m ρ σ p1' e' σ'
 
+          -- e' = LBoolToF p1'
+          is_LBoolToF = labelCast m0 p1 λ m1 p1' λ1 m e' λ'
+
+          π1 = wfCast p1'
+            ?? wgCastFresh1 m p1' σ
+            ?? wgLemma m1 m ρ σ p1'
+            ?? agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
+
+  _ -> agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 x
+    where σ1 = m_gt_m1 ?? σ1Un m1 m ρ σ p1' op i e' σ'
+
+          -- e' = LUN op p1' i
+          i = labelUn m0 p1 λ op m1 p1' λ1 m e' λ'
+
+          π1 = wfUn p1' op i
+            ?? wgUnFresh1 m p1' op i σ
+            ?? wgLemma m1 m ρ σ p1'
+            ?? agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
 
 
 {-@ auxBin :: m0:Nat -> m:{Nat | m >= m0}
@@ -240,7 +244,9 @@ agreeLemma m0 m e ρ λ σ π λ' e' σ' x = case e of
     -- True -> π x ? notElemLemma x (outputWire e') λ
     -- False -> π x ? notElemLemma x (outputWire e') λ
 
-  UN  op p1    -> admit () -- auxUn  m0 m p1    op ρ λ σ π λ' e' σ' x
+  UN  op p1    -> wellTypedUn p1 op
+               ?? labelTyped e m0 λ m e' λ'
+               ?? auxUn  m0 m p1    op ρ λ σ π λ' e' σ' x
   BIN op p1 p2 -> wellTypedBin p1 p2 op
                ?? labelTyped e m0 λ m e' λ'
                ?? auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x

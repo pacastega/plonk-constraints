@@ -20,6 +20,12 @@ import WitnessGenProof.WitnessGenLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
 
+{-@ wellTypedUn :: e1:DSL p -> op:{UnOp p | wellTyped (UN op e1)}
+                -> { wellTyped e1 } @-}
+wellTypedUn :: DSL p -> UnOp p -> Proof
+wellTypedUn e1 op = trivial
+
+
 {-@ wellTypedBin :: e1:DSL p -> e2:DSL p
                  -> op:{BinOp p | wellTyped (BIN op e1 e2)}
                  -> { wellTyped e1 && wellTyped e2 } @-}
