@@ -26,6 +26,21 @@ import Language.Haskell.Liquid.ProofCombinators
 
 -- UNARY OPERATORS =============================================================
 
+{-@ labelIncUn :: op:UnOp p -> e1:{DSL p | wellTyped (UN op e1)} -> m0:Nat -> λ:LabelEnv p Int
+               -> m1:Int -> e1':LDSL p Int -> λ1:{LabelEnv p Int | label' e1 m0 λ = (m1, e1', λ1)}
+               ->  m:Int ->  e':LDSL p Int -> λ':{LabelEnv p Int | label' (UN op e1) m0 λ = (m, e', λ')}
+               -> { m >= m1 } @-}
+labelIncUn :: Num p => UnOp p -> DSL p -> Int -> LabelEnv p Int
+           -> Int -> LDSL p Int -> LabelEnv p Int
+           -> Int -> LDSL p Int -> LabelEnv p Int
+           -> Proof
+labelIncUn op _ _ _ _ _ _ _ _ _ = case op of
+  BoolToF -> ()
+  ISZERO  -> ()
+  EQLC _  -> ()
+  _       -> ()
+
+
 -- if witnessGen succeeds for □e1, it also succeeds for e1 ---------------------
 {-@ σ1Un :: m1:Nat -> m:{Nat | m >= m1}
          -> ρ:NameValuation p -> σ:WireValuation p m1
@@ -129,6 +144,33 @@ agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 =
 
 
 -- BINARY OPERATORS ============================================================
+
+{-@ labelIncBin :: op:BinOp p
+                -> e1:DSL p -> e2:{DSL p | wellTyped (BIN op e1 e2)}
+                -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
+
+                -> m1:Nat -> e1':LDSL p (Btwn 0 m1)
+                -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, e1', λ1)}
+
+                -> m2:Nat -> e2':LDSL p (Btwn 0 m2)
+                -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
+
+                ->  m:Nat ->  e':LDSL p (Btwn 0 m)
+                -> λ':{LabelEnv p (Btwn 0 m) | label' (BIN op e1 e2) m0 λ = (m, e', λ')}
+                -> { m >= m2 && m2 >= m1 } @-}
+labelIncBin :: (Num p, Ord p) => BinOp p -> DSL p -> DSL p -> Int -> LabelEnv p Int
+            -> Int -> LDSL p Int -> LabelEnv p Int
+            -> Int -> LDSL p Int -> LabelEnv p Int
+            -> Int -> LDSL p Int -> LabelEnv p Int
+            -> Proof
+labelIncBin op e1 e2 m0 λ m1 _e1' λ1 m2 _e2' _λ2 m _e' _λ'
+  = trivial ? case label' e1 m0 λ  of (m1,_,_) -> m1
+            ? case label' e2 m1 λ1 of (m2,_,_) -> m2
+            ? case op of
+                DIV -> liquidAssert (m > m2)
+                EQL -> liquidAssert (m > m2)
+                _   -> liquidAssert (m > m2)
+
 
 -- if witnessGen succeeds for e1⮾e2, it also succeeds for e1 and e2 ------------
 {-@ σ1Bin :: m1:Nat -> m:{Nat | m >= m1}
