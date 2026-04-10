@@ -33,6 +33,7 @@ import LabelingProof.LabelingOps
 import LabelingProof.LabelingDIV
 import LabelingProof.LabelingEQL
 import LabelingProof.LabelingCast
+import LabelingProof.LabelingVec
 import LabelingProof.RecursiveLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
@@ -203,6 +204,60 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
               ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
 
 
+
+{-@ auxCons :: m0:Nat -> m:{Nat | m >= m0}
+            -> p1:TypedDSL p -> p2:{TypedDSL p | wellTyped (CONS p1 p2)}
+            -> ρ:NameValuation p
+            -> λ:LabelEnv p (Btwn 0 m0)
+            -> σ:WireValuation p m0
+
+            -> Agree λ ρ σ
+
+            -> λ':LabelEnv p (Btwn 0 m)
+            -> e':{TypedLDSL p (Btwn 0 m) | freshE e' σ && wfE e'
+                             && label' (CONS p1 p2) m0 λ = (m, e', λ')}
+            -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
+
+            -> Agree λ' ρ σ'
+             / [size (CONS p1 p2), 0] @-}
+auxCons :: (Fractional p, Eq p, Ord p)
+        => Int -> Int -> DSL p -> DSL p
+        -> NameValuation p
+        -> LabelEnv p Int
+        -> WireValuation p
+
+        -> (Var -> Proof)
+
+        -> LabelEnv p Int
+        -> LDSL p Int
+        -> WireValuation p
+
+        -> (String -> Proof)
+auxCons m0 m p1 p2 ρ λ σ π λ' e' σ' x =
+  agreeLemmaCons m0 m1 m2 m p1 p2 ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2 π2 x
+    where (m1, p1', λ1) = label' p1 m0 λ
+          (m2, p2', λ2) = label' p2 m1 λ1
+
+          m_gt_m1_m2 = labelIncCons p1 p2 m0 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
+
+          σ1 = m_gt_m1_m2 ?? is_LCONS ?? σ1Cons m1 m ρ σ p1' p2' e' σ'
+          σ2 = m_gt_m1_m2 ?? is_LCONS ?? σ2Cons m2 m ρ σ p1' p2' e' σ' σ1
+
+          -- e' = LCONS p1' p2'
+          is_LCONS = labelCons m0 p1 p2 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
+
+          π1 = wfCons p1' p2'
+            ?? wgConsFresh1 m p1' p2' σ
+            ?? wgLemma m1 m ρ σ p1'
+            ?? sizeCons p1 p2
+            ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
+
+          π2 = wfCons p1' p2'
+            ?? wgConsFresh2 m ρ p1' p2' σ σ1
+            ?? wgLemma m2 m ρ σ1 p2'
+            ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
+
+
 {-@ agreeLemma :: m0:Nat -> m:{Nat | m >= m0}
                -> e:TypedDSL p
                -> ρ:NameValuation p
@@ -244,8 +299,10 @@ agreeLemma m0 m e ρ λ σ π λ' e' σ' x = case e of
                ?? labelTyped e m0 λ m e' λ'
                ?? auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x
 
-  NIL _ -> admit () -- error "this theorem only talks about scalars"
-  CONS _ _ -> admit () -- error "this theorem only talks about scalars"
+  NIL τ -> agreeLemmaNil m0 m τ ρ λ σ π λ' e' σ' x
+  CONS p1 p2 -> wellTypedCons p1 p2
+             ?? labelTyped e m0 λ m e' λ'
+             ?? auxCons m0 m p1 p2 ρ λ σ π λ' e' σ' x
 
 
 {-@ assume admit :: () -> { False } @-}

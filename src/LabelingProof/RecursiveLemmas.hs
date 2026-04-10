@@ -35,6 +35,12 @@ wellTypedBin :: DSL p -> DSL p -> BinOp p -> Proof
 wellTypedBin e1 e2 op = trivial
 
 
+{-@ wellTypedCons :: e1:DSL p -> e2:{DSL p | wellTyped (CONS e1 e2)}
+                  -> { wellTyped e1 && wellTyped e2 } @-}
+wellTypedCons :: DSL p -> DSL p -> Proof
+wellTypedCons e1 e2 = trivial
+
+
 -- subexpressions are smaller --------------------------------------------------
 
 {-@ sizeUn :: e1:DSL p -> op:UnOp p -> { size e1 < size (UN op e1) } @-}
@@ -47,6 +53,13 @@ sizeUn e1 op = trivial
                  size e2 < size (BIN op e1 e2) } @-}
 sizeBin :: DSL p -> DSL p -> BinOp p -> Proof
 sizeBin e1 e2 op = trivial
+
+
+{-@ sizeCons :: e1:DSL p -> e2:DSL p
+             -> { size e1 < size (CONS e1 e2) &&
+                  size e2 < size (CONS e1 e2) } @-}
+sizeCons :: DSL p -> DSL p -> Proof
+sizeCons e1 e2 = trivial
 
 
 -- workarounds to fix "crash: unknown constant"
