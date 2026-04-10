@@ -290,7 +290,7 @@ agreeLemma m0 m e ρ λ σ π λ' e' σ' x = case e of
   VAR s τ -> agreeLemmaVar m0 m s τ ρ λ σ π λ' e' σ' x
   CONST k -> agreeLemmaConst m0 m k ρ λ σ π λ' e' σ' x
 
-  BOOL b -> agreeLemmaConst m0 m b ρ λ σ π λ' e' σ' x
+  BOOL b -> agreeLemmaBool m0 m b ρ λ σ π λ' e' σ' x
 
   UN  op p1    -> wellTypedUn p1 op
                ?? labelTyped e m0 λ m e' λ'
