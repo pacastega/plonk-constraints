@@ -26,16 +26,6 @@ import MapLemmas
 import SetLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
-
--- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
-{-@ type Composable Ρ Λ Σ = var:{String | elem' var (M.keys Λ)}
-                         -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
-
-{-@ type Agree Λ Ρ Σ = var:{String | M.member var Λ}
-                    -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
-
-
-
 {-@ labelWF :: e:TypedDSL p -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
             -> m:{Int | m >= m0} -> e':LDSL p Int
             -> λ':{LabelEnv p Int | label' e m0 λ = (m, e', λ')}

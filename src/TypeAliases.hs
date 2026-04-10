@@ -31,3 +31,10 @@ type NameValuation p = M.Map String p
 
 -- Λ ~~ labeling environment (variable name ↦ wire index)
 type LabelEnv p i = M.Map String i
+
+
+-- "Agreement" relation between ρ and σ valuations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
+{-@ type Agree Λ Ρ Σ = var:{String | M.member var Λ}
+                    -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
