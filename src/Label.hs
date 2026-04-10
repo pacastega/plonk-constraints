@@ -7,7 +7,6 @@ module Label where
 import TypeAliases
 import DSL
 import Utils
-import PlinkLib
 
 #if LiquidOn
 import qualified Liquid.Data.Map as M
