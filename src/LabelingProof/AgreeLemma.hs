@@ -303,12 +303,3 @@ agreeLemma m0 m e ρ λ σ π λ' e' σ' x = case e of
   CONS p1 p2 -> wellTypedCons p1 p2
              ?? labelTyped e m0 λ m e' λ'
              ?? auxCons m0 m p1 p2 ρ λ σ π λ' e' σ' x
-
-
-{-@ assume admit :: () -> { False } @-}
-admit :: () -> ()
-admit _ = ()
-
-{-@ assume admit' :: b:Bool -> { b } @-}
-admit' :: Bool -> ()
-admit' _ = ()
