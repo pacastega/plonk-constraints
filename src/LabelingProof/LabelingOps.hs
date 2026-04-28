@@ -26,21 +26,6 @@ import Language.Haskell.Liquid.ProofCombinators
 
 -- UNARY OPERATORS =============================================================
 
-{-@ labelIncUn :: op:UnOp p -> e1:{DSL p | wellTyped (UN op e1)} -> m0:Nat -> λ:LabelEnv p Int
-               -> m1:Int -> e1':LDSL p Int -> λ1:{LabelEnv p Int | label' e1 m0 λ = (m1, e1', λ1)}
-               ->  m:Int ->  e':LDSL p Int -> λ':{LabelEnv p Int | label' (UN op e1) m0 λ = (m, e', λ')}
-               -> { m >= m1 } @-}
-labelIncUn :: Num p => UnOp p -> DSL p -> Int -> LabelEnv p Int
-           -> Int -> LDSL p Int -> LabelEnv p Int
-           -> Int -> LDSL p Int -> LabelEnv p Int
-           -> Proof
-labelIncUn op _ _ _ _ _ _ _ _ _ = case op of
-  BoolToF -> ()
-  ISZERO  -> ()
-  EQLC _  -> ()
-  _       -> ()
-
-
 -- if witnessGen succeeds for □e1, it also succeeds for e1 ---------------------
 {-@ σ1Un :: m1:Nat -> m:{Nat | m >= m1}
          -> ρ:NameValuation p -> σ:WireValuation p m1
@@ -67,29 +52,6 @@ labelIncUn op _ _ _ _ _ _ _ _ _ = case op of
 wgUnFresh1 :: (Ord p, Fractional p)
            => Int -> LDSL p Int -> UnOp p -> Int -> WireValuation p -> Proof
 wgUnFresh1 m e1 op i σ = trivial
-
-
--- if e1↝e1' and □e1↝e' then ∃w,i . e' = LUN □ e1' i ---------------------------
-{-@ labelUn :: m0:Nat -> e1:DSL p -> λ:LabelEnv p (Btwn 0 m0) -> op:UnOp' p
-
-            -> m1:{Int | m1 >= m0}
-            -> e1':LDSL p (Btwn 0 m1)
-            -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, e1', λ1)}
-
-            -> m:{Int | m >= m1}
-            -> e':LDSL p (Btwn 0 m)
-            -> λ':{LabelEnv p (Btwn 0 m) |
-                            label' (UN op e1) m0 λ = (m, e', λ')}
-            -> i:{Btwn 0 m | e' = LUN op e1' i} @-}
-labelUn :: (Num p, Ord p) => Int -> DSL p -> LabelEnv p Int -> UnOp p
-        -> Int -> LDSL p Int -> LabelEnv p Int
-        -> Int -> LDSL p Int -> LabelEnv p Int
-        -> Int
-labelUn m0 e1 λ op m1 e1' λ1 _m e' _λ' = case op of
-  EQLC _  -> error "impossible"
-  ISZERO  -> error "impossible"
-  BoolToF -> error "impossible"
-  _ -> case e' of LUN _ _ i -> i
 
 
 -- if agree_Λ1(ρ,σ1) then also agree_Λ'(ρ,σ1) ----------------------------------
@@ -136,33 +98,6 @@ agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 =
 
 
 -- BINARY OPERATORS ============================================================
-
-{-@ labelIncBin :: op:BinOp p
-                -> e1:DSL p -> e2:{DSL p | wellTyped (BIN op e1 e2)}
-                -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
-
-                -> m1:Nat -> e1':LDSL p (Btwn 0 m1)
-                -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, e1', λ1)}
-
-                -> m2:Nat -> e2':LDSL p (Btwn 0 m2)
-                -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
-
-                ->  m:Nat ->  e':LDSL p (Btwn 0 m)
-                -> λ':{LabelEnv p (Btwn 0 m) | label' (BIN op e1 e2) m0 λ = (m, e', λ')}
-                -> { m >= m2 && m2 >= m1 } @-}
-labelIncBin :: (Num p, Ord p) => BinOp p -> DSL p -> DSL p -> Int -> LabelEnv p Int
-            -> Int -> LDSL p Int -> LabelEnv p Int
-            -> Int -> LDSL p Int -> LabelEnv p Int
-            -> Int -> LDSL p Int -> LabelEnv p Int
-            -> Proof
-labelIncBin op e1 e2 m0 λ m1 _e1' λ1 m2 _e2' _λ2 m _e' _λ'
-  = trivial ? case label' e1 m0 λ  of (m1,_,_) -> m1
-            ? case label' e2 m1 λ1 of (m2,_,_) -> m2
-            ? case op of
-                DIV -> liquidAssert (m > m2)
-                EQL -> liquidAssert (m > m2)
-                _   -> liquidAssert (m > m2)
-
 
 -- if witnessGen succeeds for e1⮾e2, it also succeeds for e1 and e2 ------------
 {-@ σ1Bin :: m1:Nat -> m:{Nat | m >= m1}
@@ -226,34 +161,6 @@ wgBinFresh2 :: (Ord p, Fractional p) => Int -> NameValuation p
             -> Proof
 wgBinFresh2 m ρ e1 e2 op i σ σ1 = case witnessGenE' m ρ σ e1 of
   Just _ -> trivial
-
-
--- if e1↝e1', e2↝e2' and e1⮾e2↝e' then ∃i . e' = LBIN ⮾ e1' e2' i --------------
-{-@ labelBin :: m0:Nat -> e1:DSL p -> e2:DSL p -> λ:LabelEnv p (Btwn 0 m0)
-             -> op:BinOp' p
-
-             -> m1:{Int | m1 >= m0}
-             -> e1':LDSL p (Btwn 0 m1)
-             -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, e1', λ1)}
-
-             -> m2:{Int | m2 >= m1}
-             -> e2':LDSL p (Btwn 0 m2)
-             -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
-
-             -> m:{Int | m >= m2}
-             -> e':LDSL p (Btwn 0 m)
-             -> λ':{LabelEnv p (Btwn 0 m) |
-                             label' (BIN op e1 e2) m0 λ = (m, e', λ')}
-             -> i:{Btwn 0 m | e' = LBIN op e1' e2' i} @-}
-labelBin :: (Num p, Ord p) => Int -> DSL p -> DSL p -> LabelEnv p Int -> BinOp p
-         -> Int -> LDSL p Int -> LabelEnv p Int
-         -> Int -> LDSL p Int -> LabelEnv p Int
-         -> Int -> LDSL p Int -> LabelEnv p Int
-         -> Int
-labelBin m0 e1 e2 λ op m1 e1' λ1 m2 e2' λ2 _m e' _λ' = case op of
-  EQL -> error "impossible"
-  DIV -> error "impossible"
-  _ -> case e' of LBIN _ _ _ i -> i
 
 
 -- if agree_Λ2(ρ,σ2) then also agree_Λ'(ρ,σ') ----------------------------------

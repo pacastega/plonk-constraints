@@ -57,26 +57,6 @@ wgIs0Fresh1 :: (Ord p, Fractional p)
 wgIs0Fresh1 m e1 w i σ = trivial
 
 
--- if e1↝e1' and e1==0↝e' then ∃w,i . e' = LEQLC e1' 0 w i ---------------------
-{-@ labelIs0 :: m0:Nat -> e1:DSL p -> λ:LabelEnv p (Btwn 0 m0)
-
-             -> m1:{Int | m1 >= m0}
-             -> e1':LDSL p (Btwn 0 m1)
-             -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, e1', λ1)}
-
-             -> m:{Int | m >= m1}
-             -> e':LDSL p (Btwn 0 m)
-             -> λ':{LabelEnv p (Btwn 0 m) |
-                             label' (UN ISZERO e1) m0 λ = (m, e', λ')}
-             -> (w::Btwn 0 m, i:{Btwn 0 m | e' = LEQLC e1' 0 w i}) @-}
-labelIs0 :: (Num p, Ord p) => Int -> DSL p -> LabelEnv p Int
-         -> Int -> LDSL p Int -> LabelEnv p Int
-         -> Int -> LDSL p Int -> LabelEnv p Int
-         -> (Int, Int)
-labelIs0 m0 e1 λ m1 e1' λ1 _m e' _λ' = case e' of
-  LEQLC _ _ w i -> (w, i)
-
-
 -- if agree_Λ1(ρ,σ1) then also agree_Λ'(ρ,σ') ----------------------------------
 {-@ agreeLemmaISZERO :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
                   -> p1:{DSL p | wellTyped (UN ISZERO p1)}

@@ -60,26 +60,6 @@ wgIskFresh1 :: (Ord p, Fractional p)
 wgIskFresh1 m e1 k w i σ = trivial
 
 
--- if e1↝e1' and e1==k↝e' then ∃w,i . e' = LEQLC e1' k w i ---------------------
-{-@ labelIsk :: m0:Nat -> e1:DSL p -> λ:LabelEnv p (Btwn 0 m0) -> k:p
-
-             -> m1:{Int | m1 >= m0}
-             -> e1':LDSL p (Btwn 0 m1)
-             -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, e1', λ1)}
-
-             -> m:{Int | m >= m1}
-             -> e':LDSL p (Btwn 0 m)
-             -> λ':{LabelEnv p (Btwn 0 m) |
-                             label' (UN (EQLC k) e1) m0 λ = (m, e', λ')}
-             -> (w::Btwn 0 m, i:{Btwn 0 m | e' = LEQLC e1' k w i}) @-}
-labelIsk :: (Num p, Ord p) => Int -> DSL p -> LabelEnv p Int -> p
-         -> Int -> LDSL p Int -> LabelEnv p Int
-         -> Int -> LDSL p Int -> LabelEnv p Int
-         -> (Int, Int)
-labelIsk m0 e1 λ k m1 e1' λ1 _m e' _λ' = case e' of
-  LEQLC _ _ w i -> (w, i)
-
-
 -- if agree_Λ1(ρ,σ1) then also agree_Λ'(ρ,σ') ----------------------------------
 {-@ agreeLemmaEQLC :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
                   -> k:p

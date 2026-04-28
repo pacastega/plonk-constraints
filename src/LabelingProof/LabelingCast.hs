@@ -54,26 +54,6 @@ wgCastFresh1 :: (Ord p, Fractional p)
 wgCastFresh1 m e1 σ = trivial
 
 
--- if e1↝e1' and ↑e1↝e' then e' = LBoolToF e1' ---------------------------------
-{-@ labelCast :: m0:Nat -> e1:DSL p -> λ:LabelEnv p (Btwn 0 m0)
-
-              -> m1:{Int | m1 >= m0}
-              -> e1':LDSL p (Btwn 0 m1)
-              -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ  = (m1, e1', λ1)}
-
-              -> m:{Int | m >= m1}
-              -> e':LDSL p (Btwn 0 m)
-              -> λ':{LabelEnv p (Btwn 0 m) |
-                              label' (UN BoolToF e1) m0 λ = (m, e', λ')}
-              -> { e' = LBoolToF e1' } @-}
-labelCast :: (Num p, Ord p) => Int -> DSL p -> LabelEnv p Int
-          -> Int -> LDSL p Int -> LabelEnv p Int
-          -> Int -> LDSL p Int -> LabelEnv p Int
-          -> Proof
-labelCast m0 e1 λ m1 e1' λ1 _m e' _λ' = case e' of
-  LBoolToF _ -> trivial
-
-
 -- if agree_Λ1(ρ,σ1) then also agree_Λ'(ρ,σ') ----------------------------------
 {-@ agreeLemmaCast :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
                    -> p1:{DSL p | wellTyped (UN BoolToF p1)}
