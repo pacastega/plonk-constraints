@@ -73,11 +73,6 @@ wgBoolean m ρ σ e σ' = case e of
     where σ1 = case witnessGenE' m ρ σ e1 of Just s -> s
 
 
-{-@ type MapGE M2 M1 = k:{Int | M.member k M1
-                             && S.isSubsetOf (M.keysSet M1) (M.keysSet M2)}
-                    -> { M.lookup' k M1 = M.lookup' k M2 } @-}
-
-
 -- Witness generation never "updates" old keys, only adds new ones.
 -- We can think of this as "witnessGenE'(σ,e) ≥ σ".
 {-@ wgIncr :: m:Nat -> ρ:NameValuation p -> σ:WireValuation p m

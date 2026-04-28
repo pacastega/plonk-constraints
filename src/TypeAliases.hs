@@ -38,3 +38,8 @@ type LabelEnv p i = M.Map String i
 -- ∀x ∈ dom(Λ) . ρ(x) = σ(Λ(x))
 {-@ type Agree Λ Ρ Σ = var:{String | M.member var Λ}
                     -> {(M.lookup var Ρ = M.lookup (M.lookup' var Λ) Σ)} @-}
+
+-- "Greater than or equal" relation between maps ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+{-@ type MapGE M2 M1 = k:{Int | M.member k M1}
+                    -> { M.member k M2 && M.lookup' k M1 = M.lookup' k M2 } @-}
