@@ -69,14 +69,6 @@ wgUnFresh1 :: (Ord p, Fractional p)
 wgUnFresh1 m e1 op i σ = trivial
 
 
--- if □e1 is well-typed and well-formed, then so is e1 -------------------------
-{-@ wfUn :: e1:LDSL p Int -> op:UnOp' p
-         -> i:{Int | wfE (LUN op e1 i) && wellTyped' (LUN op e1 i)}
-         -> { wfE e1 && wellTyped' e1 } @-}
-wfUn :: (Num p) => LDSL p Int -> UnOp p -> Int -> Proof
-wfUn e1 op i = trivial
-
-
 -- if e1↝e1' and □e1↝e' then ∃w,i . e' = LUN □ e1' i ---------------------------
 {-@ labelUn :: m0:Nat -> e1:DSL p -> λ:LabelEnv p (Btwn 0 m0) -> op:UnOp' p
 
@@ -234,14 +226,6 @@ wgBinFresh2 :: (Ord p, Fractional p) => Int -> NameValuation p
             -> Proof
 wgBinFresh2 m ρ e1 e2 op i σ σ1 = case witnessGenE' m ρ σ e1 of
   Just _ -> trivial
-
-
--- if e1⮾e2 is well-typed and well-formed, then so are e1 and e2 ---------------
-{-@ wfBin :: e1:LDSL p Int -> e2:LDSL p Int -> op:BinOp' p
-          -> i:{Int | wfE (LBIN op e1 e2 i) && wellTyped' (LBIN op e1 e2 i)}
-          -> { wfE e1 && wfE e2 && wellTyped' e1 && wellTyped' e2 } @-}
-wfBin :: LDSL p Int -> LDSL p Int -> BinOp p -> Int -> Proof
-wfBin e1 e2 op i = trivial
 
 
 -- if e1↝e1', e2↝e2' and e1⮾e2↝e' then ∃i . e' = LBIN ⮾ e1' e2' i --------------

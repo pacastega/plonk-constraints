@@ -110,32 +110,6 @@ wgIncr m ρ σ e σ' j = case e of
           σ2 = case witnessGenE' m ρ σ1 e2 of Just s -> s
 
 
-{-@ coherentEIncr :: m:Nat -> e:TypedLDSL p (Btwn 0 m)
-                  -> {σ1:WireValuation p m | closedExpr m σ1 e && coherentE m e σ1}
-                  -> {σ2:WireValuation p m | S.isSubsetOf (M.keysSet σ1) (M.keysSet σ2)}
-                  -> MapGE σ2 σ1
-                  -> { coherentE m e σ2 } @-}
-coherentEIncr :: (Eq p, Fractional p) => Int -> LDSL p Int -> WireValuation p
-              -> WireValuation p -> (Int -> Proof) -> Proof
-coherentEIncr m e σ1 σ2 π = case e of
-  LWIRE  _ i -> trivial
-  LVAR _ τ i -> case τ of
-    TF -> trivial
-    TBool -> π i
-  LCONST _ i -> π i
-  LBOOL  _ i -> π i
-
-  LDIV e1 e2  w i -> coherentEIncr m e1 σ1 σ2 π ? coherentEIncr m e2 σ1 σ2 π
-                   ? π (outputWire e1) ? π (outputWire e2) ? π i ? π w
-  LUN  op e1    i -> coherentEIncr m e1 σ1 σ2 π ? π (outputWire e1) ? π i
-  LBIN op e1 e2 i -> coherentEIncr m e1 σ1 σ2 π ? coherentEIncr m e2 σ1 σ2 π
-                   ? π (outputWire e1) ? π (outputWire e2) ? π i
-  LBoolToF e1 -> coherentEIncr m e1 σ1 σ2 π
-  LEQLC e1 k w i -> coherentEIncr m e1 σ1 σ2 π ? π (outputWire e1) ? π i ? π w
-  LNIL _ -> trivial
-  LCONS e1 e2 -> coherentEIncr m e1 σ1 σ2 π ? coherentEIncr m e2 σ1 σ2 π
-
-
 {-@ wgClosed :: m:Nat -> ρ:NameValuation p -> σ:WireValuation p m
                -> e':{TypedLDSL p (Btwn 0 m) | wfE e' && freshE e' σ}
                -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}

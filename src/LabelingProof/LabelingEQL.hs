@@ -95,15 +95,6 @@ wgEqlFresh2 m ρ e1 e2 d w i σ σ1 = case witnessGenE' m ρ σ e1 of
   Just _ -> trivial
 
 
--- if e1==e2 is well-typed and well-formed, then so are e1 and e2 --------------
-{-@ wfEql :: e1:LDSL p Int -> e2:LDSL p Int -> d:Int -> w:Int
-          -> i:{Int | wfE        (LEQLC (LBIN SUB e1 e2 d) 0 w i)
-                   && wellTyped' (LEQLC (LBIN SUB e1 e2 d) 0 w i)}
-          -> { wfE e1 && wfE e2 && wellTyped' e1 && wellTyped' e2 } @-}
-wfEql :: (Num p) => LDSL p Int -> LDSL p Int -> Int -> Int -> Int -> Proof
-wfEql e1 e2 d w i = trivial
-
-
 -- if e1↝e1', e2↝e2' and e1==e2↝e' then ∃d,w,i . e' = LEQLC (LBIN SUB e1' e2' d) 0 w i
 {-@ labelEql :: m0:Nat -> e1:DSL p -> e2:DSL p -> λ:LabelEnv p (Btwn 0 m0)
 

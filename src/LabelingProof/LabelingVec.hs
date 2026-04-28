@@ -108,14 +108,6 @@ wgConsFresh2 m ρ e1 e2 σ σ1 = case witnessGenE' m ρ σ e1 of
   Just _ -> trivial
 
 
--- if e1::e2 is well-typed and well-formed, then so are e1 and e2 --------------
-{-@ wfCons :: e1:LDSL p Int
-           -> e2:{LDSL p Int | wfE (LCONS e1 e2) && wellTyped' (LCONS e1 e2)}
-           -> { wfE e1 && wfE e2 && wellTyped' e1 && wellTyped' e2 } @-}
-wfCons :: LDSL p Int -> LDSL p Int -> Proof
-wfCons e1 e2 = trivial
-
-
 -- if e1↝e1', e2↝e2' and e1::e2↝e' then e' = LCONS e1' e2' ---------------------
 {-@ labelCons :: m0:Nat -> e1:DSL p -> e2:DSL p -> λ:LabelEnv p (Btwn 0 m0)
 

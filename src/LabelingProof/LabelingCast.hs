@@ -54,13 +54,6 @@ wgCastFresh1 :: (Ord p, Fractional p)
 wgCastFresh1 m e1 σ = trivial
 
 
--- if ↑e1 is well-typed and well-formed, then so is e1 -------------------------
-{-@ wfCast :: e1:{LDSL p Int | wfE (LBoolToF e1) && wellTyped' (LBoolToF e1)}
-           -> { wfE e1 && wellTyped' e1 } @-}
-wfCast :: (Num p) => LDSL p Int -> Proof
-wfCast e1 = trivial
-
-
 -- if e1↝e1' and ↑e1↝e' then e' = LBoolToF e1' ---------------------------------
 {-@ labelCast :: m0:Nat -> e1:DSL p -> λ:LabelEnv p (Btwn 0 m0)
 

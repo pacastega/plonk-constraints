@@ -94,14 +94,6 @@ wgDivFresh2 m ρ e1 e2 w i σ σ1 = case witnessGenE' m ρ σ e1 of
   Just _ -> trivial
 
 
--- if e1/e2 is well-typed and well-formed, then so are e1 and e2 ---------------
-{-@ wfDiv :: e1:LDSL p Int -> e2:LDSL p Int -> w:Int
-          -> i:{Int | wfE (LDIV e1 e2 w i) && wellTyped' (LDIV e1 e2 w i)}
-          -> { wfE e1 && wfE e2 && wellTyped' e1 && wellTyped' e2 } @-}
-wfDiv :: LDSL p Int -> LDSL p Int -> Int -> Int -> Proof
-wfDiv e1 e2 w i = trivial
-
-
 -- if e1↝e1', e2↝e2' and e1/e2↝e' then ∃w,i . e' = LDIV e1' e2' w i ------------
 {-@ labelDiv :: m0:Nat -> e1:DSL p -> e2:DSL p -> λ:LabelEnv p (Btwn 0 m0)
 

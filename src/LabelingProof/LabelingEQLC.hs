@@ -60,14 +60,6 @@ wgIskFresh1 :: (Ord p, Fractional p)
 wgIskFresh1 m e1 k w i σ = trivial
 
 
--- if e1==k is well-typed and well-formed, then so is e1 -----------------------
-{-@ wfIsk :: e1:LDSL p Int -> k:p -> w:Int
-          -> i:{Int | wfE (LEQLC e1 k w i) && wellTyped' (LEQLC e1 k w i)}
-          -> { wfE e1 && wellTyped' e1 } @-}
-wfIsk :: (Num p) => LDSL p Int -> p -> Int -> Int -> Proof
-wfIsk e1 k w i = trivial
-
-
 -- if e1↝e1' and e1==k↝e' then ∃w,i . e' = LEQLC e1' k w i ---------------------
 {-@ labelIsk :: m0:Nat -> e1:DSL p -> λ:LabelEnv p (Btwn 0 m0) -> k:p
 
