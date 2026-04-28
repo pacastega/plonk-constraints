@@ -28,24 +28,6 @@ import WitnessGenProof.WitnessGenLemmas
 import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
--- if witnessGen succeeds for e1==0, it also succeeds for e1 -------------------
-{-@ σ1Is0 :: m1:Nat -> m:{Nat | m >= m1}
-          -> ρ:NameValuation p -> σ:WireValuation p m1
-          -> e1:LDSL p (Btwn 0 m1)
-          -> w:Btwn 0 m -> i:Btwn 0 m
-          -> e:{TypedLDSL p (Btwn 0 m) | e = LEQLC e1 0 w i
-                                      && wfE e && freshE e σ}
-          -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
-          -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-σ1Is0 :: (Ord p, Fractional p) => Int -> Int
-      -> NameValuation p -> WireValuation p
-      -> LDSL p Int -> Int -> Int
-      -> LDSL p Int -> WireValuation p
-      -> WireValuation p
-σ1Is0 m1 m ρ σ e1 _w _i _e _σ' = wgLemma m1 m ρ σ e1 ??
-  case witnessGenE' m1 ρ σ e1 of Just σ1 -> σ1
-
-
 -- if fresh(e1==0, σ), then also fresh(e1,σ) -----------------------------------
 {-@ wgIs0Fresh1 :: m:Nat
                 -> e1:LDSL p (Btwn 0 m)

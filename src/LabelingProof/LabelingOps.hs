@@ -26,23 +26,6 @@ import Language.Haskell.Liquid.ProofCombinators
 
 -- UNARY OPERATORS =============================================================
 
--- if witnessGen succeeds for □e1, it also succeeds for e1 ---------------------
-{-@ σ1Un :: m1:Nat -> m:{Nat | m >= m1}
-         -> ρ:NameValuation p -> σ:WireValuation p m1
-         -> e1:LDSL p (Btwn 0 m1) -> op:UnOp' p
-         -> i:Btwn 0 m
-         -> e:{TypedLDSL p (Btwn 0 m) | e = LUN op e1 i && wfE e && freshE e σ}
-         -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
-         -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-σ1Un     :: (Ord p, Fractional p) => Int -> Int
-     -> NameValuation p -> WireValuation p
-     -> LDSL p Int -> UnOp p -> Int
-     -> LDSL p Int -> WireValuation p
-     -> WireValuation p
-σ1Un m1 m ρ σ e1 op _i _e _σ' = wgLemma m1 m ρ σ e1 ??
-  case witnessGenE' m1 ρ σ e1 of Just σ1 -> σ1
-
-
 -- if fresh(e1==0, σ), then also fresh(e1,σ) -----------------------------------
 {-@ wgUnFresh1 :: m:Nat
                -> e1:LDSL p (Btwn 0 m) -> op:UnOp' p
@@ -98,43 +81,6 @@ agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 =
 
 
 -- BINARY OPERATORS ============================================================
-
--- if witnessGen succeeds for e1⮾e2, it also succeeds for e1 and e2 ------------
-{-@ σ1Bin :: m1:Nat -> m:{Nat | m >= m1}
-          -> ρ:NameValuation p -> σ:WireValuation p m1
-          -> e1:LDSL p (Btwn 0 m1) -> e2:LDSL p (Btwn 0 m)
-          -> op:BinOp' p -> i:Btwn 0 m
-          -> e:{TypedLDSL p (Btwn 0 m) | e = LBIN op e1 e2 i
-                                      && wfE e && freshE e σ}
-          -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
-          -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-σ1Bin :: (Ord p, Fractional p) => Int -> Int
-      -> NameValuation p -> WireValuation p
-      -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
-      -> LDSL p Int -> WireValuation p
-      -> WireValuation p
-σ1Bin m1 m ρ σ e1 _e2 _op _i _e _σ' = wgLemma m1 m ρ σ e1 ??
-  case witnessGenE' m1 ρ σ e1 of Just σ1 -> σ1
-
-{-@ σ2Bin :: m2:Nat -> m:{Nat | m >= m2}
-          -> ρ:NameValuation p -> σ:WireValuation p m2
-          -> e1:LDSL p (Btwn 0 m2) -> e2:LDSL p (Btwn 0 m2)
-          -> op:BinOp' p -> i:Btwn 0 m
-          -> e:{TypedLDSL p (Btwn 0 m) | e = LBIN op e1 e2 i
-                                      && wfE e && freshE e σ}
-          -> {σ':WireValuation p m  | Just σ' = witnessGenE' m  ρ σ  e}
-          -> {σ1:WireValuation p m2 | Just σ1 = witnessGenE' m  ρ σ  e1}
-          -> {σ2:WireValuation p m2 | Just σ2 = witnessGenE' m  ρ σ1 e2} @-}
-σ2Bin :: (Ord p, Fractional p) => Int -> Int
-      -> NameValuation p -> WireValuation p
-      -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
-      -> LDSL p Int -> WireValuation p -> WireValuation p
-      -> WireValuation p
-σ2Bin m2 m ρ σ e1 e2 _op _i _e _σ' _σ1 =
-  wgLemma m2 m ρ σ e1 ?? case witnessGenE' m2 ρ σ e1 of
-    Just σ1 -> wgLemma m2 m ρ σ1 e2 ?? case witnessGenE' m2 ρ σ1 e2 of
-      Just σ2 -> σ2
-
 
 -- if fresh(e1⮾e2, σ), then also fresh(e1,σ) and fresh(e2,σ1) ------------------
 {-@ wgBinFresh1 :: m:Nat
