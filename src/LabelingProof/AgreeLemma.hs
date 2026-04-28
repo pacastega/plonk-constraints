@@ -73,12 +73,12 @@ auxUn m0 m p1 op ρ λ σ π λ' e' σ' x =
       m_gt_m1 = labelIncUn op p1 m0 λ m1 p1' λ1 m e' λ'
   in sizeUn p1 op ?? case op of
   ISZERO -> agreeLemmaISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 π1 x
-    where σ1 = m_gt_m1 ?? σ1Is0 m1 m ρ σ p1' w i e' σ'
+    where σ1 = m_gt_m1 ?? σ1Isk m1 m ρ σ p1' 0 w i e' σ'
 
           -- e' == EQLC p1' 0 w i
           (w,i) = labelIs0 m0 p1 λ m1 p1' λ1 m e' λ'
 
-          π1 = wfIs0 p1' w i
+          π1 = wfIsk p1' 0 w i
             ?? wgIs0Fresh1 m p1' w i σ
             ?? wgLemma m1 m ρ σ p1'
             ?? agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
