@@ -1,6 +1,6 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-module SetLemmas (ltLemma, disjLemma) where
+module SetLemmas (ltLemma, disjLemma, subsetIncr) where
 
 import TypeAliases
 import qualified Data.Set as S
@@ -29,3 +29,17 @@ disjLemma a b c s1 s2 = disjAux a b c (S.toList s1) (S.toList s2)
 disjAux :: Int -> Int -> Int -> [Int] -> [Int] -> Proof
 disjAux a b c xs []     = ()
 disjAux a b c xs (y:ys) = ltAux a b xs y ? disjAux a b c xs ys
+
+{-@ subsetIncr :: s1:S.Set Int -> s2:S.Set Int
+               -> (x:{Int | S.member x s1} -> { S.member x s2 })
+               -> { S.isSubsetOf s1 s2 } @-}
+subsetIncr :: S.Set Int -> S.Set Int -> (Int -> Proof) -> Proof
+subsetIncr s1 s2 = subsetIncr' (S.toList s1) (S.toList s2)
+
+{-@ subsetIncr' :: xs:[Int] -> ys:[Int]
+                -> (x:{Int | S.member x (S.fromList xs)} ->
+                           { S.member x (S.fromList ys) })
+                -> { S.isSubsetOf (S.fromList xs) (S.fromList ys) } @-}
+subsetIncr' :: [Int] -> [Int] -> (Int -> Proof) -> Proof
+subsetIncr' []     ys ge = ()
+subsetIncr' (x:xs) ys ge = ge x ? subsetIncr' xs ys ge
