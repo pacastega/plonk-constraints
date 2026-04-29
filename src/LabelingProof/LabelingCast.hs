@@ -28,16 +28,6 @@ import WitnessGenProof.WitnessGenLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
 
--- if fresh(↑e1, σ), then also fresh(e1,σ) -------------------------------------
-{-@ wgCastFresh1 :: m:Nat
-                 -> e1:LDSL p (Btwn 0 m)
-                 -> σ:{WireValuation p m | freshE (LBoolToF e1) σ}
-                 -> { freshE e1 σ } @-}
-wgCastFresh1 :: (Ord p, Fractional p)
-             => Int -> LDSL p Int -> WireValuation p -> Proof
-wgCastFresh1 m e1 σ = trivial
-
-
 -- if agree_Λ1(ρ,σ1) then also agree_Λ'(ρ,σ') ----------------------------------
 {-@ agreeLemmaCast :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
                    -> p1:{DSL p | wellTyped (UN BoolToF p1)}

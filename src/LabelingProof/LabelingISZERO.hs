@@ -28,17 +28,6 @@ import WitnessGenProof.WitnessGenLemmas
 import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
--- if fresh(e1==0, σ), then also fresh(e1,σ) -----------------------------------
-{-@ wgIs0Fresh1 :: m:Nat
-                -> e1:LDSL p (Btwn 0 m)
-                -> w:Btwn 0 m -> i:Btwn 0 m
-                -> σ:{WireValuation p m | freshE (LEQLC e1 0 w i) σ}
-                -> { freshE e1 σ } @-}
-wgIs0Fresh1 :: (Ord p, Fractional p)
-            => Int -> LDSL p Int -> Int -> Int -> WireValuation p -> Proof
-wgIs0Fresh1 m e1 w i σ = trivial
-
-
 -- if agree_Λ1(ρ,σ1) then also agree_Λ'(ρ,σ') ----------------------------------
 {-@ agreeLemmaISZERO :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
                   -> p1:{DSL p | wellTyped (UN ISZERO p1)}

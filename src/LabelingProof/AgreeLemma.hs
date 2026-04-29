@@ -79,7 +79,7 @@ auxUn m0 m p1 op ρ λ σ π λ' e' σ' x =
           (w,i) = labelIs0 m0 p1 λ m1 p1' λ1 m e' λ'
 
           π1 = wfIsk p1' 0 w i
-            ?? wgIs0Fresh1 m p1' w i σ
+            ?? freshIsk m p1' 0 w i σ
             ?? wgLemma m1 m ρ σ p1'
             ?? agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
 
@@ -90,7 +90,7 @@ auxUn m0 m p1 op ρ λ σ π λ' e' σ' x =
           (w,i) = labelIsk m0 p1 λ k m1 p1' λ1 m e' λ'
 
           π1 = wfIsk p1' k w i
-            ?? wgIskFresh1 m p1' k w i σ
+            ?? freshIsk m p1' k w i σ
             ?? wgLemma m1 m ρ σ p1'
             ?? agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
 
@@ -112,7 +112,7 @@ auxUn m0 m p1 op ρ λ σ π λ' e' σ' x =
           i = labelUn m0 p1 λ op m1 p1' λ1 m e' λ'
 
           π1 = wfUn p1' op i
-            ?? wgUnFresh1 m p1' op i σ
+            ?? freshUn m p1' op i σ
             ?? wgLemma m1 m ρ σ p1'
             ?? agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
 
@@ -160,12 +160,12 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
             (w,i) = labelDiv m0 p1 p2 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
 
             π1 = wfDiv p1' p2' w i           -- p1' is well typed and well formed
-              ?? wgDivFresh1 m p1' p2' w i σ -- p1' is fresh w.r.t. σ
+              ?? freshDiv1 m p1' p2' w i σ -- p1' is fresh w.r.t. σ
               ?? wgLemma m1 m ρ σ p1'        -- using m and m1 yield the same output
               ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1 -- IH 1
 
             π2 = wfDiv p1' p2' w i                -- p2' is well typed and well formed
-              ?? wgDivFresh2 m ρ p1' p2' w i σ σ1 -- p2' is fresh w.r.t. σ1
+              ?? freshDiv2 m ρ p1' p2' w i σ σ1 -- p2' is fresh w.r.t. σ1
               ?? wgLemma m2 m ρ σ1 p2'            -- using m and m2 yield the same result
               ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2 -- IH 2
 
@@ -177,12 +177,12 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
             (d,w,i) = labelEql m0 p1 p2 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
 
             π1 = wfEql p1' p2' d w i
-              ?? wgEqlFresh1 m p1' p2' d w i σ
+              ?? freshEql1 m p1' p2' d w i σ
               ?? wgLemma m1 m ρ σ p1'
               ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
 
             π2 = wfEql p1' p2' d w i
-              ?? wgEqlFresh2 m ρ p1' p2' d w i σ σ1
+              ?? freshEql2 m ρ p1' p2' d w i σ σ1
               ?? wgLemma m2 m ρ σ1 p2'
               ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
 
@@ -194,12 +194,12 @@ auxBin m0 m p1 p2 op ρ λ σ π λ' e' σ' x =
             i = labelBin m0 p1 p2 λ op m1 p1' λ1 m2 p2' λ2 m e' λ'
 
             π1 = wfBin p1' p2' op i
-              ?? wgBinFresh1 m p1' p2' op i σ
+              ?? freshBin1 m p1' p2' op i σ
               ?? wgLemma m1 m ρ σ p1'
               ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
 
             π2 = wfBin p1' p2' op i
-              ?? wgBinFresh2 m ρ p1' p2' op i σ σ1
+              ?? freshBin2 m ρ p1' p2' op i σ σ1
               ?? wgLemma m2 m ρ σ1 p2'
               ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
 
@@ -247,13 +247,13 @@ auxCons m0 m p1 p2 ρ λ σ π λ' e' σ' x =
           is_LCONS = labelCons m0 p1 p2 λ m1 p1' λ1 m2 p2' λ2 m e' λ'
 
           π1 = wfCons p1' p2'
-            ?? wgConsFresh1 m p1' p2' σ
+            ?? freshCons1 m p1' p2' σ
             ?? wgLemma m1 m ρ σ p1'
             ?? sizeCons p1 p2
             ?? agreeLemma m0 m1 p1 ρ λ  σ  π  λ1 p1' σ1
 
           π2 = wfCons p1' p2'
-            ?? wgConsFresh2 m ρ p1' p2' σ σ1
+            ?? freshCons2 m ρ p1' p2' σ σ1
             ?? wgLemma m2 m ρ σ1 p2'
             ?? agreeLemma m1 m2 p2 ρ λ1 σ1 π1 λ2 p2' σ2
 

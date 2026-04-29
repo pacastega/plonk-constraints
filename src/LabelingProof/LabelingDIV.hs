@@ -30,33 +30,6 @@ import WitnessGenProof.WitnessGenLemmas
 import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
--- if fresh(e1/e2, σ), then also fresh(e1,σ) and fresh(e2,σ1) ------------------
-{-@ wgDivFresh1 :: m:Nat
-                -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
-                -> w:Btwn 0 m -> i:Btwn 0 m
-                -> σ:{WireValuation p m | freshE (LDIV e1 e2 w i) σ}
-                -> { freshE e1 σ } @-}
-wgDivFresh1 :: (Ord p, Fractional p) => Int
-            -> LDSL p Int -> LDSL p Int -> Int -> Int
-            -> WireValuation p
-            -> Proof
-wgDivFresh1 m e1 e2 w i σ = trivial
-
-{-@ wgDivFresh2 :: m:Nat -> ρ:NameValuation p
-                -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
-                -> w:Btwn 0 m -> i:{Btwn 0 m | wellTyped' (LDIV e1 e2 w i)
-                                            && wfE (LDIV e1 e2 w i)}
-                -> σ:{WireValuation p m | freshE (LDIV e1 e2 w i) σ}
-                -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
-                -> { freshE e2 σ1 } @-}
-wgDivFresh2 :: (Ord p, Fractional p) => Int -> NameValuation p
-            -> LDSL p Int -> LDSL p Int -> Int -> Int
-            -> WireValuation p -> WireValuation p
-            -> Proof
-wgDivFresh2 m ρ e1 e2 w i σ σ1 = case witnessGenE' m ρ σ e1 of
-  Just _ -> trivial
-
-
 -- if agree_Λ2(ρ,σ2) then also agree_Λ'(ρ,σ') ----------------------------------
 {-@ agreeLemmaDIV :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}
                   -> p1:DSL p

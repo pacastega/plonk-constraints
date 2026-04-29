@@ -26,17 +26,6 @@ import Language.Haskell.Liquid.ProofCombinators
 
 -- UNARY OPERATORS =============================================================
 
--- if fresh(e1==0, σ), then also fresh(e1,σ) -----------------------------------
-{-@ wgUnFresh1 :: m:Nat
-               -> e1:LDSL p (Btwn 0 m) -> op:UnOp' p
-               -> i:Btwn 0 m
-               -> σ:{WireValuation p m | freshE (LUN op e1 i) σ}
-               -> { freshE e1 σ } @-}
-wgUnFresh1 :: (Ord p, Fractional p)
-           => Int -> LDSL p Int -> UnOp p -> Int -> WireValuation p -> Proof
-wgUnFresh1 m e1 op i σ = trivial
-
-
 -- if agree_Λ1(ρ,σ1) then also agree_Λ'(ρ,σ1) ----------------------------------
 {-@ agreeLemmaUn  :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
                   -> p1:DSL p
@@ -81,33 +70,6 @@ agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 =
 
 
 -- BINARY OPERATORS ============================================================
-
--- if fresh(e1⮾e2, σ), then also fresh(e1,σ) and fresh(e2,σ1) ------------------
-{-@ wgBinFresh1 :: m:Nat
-                -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
-                -> op:BinOp' p -> i:Btwn 0 m
-                -> σ:{WireValuation p m | freshE (LBIN op e1 e2 i) σ}
-                -> { freshE e1 σ } @-}
-wgBinFresh1 :: (Ord p, Fractional p) => Int
-            -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
-            -> WireValuation p
-            -> Proof
-wgBinFresh1 m e1 e2 op i σ = trivial
-
-{-@ wgBinFresh2 :: m:Nat -> ρ:NameValuation p
-                -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
-                -> op:BinOp' p -> i:{Btwn 0 m | wellTyped' (LBIN op e1 e2 i)
-                                            && wfE (LBIN op e1 e2 i)}
-                -> σ:{WireValuation p m | freshE (LBIN op e1 e2 i) σ}
-                -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
-                -> { freshE e2 σ1 } @-}
-wgBinFresh2 :: (Ord p, Fractional p) => Int -> NameValuation p
-            -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
-            -> WireValuation p -> WireValuation p
-            -> Proof
-wgBinFresh2 m ρ e1 e2 op i σ σ1 = case witnessGenE' m ρ σ e1 of
-  Just _ -> trivial
-
 
 -- if agree_Λ2(ρ,σ2) then also agree_Λ'(ρ,σ') ----------------------------------
 {-@ agreeLemmaBin :: m0:Nat -> m1:{Nat | m1 >= m0} -> m2:{Nat | m2 >= m1} -> m:{Nat | m >= m2}

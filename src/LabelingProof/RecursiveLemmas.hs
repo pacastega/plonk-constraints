@@ -120,6 +120,148 @@ wfCons :: LDSL p Int -> LDSL p Int -> Proof
 wfCons e1 e2 = trivial
 
 
+-- freshness is propagated to the arguments ------------------------------------
+
+-- if fresh(e1/e2, σ), then also fresh(e1,σ) and fresh(e2,σ1)
+{-@ freshDiv1 :: m:Nat
+              -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
+              -> w:Btwn 0 m -> i:Btwn 0 m
+              -> σ:{WireValuation p m | freshE (LDIV e1 e2 w i) σ}
+              -> { freshE e1 σ } @-}
+freshDiv1 :: (Ord p, Fractional p) => Int
+          -> LDSL p Int -> LDSL p Int -> Int -> Int
+          -> WireValuation p
+          -> Proof
+freshDiv1 m e1 e2 w i σ = trivial
+
+{-@ freshDiv2 :: m:Nat -> ρ:NameValuation p
+              -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
+              -> w:Btwn 0 m -> i:{Btwn 0 m | wellTyped' (LDIV e1 e2 w i)
+                                            && wfE (LDIV e1 e2 w i)}
+              -> σ:{WireValuation p m | freshE (LDIV e1 e2 w i) σ}
+              -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
+              -> { freshE e2 σ1 } @-}
+freshDiv2 :: (Ord p, Fractional p) => Int -> NameValuation p
+          -> LDSL p Int -> LDSL p Int -> Int -> Int
+          -> WireValuation p -> WireValuation p
+          -> Proof
+freshDiv2 m ρ e1 e2 w i σ σ1 = case witnessGenE' m ρ σ e1 of
+  Just _ -> trivial
+
+
+-- if fresh(↑e1, σ), then also fresh(e1,σ)
+{-@ freshCast :: m:Nat
+              -> e1:LDSL p (Btwn 0 m)
+              -> σ:{WireValuation p m | freshE (LBoolToF e1) σ}
+              -> { freshE e1 σ } @-}
+freshCast :: (Ord p, Fractional p)
+          => Int -> LDSL p Int -> WireValuation p -> Proof
+freshCast m e1 σ = trivial
+
+
+-- if fresh(e1==e2, σ), then also fresh(e1,σ) and fresh(e2,σ1)
+{-@ freshEql1 :: m:Nat
+              -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
+              -> d:Btwn 0 m -> w:Btwn 0 m -> i:Btwn 0 m
+              -> σ:{WireValuation p m | freshE (LEQLC (LBIN SUB e1 e2 d) 0 w i) σ}
+              -> { freshE e1 σ } @-}
+freshEql1 :: (Ord p, Fractional p) => Int
+          -> LDSL p Int -> LDSL p Int -> Int -> Int -> Int
+          -> WireValuation p
+          -> Proof
+freshEql1 m e1 e2 d w i σ = trivial
+
+{-@ freshEql2 :: m:Nat -> ρ:NameValuation p
+              -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
+              -> d:Btwn 0 m -> w:Btwn 0 m
+              -> i:{Btwn 0 m | wellTyped' (LEQLC (LBIN SUB e1 e2 d) 0 w i)
+                              && wfE (LEQLC (LBIN SUB e1 e2 d) 0 w i)}
+              -> σ:{WireValuation p m | freshE (LEQLC (LBIN SUB e1 e2 d) 0 w i) σ}
+              -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
+              -> { freshE e2 σ1 } @-}
+freshEql2 :: (Ord p, Fractional p) => Int -> NameValuation p
+          -> LDSL p Int -> LDSL p Int -> Int -> Int -> Int
+          -> WireValuation p -> WireValuation p
+          -> Proof
+freshEql2 m ρ e1 e2 d w i σ σ1 = case witnessGenE' m ρ σ e1 of
+  Just _ -> trivial
+
+
+-- if fresh(e1==0, σ), then also fresh(e1,σ)
+{-@ freshIsk :: m:Nat
+             -> e1:LDSL p (Btwn 0 m) -> k:p
+             -> w:Btwn 0 m -> i:Btwn 0 m
+             -> σ:{WireValuation p m | freshE (LEQLC e1 k w i) σ}
+             -> { freshE e1 σ } @-}
+freshIsk :: (Ord p, Fractional p)
+         => Int -> LDSL p Int -> p -> Int -> Int -> WireValuation p -> Proof
+freshIsk m e1 k w i σ = trivial
+
+
+-- if fresh(e1==0, σ), then also fresh(e1,σ)
+{-@ freshUn :: m:Nat
+            -> e1:LDSL p (Btwn 0 m) -> op:UnOp' p
+            -> i:Btwn 0 m
+            -> σ:{WireValuation p m | freshE (LUN op e1 i) σ}
+            -> { freshE e1 σ } @-}
+freshUn :: (Ord p, Fractional p)
+        => Int -> LDSL p Int -> UnOp p -> Int -> WireValuation p -> Proof
+freshUn m e1 op i σ = trivial
+
+
+-- if fresh(e1⮾e2, σ), then also fresh(e1,σ) and fresh(e2,σ1)
+{-@ freshBin1 :: m:Nat
+              -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
+              -> op:BinOp' p -> i:Btwn 0 m
+              -> σ:{WireValuation p m | freshE (LBIN op e1 e2 i) σ}
+              -> { freshE e1 σ } @-}
+freshBin1 :: (Ord p, Fractional p) => Int
+          -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
+          -> WireValuation p
+          -> Proof
+freshBin1 m e1 e2 op i σ = trivial
+
+{-@ freshBin2 :: m:Nat -> ρ:NameValuation p
+              -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
+              -> op:BinOp' p -> i:{Btwn 0 m | wellTyped' (LBIN op e1 e2 i)
+                                            && wfE (LBIN op e1 e2 i)}
+              -> σ:{WireValuation p m | freshE (LBIN op e1 e2 i) σ}
+              -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
+              -> { freshE e2 σ1 } @-}
+freshBin2 :: (Ord p, Fractional p) => Int -> NameValuation p
+          -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
+          -> WireValuation p -> WireValuation p
+          -> Proof
+freshBin2 m ρ e1 e2 op i σ σ1 = case witnessGenE' m ρ σ e1 of
+  Just _ -> trivial
+
+
+-- if fresh(e1::e2, σ), then also fresh(e1,σ) and fresh(e2,σ1)
+{-@ freshCons1 :: m:Nat
+               -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
+               -> σ:{WireValuation p m | freshE (LCONS e1 e2) σ}
+               -> { freshE e1 σ } @-}
+freshCons1 :: (Ord p, Fractional p) => Int
+           -> LDSL p Int -> LDSL p Int
+           -> WireValuation p
+           -> Proof
+freshCons1 m e1 e2 σ = trivial
+
+{-@ freshCons2 :: m:Nat -> ρ:NameValuation p
+               -> e1:LDSL p (Btwn 0 m)
+               -> e2:{LDSL p (Btwn 0 m) | wellTyped' (LCONS e1 e2)
+                                         && wfE (LCONS e1 e2)}
+               -> σ:{WireValuation p m | freshE (LCONS e1 e2) σ}
+               -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
+               -> { freshE e2 σ1 } @-}
+freshCons2 :: (Ord p, Fractional p) => Int -> NameValuation p
+           -> LDSL p Int -> LDSL p Int
+           -> WireValuation p -> WireValuation p
+           -> Proof
+freshCons2 m ρ e1 e2 σ σ1 = case witnessGenE' m ρ σ e1 of
+  Just _ -> trivial
+
+
 -- if σ ⊢ e and σ' ≥ σ, then also σ' ⊢ e [LDSL] --------------------------------
 
 {-@ coherentEIncr :: m:Nat -> e:TypedLDSL p (Btwn 0 m)
