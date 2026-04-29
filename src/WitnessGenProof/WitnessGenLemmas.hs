@@ -317,3 +317,26 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
   wgLemma m2 m ρ σ e1 ?? case witnessGenE' m2 ρ σ e1 of
     Just σ1 -> wgLemma m2 m ρ σ1 e2 ?? case witnessGenE' m2 ρ σ1 e2 of
       Just σ2 -> σ2
+
+
+-- outputWire(e) is always bound in wg(σ,e) ------------------------------------
+
+{-@ wgOutputMem :: m:Nat -> ρ:NameValuation p -> σ:WireValuation p m
+                -> e:{ScalarLDSL p (Btwn 0 m) | wfE e && freshE e σ}
+                -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e}
+                -> { M.member (outputWire e) σ' } @-}
+wgOutputMem :: (Fractional p, Ord p) => Int
+            -> NameValuation p -> WireValuation p -> LDSL p Int
+            -> WireValuation p -> Proof
+wgOutputMem m ρ σ e σ' = wgClosed m ρ σ e σ' ? outputWire e
+
+
+-- if σ' = wg(σ,e), then keys(σ') = keys(σ) ∪ wires(e) -------------------------
+
+{-@ wgKeysSet :: m:Nat -> ρ:NameValuation p -> σ:WireValuation p m
+              -> e:{TypedLDSL p (Btwn 0 m) | wfE e && freshE e σ}
+              -> σ':{WireValuation p m | Just σ' == witnessGenE' m ρ σ e}
+              -> { M.keysSet σ' == S.union (M.keysSet σ) (wiresE e) } @-}
+wgKeysSet :: (Eq p, Fractional p) => Int -> NameValuation p -> WireValuation p
+          -> LDSL p Int -> WireValuation p -> Proof
+wgKeysSet m ρ σ e σ' = case witnessGenE' m ρ σ e of Just _ -> trivial
