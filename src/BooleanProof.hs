@@ -7,6 +7,8 @@ import Utils
 import DSL
 import Semantics
 
+import qualified Liquid.Data.Map as M
+
 import Language.Haskell.Liquid.ProofCombinators
 
 {-@ booleanProof :: ρ:NameValuation p
@@ -16,6 +18,14 @@ import Language.Haskell.Liquid.ProofCombinators
 booleanProof :: (Fractional p, Eq p)
              => NameValuation p -> DSL p -> DSLValue p -> Proof
 booleanProof ρ e _ = case eval e ρ of Just _ -> trivial
+
+{-@ booleanProof' :: m:Nat
+                  -> σ:WireValuation p m
+                  -> e:{LDSL p (Btwn 0 m) | booleanE e}
+                  -> { coherentE m e σ => boolean (M.lookup' (outputWire e) σ) } @-}
+booleanProof' :: (Fractional p, Eq p)
+             => Int -> WireValuation p -> LDSL p Int -> Proof
+booleanProof' m σ e = undefined
 
 
 -- workarounds to fix "crash: unknown constant"

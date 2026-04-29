@@ -612,7 +612,7 @@ valueUnOp op x1 = case op of
    ADDC k1 -> k1 + x1
    MULC k1 -> k1 * x1
    NOT -> if x1 == 1 then 0 else 1
-   UnsafeNOT -> 1 - x1
+   UnsafeNOT -> if x1 == 1 then 0 else 1
 
 {-@ reflect valueBinOp @-}
 {-@ valueBinOp :: BinOp' p -> p -> p -> p @-}
@@ -625,9 +625,9 @@ valueBinOp op x1 x2 = case op of
    AND -> if x1 == 0 || x2 == 0 then 0 else 1
    OR  -> if x1 == 1 || x2 == 1 then 1 else 0
    XOR -> if x1 /= x2 then 1 else 0
-   UnsafeAND -> x1 * x2
-   UnsafeOR  -> x1 + x2 -   x1*x2
-   UnsafeXOR -> x1 + x2 - 2*x1*x2
+   UnsafeAND -> if x1 == 0 || x2 == 0 then 0 else 1
+   UnsafeOR  -> if x1 == 1 || x2 == 1 then 1 else 0
+   UnsafeXOR -> if x1 /= x2 then 1 else 0
 
 
 {-@ reflect coherentE @-}
@@ -653,29 +653,12 @@ coherentE m e σ = case e of
           v1 = M.lookup' (outputWire e1) σ
           v2 = M.lookup' (outputWire e2) σ
 
-  LUN op e1 i -> case op of
-      ADDC k -> c1 && vi == valueUnOp op v1
-      MULC k -> c1 && vi == valueUnOp op v1
-      NOT    -> c1 && vi == valueUnOp op v1 && boolean v1
-      UnsafeNOT -> c1 && vi == valueUnOp op v1
+  LUN op e1 i -> c1 && vi == valueUnOp op v1
     where c1 = coherentE m e1 σ
           vi = M.lookup' i σ
           v1 = M.lookup' (outputWire e1) σ
 
-  LBIN op e1 e2 i -> case op of
-      ADD -> c1 && c2 && vi == valueBinOp op v1 v2
-      SUB -> c1 && c2 && vi == valueBinOp op v1 v2
-      MUL -> c1 && c2 && vi == valueBinOp op v1 v2
-      LINCOMB k1 k2 -> c1 && c2 && vi == valueBinOp op v1 v2
-      AND -> c1 && c2 && boolean v1 && boolean v2
-          && vi == valueBinOp op v1 v2
-      OR  -> c1 && c2 && boolean v1 && boolean v2
-          && vi == valueBinOp op v1 v2
-      XOR -> c1 && c2 && boolean v1 && boolean v2
-          && vi == valueBinOp op v1 v2
-      UnsafeAND -> c1 && c2 && vi == valueBinOp op v1 v2
-      UnsafeOR  -> c1 && c2 && vi == valueBinOp op v1 v2
-      UnsafeXOR -> c1 && c2 && vi == valueBinOp op v1 v2
+  LBIN op e1 e2 i -> c1 && c2 && vi == valueBinOp op v1 v2
     where c1 = coherentE m e1 σ
           c2 = coherentE m e2 σ
           vi = M.lookup' i σ
@@ -683,7 +666,7 @@ coherentE m e σ = case e of
           v2 = M.lookup' (outputWire e2) σ
 
   LBoolToF e1 -> coherentE m e1 σ
-  LEQLC e1 k w i -> coherentE m e1 σ && boolean vi
+  LEQLC e1 k w i -> coherentE m e1 σ
                  && ((v1 - k) * vi == 0)
                  && (if v1 == k then vi == 1 else vi == 0 && vw * (v1 - k) == 1)
     where vi = M.lookup' i σ

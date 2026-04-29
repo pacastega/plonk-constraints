@@ -1,5 +1,4 @@
 {-# LANGUAGE CPP #-}
-{-@ infix ! @-}
 {-# OPTIONS -Wno-unused-matches -Wno-unused-imports
             -Wno-redundant-constraints #-}
 {-@ LIQUID "--reflection" @-}
@@ -23,6 +22,8 @@ import ArithmeticGates
 import LogicGates
 
 import DSL
+
+import BooleanProof
 
 import Language.Haskell.Liquid.ProofCombinators
 
@@ -60,15 +61,21 @@ compileProofE m e σ = case e of
   LUN op e1 i -> case op of
     ADDC _    -> proof
     MULC _    -> proof
-    NOT       -> proof
-    UnsafeNOT -> proof
+    NOT       -> booleanProof' m σ e1 ? proof
+    UnsafeNOT -> booleanProof' m σ e1 ? proof
     where proof = compileProofE m e1 σ
                 ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
   LBIN op e1 e2 i -> case op of
     ADD -> proof; SUB -> proof; MUL -> proof; LINCOMB _ _ -> proof;
-    AND -> proof; UnsafeAND -> proof;
-    OR  -> proof; UnsafeOR  -> proof;
-    XOR -> proof; UnsafeXOR -> proof;
+    AND ->       booleanProof' m σ e1 ? booleanProof' m σ e2 ? proof;
+    UnsafeAND -> booleanProof' m σ e1 ? booleanProof' m σ e2 ? proof;
+
+    OR  ->       booleanProof' m σ e1 ? booleanProof' m σ e2 ? proof;
+    UnsafeOR  -> booleanProof' m σ e1 ? booleanProof' m σ e2 ? proof;
+
+    XOR ->       booleanProof' m σ e1 ? booleanProof' m σ e2 ? proof;
+    UnsafeXOR -> booleanProof' m σ e1 ? booleanProof' m σ e2 ? proof;
+
     where proof = compileProofE m e1 σ ? compileProofE m e2 σ
                 ? satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
                 ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
