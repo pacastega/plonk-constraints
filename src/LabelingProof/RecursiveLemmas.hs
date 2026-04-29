@@ -11,6 +11,7 @@ import qualified MapFunctions as M
 #endif
 
 import TypeAliases
+import SetLemmas
 import DSL
 import Utils
 import WitnessGeneration
@@ -65,7 +66,7 @@ sizeCons e1 e2 = trivial
 -- if ↑e1 is well-typed and well-formed, then so is e1
 {-@ wfCast :: e1:{LDSL p Int | wfE (LBoolToF e1) && wellTyped' (LBoolToF e1)}
            -> { wfE e1 && wellTyped' e1 } @-}
-wfCast :: (Num p) => LDSL p Int -> Proof
+wfCast :: LDSL p Int -> Proof
 wfCast e1 = trivial
 
 
@@ -90,7 +91,7 @@ wfEql e1 e2 d w i = trivial
 {-@ wfIsk :: e1:LDSL p Int -> k:p -> w:Int
           -> i:{Int | wfE (LEQLC e1 k w i) && wellTyped' (LEQLC e1 k w i)}
           -> { wfE e1 && wellTyped' e1 } @-}
-wfIsk :: (Num p) => LDSL p Int -> p -> Int -> Int -> Proof
+wfIsk :: LDSL p Int -> p -> Int -> Int -> Proof
 wfIsk e1 k w i = trivial
 
 
@@ -98,7 +99,7 @@ wfIsk e1 k w i = trivial
 {-@ wfUn :: e1:LDSL p Int -> op:UnOp' p
          -> i:{Int | wfE (LUN op e1 i) && wellTyped' (LUN op e1 i)}
          -> { wfE e1 && wellTyped' e1 } @-}
-wfUn :: (Num p) => LDSL p Int -> UnOp p -> Int -> Proof
+wfUn :: LDSL p Int -> UnOp p -> Int -> Proof
 wfUn e1 op i = trivial
 
 
@@ -126,8 +127,7 @@ wfCons e1 e2 = trivial
               -> w:Btwn 0 m -> i:Btwn 0 m
               -> σ:{WireValuation p m | freshE (LDIV e1 e2 w i) σ}
               -> { freshE e1 σ } @-}
-freshDiv1 :: (Eq p, Fractional p) => Int
-          -> LDSL p Int -> LDSL p Int -> Int -> Int
+freshDiv1 :: Int -> LDSL p Int -> LDSL p Int -> Int -> Int
           -> WireValuation p
           -> Proof
 freshDiv1 m e1 e2 w i σ = trivial
@@ -152,8 +152,7 @@ freshDiv2 m ρ e1 e2 w i σ σ1 = case witnessGenE' m ρ σ e1 of
               -> e1:LDSL p (Btwn 0 m)
               -> σ:{WireValuation p m | freshE (LBoolToF e1) σ}
               -> { freshE e1 σ } @-}
-freshCast :: (Eq p, Fractional p)
-          => Int -> LDSL p Int -> WireValuation p -> Proof
+freshCast :: Int -> LDSL p Int -> WireValuation p -> Proof
 freshCast m e1 σ = trivial
 
 
@@ -191,8 +190,7 @@ freshEql2 m ρ e1 e2 d w i σ σ1 = case witnessGenE' m ρ σ e1 of
              -> w:Btwn 0 m -> i:Btwn 0 m
              -> σ:{WireValuation p m | freshE (LEQLC e1 k w i) σ}
              -> { freshE e1 σ } @-}
-freshIsk :: (Eq p, Fractional p)
-         => Int -> LDSL p Int -> p -> Int -> Int -> WireValuation p -> Proof
+freshIsk :: Int -> LDSL p Int -> p -> Int -> Int -> WireValuation p -> Proof
 freshIsk m e1 k w i σ = trivial
 
 
@@ -202,8 +200,7 @@ freshIsk m e1 k w i σ = trivial
             -> i:Btwn 0 m
             -> σ:{WireValuation p m | freshE (LUN op e1 i) σ}
             -> { freshE e1 σ } @-}
-freshUn :: (Eq p, Fractional p)
-        => Int -> LDSL p Int -> UnOp p -> Int -> WireValuation p -> Proof
+freshUn :: Int -> LDSL p Int -> UnOp p -> Int -> WireValuation p -> Proof
 freshUn m e1 op i σ = trivial
 
 
@@ -213,8 +210,7 @@ freshUn m e1 op i σ = trivial
               -> op:BinOp' p -> i:Btwn 0 m
               -> σ:{WireValuation p m | freshE (LBIN op e1 e2 i) σ}
               -> { freshE e1 σ } @-}
-freshBin1 :: (Eq p, Fractional p) => Int
-          -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
+freshBin1 :: Int -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
           -> WireValuation p
           -> Proof
 freshBin1 m e1 e2 op i σ = trivial
@@ -239,8 +235,7 @@ freshBin2 m ρ e1 e2 op i σ σ1 = case witnessGenE' m ρ σ e1 of
                -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
                -> σ:{WireValuation p m | freshE (LCONS e1 e2) σ}
                -> { freshE e1 σ } @-}
-freshCons1 :: (Eq p, Fractional p) => Int
-           -> LDSL p Int -> LDSL p Int
+freshCons1 :: Int -> LDSL p Int -> LDSL p Int
            -> WireValuation p
            -> Proof
 freshCons1 m e1 e2 σ = trivial
@@ -294,9 +289,39 @@ coherentEIncr m e σ1 σ2 π = case e of
                -> σ:{WireValuation p m | closedExpr m σ e}
                -> σ':WireValuation p m -> MapGE σ' σ
                -> { closedExpr m σ' e } @-}
-closedIncr :: (Fractional p, Ord p) => Int -> LDSL p Int -> WireValuation p
+closedIncr :: Int -> LDSL p Int -> WireValuation p
            -> WireValuation p -> (Int -> Proof) -> Proof
 closedIncr m e σ σ' π = subsetIncr (M.keysSet σ) (M.keysSet σ') π
+
+
+-- operators always take scalar arguments --------------------------------------
+
+{-@ scalarUn :: m:Nat -> e1:LDSL p (Btwn 0 m)
+             -> op:UnOp' p -> i:{Btwn 0 m | wellTyped' (LUN op e1 i)}
+             -> { scalar' e1 } @-}
+scalarUn :: Int -> LDSL p Int -> UnOp p -> Int -> Proof
+scalarUn m e1 op i = trivial
+
+
+{-@ scalarBin :: m:Nat -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
+              -> op:BinOp' p -> i:{Btwn 0 m | wellTyped' (LBIN op e1 e2 i)}
+              -> { scalar' e1 && scalar' e2 } @-}
+scalarBin :: Int -> LDSL p Int -> LDSL p Int -> BinOp p -> Int -> Proof
+scalarBin m e1 e2 op i = trivial
+
+
+{-@ scalarIsk :: m:Nat -> e1:LDSL p (Btwn 0 m) -> k:p
+              -> w:Btwn 0 m -> i:{Btwn 0 m | wellTyped' (LEQLC e1 k w i)}
+              -> { scalar' e1 } @-}
+scalarIsk :: Int -> LDSL p Int -> p -> Int -> Int -> Proof
+scalarIsk m e1 k w i = trivial
+
+
+{-@ scalarDiv :: m:Nat -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
+                -> w:Btwn 0 m -> i:{Btwn 0 m | wellTyped' (LDIV e1 e2 w i)}
+                -> { scalar' e1 && scalar' e2 } @-}
+scalarDiv :: Int -> LDSL p Int -> LDSL p Int -> Int -> Int -> Proof
+scalarDiv m e1 e2 w i = trivial
 
 
 -- workarounds to fix "crash: unknown constant"

@@ -101,7 +101,7 @@ auxUn m0 m p1 op ρ λ σ π λ' e' σ' x =
           is_LBoolToF = labelCast m0 p1 λ m1 p1' λ1 m e' λ'
 
           π1 = wfCast p1'
-            ?? wgCastFresh1 m p1' σ
+            ?? freshCast m p1' σ
             ?? wgLemma m1 m ρ σ p1'
             ?? agreeLemma m0 m1 p1 ρ λ σ π λ1 p1' σ1
 

@@ -66,3 +66,18 @@ wgSoundConst :: (Eq p, Fractional p)
              -> p -> Int
              -> WireValuation p -> Proof
 wgSoundConst m ρ σ x i σ' = trivial
+
+
+{-@ wgSoundBool :: m:Nat
+                -> ρ:NameValuation p
+                -> σ:WireValuation p m
+
+                -> b:Bool -> {i:Btwn 0 m | freshE (LBOOL b i) σ}
+
+                -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ (LBOOL b i)}
+                -> { coherentE m (LBOOL b i) σ' } @-}
+wgSoundBool     :: (Eq p, Fractional p)
+            => Int -> NameValuation p -> WireValuation p
+            -> Bool -> Int
+            -> WireValuation p -> Proof
+wgSoundBool m ρ σ b i σ' = trivial
