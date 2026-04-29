@@ -288,6 +288,17 @@ coherentEIncr m e σ1 σ2 π = case e of
   LCONS e1 e2 -> coherentEIncr m e1 σ1 σ2 π ? coherentEIncr m e2 σ1 σ2 π
 
 
+-- if wires(e) are bound in σ and σ' ≥ σ, they are also bound in σ' ------------
+
+{-@ closedIncr :: m:Nat -> e:LDSL p (Btwn 0 m)
+               -> σ:{WireValuation p m | closedExpr m σ e}
+               -> σ':WireValuation p m -> MapGE σ' σ
+               -> { closedExpr m σ' e } @-}
+closedIncr :: (Fractional p, Ord p) => Int -> LDSL p Int -> WireValuation p
+           -> WireValuation p -> (Int -> Proof) -> Proof
+closedIncr m e σ σ' π = subsetIncr (M.keysSet σ) (M.keysSet σ') π
+
+
 -- workarounds to fix "crash: unknown constant"
 
 {-@ reflect barOp @-}
