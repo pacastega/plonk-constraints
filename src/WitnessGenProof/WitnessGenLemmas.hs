@@ -114,7 +114,7 @@ wgIncr m ρ σ e σ' j = case e of
                -> e':{TypedLDSL p (Btwn 0 m) | wfE e' && freshE e' σ}
                -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
                -> { closedExpr m σ' e' } @-}
-wgClosed :: (Ord p, Fractional p) => Int -> NameValuation p -> WireValuation p
+wgClosed :: (Eq p, Fractional p) => Int -> NameValuation p -> WireValuation p
            -> LDSL p Int -> WireValuation p -> Proof
 wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
 
@@ -130,7 +130,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
            -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
            -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1
                                     && σ1 == σ' } @-}
-σ1Cast :: (Ord p, Fractional p) => Int -> Int
+σ1Cast :: (Eq p, Fractional p) => Int -> Int
        -> NameValuation p -> WireValuation p
        -> LDSL p Int -> LDSL p Int
        -> WireValuation p -> WireValuation p
@@ -147,7 +147,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
                                       && wfE e && freshE e σ}
           -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
           -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-σ1Div :: (Ord p, Fractional p) => Int -> Int
+σ1Div :: (Eq p, Fractional p) => Int -> Int
       -> NameValuation p -> WireValuation p
       -> LDSL p Int -> LDSL p Int -> Int -> Int
       -> LDSL p Int -> WireValuation p
@@ -164,7 +164,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
           -> {σ':WireValuation p m  | Just σ' = witnessGenE' m  ρ σ  e}
           -> {σ1:WireValuation p m2 | Just σ1 = witnessGenE' m  ρ σ  e1}
           -> {σ2:WireValuation p m2 | Just σ2 = witnessGenE' m  ρ σ1 e2} @-}
-σ2Div :: (Ord p, Fractional p) => Int -> Int
+σ2Div :: (Eq p, Fractional p) => Int -> Int
       -> NameValuation p -> WireValuation p
       -> LDSL p Int -> LDSL p Int -> Int -> Int
       -> LDSL p Int -> WireValuation p -> WireValuation p
@@ -184,7 +184,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
                                       && wfE e && freshE e σ}
           -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
           -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-σ1Eql :: (Ord p, Fractional p) => Int -> Int
+σ1Eql :: (Eq p, Fractional p) => Int -> Int
       -> NameValuation p -> WireValuation p
       -> LDSL p Int -> LDSL p Int -> Int -> Int -> Int
       -> LDSL p Int -> WireValuation p
@@ -201,7 +201,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
           -> {σ':WireValuation p m  | Just σ' = witnessGenE' m  ρ σ  e}
           -> {σ1:WireValuation p m2 | Just σ1 = witnessGenE' m  ρ σ  e1}
           -> {σ2:WireValuation p m2 | Just σ2 = witnessGenE' m  ρ σ1 e2} @-}
-σ2Eql :: (Ord p, Fractional p) => Int -> Int
+σ2Eql :: (Eq p, Fractional p) => Int -> Int
       -> NameValuation p -> WireValuation p
       -> LDSL p Int -> LDSL p Int -> Int -> Int -> Int
       -> LDSL p Int -> WireValuation p -> WireValuation p
@@ -221,7 +221,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
                                       && wfE e && freshE e σ}
           -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
           -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-σ1Isk :: (Ord p, Fractional p) => Int -> Int
+σ1Isk :: (Eq p, Fractional p) => Int -> Int
       -> NameValuation p -> WireValuation p
       -> LDSL p Int -> p -> Int -> Int
       -> LDSL p Int -> WireValuation p
@@ -238,7 +238,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
          -> e:{TypedLDSL p (Btwn 0 m) | e = LUN op e1 i && wfE e && freshE e σ}
          -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
          -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-σ1Un     :: (Ord p, Fractional p) => Int -> Int
+σ1Un :: (Eq p, Fractional p) => Int -> Int
      -> NameValuation p -> WireValuation p
      -> LDSL p Int -> UnOp p -> Int
      -> LDSL p Int -> WireValuation p
@@ -256,7 +256,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
                                       && wfE e && freshE e σ}
           -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
           -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-σ1Bin :: (Ord p, Fractional p) => Int -> Int
+σ1Bin :: (Eq p, Fractional p) => Int -> Int
       -> NameValuation p -> WireValuation p
       -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
       -> LDSL p Int -> WireValuation p
@@ -273,7 +273,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
           -> {σ':WireValuation p m  | Just σ' = witnessGenE' m  ρ σ  e}
           -> {σ1:WireValuation p m2 | Just σ1 = witnessGenE' m  ρ σ  e1}
           -> {σ2:WireValuation p m2 | Just σ2 = witnessGenE' m  ρ σ1 e2} @-}
-σ2Bin :: (Ord p, Fractional p) => Int -> Int
+σ2Bin :: (Eq p, Fractional p) => Int -> Int
       -> NameValuation p -> WireValuation p
       -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
       -> LDSL p Int -> WireValuation p -> WireValuation p
@@ -292,7 +292,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
                                       && wfE e && freshE e σ}
            -> σ':{WireValuation p m  | Just σ' = witnessGenE' m ρ σ e}
            -> {σ1:WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1} @-}
-σ1Cons     :: (Ord p, Fractional p) => Int -> Int
+σ1Cons :: (Eq p, Fractional p) => Int -> Int
        -> NameValuation p -> WireValuation p
        -> LDSL p Int -> LDSL p Int
        -> LDSL p Int -> WireValuation p
@@ -308,7 +308,7 @@ wgClosed m ρ σ e' σ' = case witnessGenE' m ρ σ e' of Just _ -> trivial
            -> {σ':WireValuation p m  | Just σ' = witnessGenE' m  ρ σ  e}
            -> {σ1:WireValuation p m2 | Just σ1 = witnessGenE' m  ρ σ  e1}
            -> {σ2:WireValuation p m2 | Just σ2 = witnessGenE' m  ρ σ1 e2} @-}
-σ2Cons     :: (Ord p, Fractional p) => Int -> Int
+σ2Cons :: (Eq p, Fractional p) => Int -> Int
        -> NameValuation p -> WireValuation p
        -> LDSL p Int -> LDSL p Int
        -> LDSL p Int -> WireValuation p -> WireValuation p

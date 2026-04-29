@@ -16,8 +16,6 @@ import Utils
 import WitnessGeneration
 import Label
 
-import WitnessGenProof.WitnessGenLemmas
-
 import Language.Haskell.Liquid.ProofCombinators
 
 -- well-typedness is propagated to the arguments [DSL] -------------------------
@@ -128,7 +126,7 @@ wfCons e1 e2 = trivial
               -> w:Btwn 0 m -> i:Btwn 0 m
               -> σ:{WireValuation p m | freshE (LDIV e1 e2 w i) σ}
               -> { freshE e1 σ } @-}
-freshDiv1 :: (Ord p, Fractional p) => Int
+freshDiv1 :: (Eq p, Fractional p) => Int
           -> LDSL p Int -> LDSL p Int -> Int -> Int
           -> WireValuation p
           -> Proof
@@ -141,7 +139,7 @@ freshDiv1 m e1 e2 w i σ = trivial
               -> σ:{WireValuation p m | freshE (LDIV e1 e2 w i) σ}
               -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
               -> { freshE e2 σ1 } @-}
-freshDiv2 :: (Ord p, Fractional p) => Int -> NameValuation p
+freshDiv2 :: (Eq p, Fractional p) => Int -> NameValuation p
           -> LDSL p Int -> LDSL p Int -> Int -> Int
           -> WireValuation p -> WireValuation p
           -> Proof
@@ -154,7 +152,7 @@ freshDiv2 m ρ e1 e2 w i σ σ1 = case witnessGenE' m ρ σ e1 of
               -> e1:LDSL p (Btwn 0 m)
               -> σ:{WireValuation p m | freshE (LBoolToF e1) σ}
               -> { freshE e1 σ } @-}
-freshCast :: (Ord p, Fractional p)
+freshCast :: (Eq p, Fractional p)
           => Int -> LDSL p Int -> WireValuation p -> Proof
 freshCast m e1 σ = trivial
 
@@ -165,7 +163,7 @@ freshCast m e1 σ = trivial
               -> d:Btwn 0 m -> w:Btwn 0 m -> i:Btwn 0 m
               -> σ:{WireValuation p m | freshE (LEQLC (LBIN SUB e1 e2 d) 0 w i) σ}
               -> { freshE e1 σ } @-}
-freshEql1 :: (Ord p, Fractional p) => Int
+freshEql1 :: (Eq p, Fractional p) => Int
           -> LDSL p Int -> LDSL p Int -> Int -> Int -> Int
           -> WireValuation p
           -> Proof
@@ -179,7 +177,7 @@ freshEql1 m e1 e2 d w i σ = trivial
               -> σ:{WireValuation p m | freshE (LEQLC (LBIN SUB e1 e2 d) 0 w i) σ}
               -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
               -> { freshE e2 σ1 } @-}
-freshEql2 :: (Ord p, Fractional p) => Int -> NameValuation p
+freshEql2 :: (Eq p, Fractional p) => Int -> NameValuation p
           -> LDSL p Int -> LDSL p Int -> Int -> Int -> Int
           -> WireValuation p -> WireValuation p
           -> Proof
@@ -193,7 +191,7 @@ freshEql2 m ρ e1 e2 d w i σ σ1 = case witnessGenE' m ρ σ e1 of
              -> w:Btwn 0 m -> i:Btwn 0 m
              -> σ:{WireValuation p m | freshE (LEQLC e1 k w i) σ}
              -> { freshE e1 σ } @-}
-freshIsk :: (Ord p, Fractional p)
+freshIsk :: (Eq p, Fractional p)
          => Int -> LDSL p Int -> p -> Int -> Int -> WireValuation p -> Proof
 freshIsk m e1 k w i σ = trivial
 
@@ -204,7 +202,7 @@ freshIsk m e1 k w i σ = trivial
             -> i:Btwn 0 m
             -> σ:{WireValuation p m | freshE (LUN op e1 i) σ}
             -> { freshE e1 σ } @-}
-freshUn :: (Ord p, Fractional p)
+freshUn :: (Eq p, Fractional p)
         => Int -> LDSL p Int -> UnOp p -> Int -> WireValuation p -> Proof
 freshUn m e1 op i σ = trivial
 
@@ -215,7 +213,7 @@ freshUn m e1 op i σ = trivial
               -> op:BinOp' p -> i:Btwn 0 m
               -> σ:{WireValuation p m | freshE (LBIN op e1 e2 i) σ}
               -> { freshE e1 σ } @-}
-freshBin1 :: (Ord p, Fractional p) => Int
+freshBin1 :: (Eq p, Fractional p) => Int
           -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
           -> WireValuation p
           -> Proof
@@ -228,7 +226,7 @@ freshBin1 m e1 e2 op i σ = trivial
               -> σ:{WireValuation p m | freshE (LBIN op e1 e2 i) σ}
               -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
               -> { freshE e2 σ1 } @-}
-freshBin2 :: (Ord p, Fractional p) => Int -> NameValuation p
+freshBin2 :: (Eq p, Fractional p) => Int -> NameValuation p
           -> LDSL p Int -> LDSL p Int -> BinOp p -> Int
           -> WireValuation p -> WireValuation p
           -> Proof
@@ -241,7 +239,7 @@ freshBin2 m ρ e1 e2 op i σ σ1 = case witnessGenE' m ρ σ e1 of
                -> e1:LDSL p (Btwn 0 m) -> e2:LDSL p (Btwn 0 m)
                -> σ:{WireValuation p m | freshE (LCONS e1 e2) σ}
                -> { freshE e1 σ } @-}
-freshCons1 :: (Ord p, Fractional p) => Int
+freshCons1 :: (Eq p, Fractional p) => Int
            -> LDSL p Int -> LDSL p Int
            -> WireValuation p
            -> Proof
@@ -254,7 +252,7 @@ freshCons1 m e1 e2 σ = trivial
                -> σ:{WireValuation p m | freshE (LCONS e1 e2) σ}
                -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1}
                -> { freshE e2 σ1 } @-}
-freshCons2 :: (Ord p, Fractional p) => Int -> NameValuation p
+freshCons2 :: (Eq p, Fractional p) => Int -> NameValuation p
            -> LDSL p Int -> LDSL p Int
            -> WireValuation p -> WireValuation p
            -> Proof
