@@ -19,7 +19,6 @@ import Vec
 import DSL
 import Label
 import WitnessGeneration
-import Semantics
 
 import MapLemmas
 

@@ -20,7 +20,6 @@ import Constraints
 import DSL
 import Label
 import WitnessGeneration
-import Semantics
 
 import MapLemmas
 import SetLemmas

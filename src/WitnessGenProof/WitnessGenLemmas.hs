@@ -16,7 +16,6 @@ import qualified Data.Set as S
 import TypeAliases
 import Utils
 import DSL
-import Semantics
 import WitnessGeneration
 import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators

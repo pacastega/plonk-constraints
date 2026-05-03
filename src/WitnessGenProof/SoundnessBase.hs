@@ -6,7 +6,6 @@ module WitnessGenProof.SoundnessBase where
 import Constraints
 import TypeAliases
 import DSL
-import Semantics
 import WitnessGeneration
 
 import Utils
