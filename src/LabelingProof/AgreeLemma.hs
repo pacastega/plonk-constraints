@@ -3,7 +3,7 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--linear" @-}
 
-module LabelingProof.AgreeLemma where
+module LabelingProof.AgreeLemma (agreeLemma) where
 
 #if LiquidOn
 import qualified Liquid.Data.Map as M
