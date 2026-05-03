@@ -61,43 +61,26 @@ eval expr ρ = case expr of
   BOOL False -> withProof (Just (VF 0)) (boolean 0)
 
   UN op p1 -> case eval p1 ρ of
-    Just (VF x) -> case op of
-      ADDC k    -> Just (VF (k + x))
-      MULC k    -> Just (VF (k * x))
-
-      NOT       -> Just (VF (notFn x))
-      UnsafeNOT -> Just (VF (notFn x))
-
-      ISZERO    -> Just (VF (eqlFn 0 x))
-      EQLC k    -> Just (VF (eqlFn k x))
-
-      BoolToF   -> Just (VF x)
+    Just (VF v1) -> case op of
+      ISZERO    -> Just (VF (eqlFn 0 v1))
+      EQLC k    -> Just (VF (eqlFn k v1))
+      BoolToF   -> Just (VF v1)
+      _ -> Just (VF (valueUnOp op v1))
 
     _ -> Nothing -- the argument is undefined
 
   BIN op p1 p2 -> case (eval p1 ρ, eval p2 ρ) of
-    (Just (VF x), Just (VF y)) -> case op of
-      ADD -> Just (VF (x + y))
-      SUB -> Just (VF (x - y))
-      MUL -> Just (VF (x * y))
-      DIV -> if y /= 0 then Just (VF (x / y)) else Nothing
-
-      LINCOMB k1 k2 -> Just (VF (k1*x + k2*y))
-
-      AND -> Just (VF (andFn x y))
-      OR  -> Just (VF (orFn  x y))
-      XOR -> Just (VF (xorFn x y))
-
-      UnsafeAND -> Just (VF (andFn x y))
-      UnsafeOR  -> Just (VF (orFn  x y))
-      UnsafeXOR -> Just (VF (xorFn x y))
-
-      EQL -> Just (VF (eqlFn x y))
+    (Just (VF v1), Just (VF v2)) -> case op of
+      DIV -> if v2 /= 0 then Just (VF (v1 / v2)) else Nothing
+      EQL -> Just (VF (eqlFn v1 v2))
+      _ -> Just (VF (valueBinOp op v1 v2))
 
     _ -> Nothing -- at least one of the arguments is undefined
 
   NIL _     -> Just VNil
-  CONS h ts -> liftA2' VCons (eval h ρ) (eval ts ρ)
+  CONS h ts -> case (eval h ρ, eval ts ρ) of
+    (Just v, Just vs) -> Just (VCons v vs)
+    _ -> Nothing -- at least one of the arguments is undefined
 
 
 {-@ reflect notFn @-}
@@ -121,6 +104,7 @@ eqlFn :: (Num p, Eq p) => p -> p -> p
 eqlFn b c = if b == c then 1 else 0
 
 
+{-@ reflect sigmaVar @-}
 {-@ sigmaVar :: m:Nat -> e:TypedLDSL p (Btwn 0 m)
              -> σ:{WireValuation p m | closedExpr m σ e} -> DSLValue p @-}
 sigmaVar :: Int -> LDSL p Int -> WireValuation p -> DSLValue p

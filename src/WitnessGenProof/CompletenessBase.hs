@@ -26,101 +26,120 @@ import Semantics
 
 import MapLemmas
 import LabelingProof.LabelingLemmas
+import WitnessGenProof.SemanticsLemmas
 
 import Language.Haskell.Liquid.ProofCombinators
 
 
-{-@ wgCompleteVar :: m0:Nat -> m:{Nat | m >= m0}
-                  -> s:Var
-                  -> τ:ScalarTy
-                  -> ρ:{NameValuation p | isJust (eval (VAR s τ) ρ)}
+{-@ wgCompleteVar :: m0:Nat
+                  -> s:Var -> τ:ScalarTy
+                  -> e:{TypedDSL p | e = VAR s τ}
+
+                  -> ρ:NameValuation p
+                  -> v:{p | eval e ρ = Just (VF v)}
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> σ:WireValuation p m0
 
                   -> Agree λ ρ σ
 
-                  -> λ':LabelEnv p (Btwn 0 m)
-                  -> e':{LDSL p (Btwn 0 m) | freshE e' σ
-                                 && label' (VAR s τ) m0 λ = (m, e', λ')}
+                  -> m:{Nat | m >= m0}
+                  -> e':{LDSL p (Btwn 0 m) | wfE e' && freshE e' σ}
+                  -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
-                  -> { isJust (witnessGenE' m ρ σ e') } @-}
+                  -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
+                                          && sigmaVar m e' σ' = VF v} @-}
 wgCompleteVar :: (Fractional p, Ord p)
-              => Int -> Int -> Var -> Ty
-              -> NameValuation p -> LabelEnv p Int -> WireValuation p
-
+              => Int -> Var -> Ty -> DSL p
+              -> NameValuation p -> p -> LabelEnv p Int -> WireValuation p
               -> (Var -> Proof)
 
-              -> LabelEnv p Int
-              -> LDSL p Int
+              -> Int -> LDSL p Int -> LabelEnv p Int
 
-              -> Proof
-wgCompleteVar m0 m s τ ρ λ σ π λ' e' = case M.lookup s ρ of
-  Nothing -> error "the variable is defined in ρ because eval succeeds"
+              -> WireValuation p
+wgCompleteVar m0 s τ e ρ v λ σ π m e' λ' = case M.lookup s ρ of
   Just value -> case M.lookup s λ of -- Is the variable labeled already?
     Nothing -> case τ of             -- NO: we get "LVAR s τ i"
-      TF -> trivial
+      TF -> M.insert (outputWire e') value σ
       TBool -> if boolean value
-               then trivial
-               else error "the value is in {0,1} because eval succeeds"
-    Just j -> elementLemma s j λ     -- YES: we get "LWIRE j"
-            ? π s ? lookupLemma s λ
-            ? case τ of
-                TF -> witnessGenE' m ρ σ (LWIRE τ j) === Just σ *** QED
-                TBool -> if boolean value
-                         then witnessGenE' m ρ σ (LWIRE τ j) === Just σ *** QED
-                         else error "the value is in {0,1} because eval succeeds"
+               then M.insert (outputWire e') value σ
+               else error "value ∈ {0,1} because eval succeeds"
+    Just j -> elementLemma s j λ     -- YES: we get "LWIRE τ j"
+           ?? π s ?? lookupLemma s λ -- value == ρ[s] == σ[Λ[s]] == σ[j]
+           ?? evalVar s τ ρ v
+
+           ?? elementLemma s value ρ ?? lookupLemma s ρ
+           ?? elementLemma j value σ ?? lookupLemma j σ
+           ?? case τ of
+               TF -> σ
+               TBool -> if boolean value then sigmaVarScalar m e' σ ?? σ
+                        else error "value ∈ {0,1} because eval succeeds"
 
 
-{-@ wgCompleteConst :: m0:Nat -> m:{Nat | m >= m0}
+{-@ wgCompleteConst :: m0:Nat
                     -> x:p
-                    -> ρ:{NameValuation p | isJust (eval (CONST x) ρ)}
+                    -> e:{TypedDSL p | e = CONST x}
+
+                    -> ρ:NameValuation p
+                    -> v:{p | eval e ρ = Just (VF v)}
                     -> λ:LabelEnv p (Btwn 0 m0)
                     -> σ:WireValuation p m0
 
-                    -> Agree λ ρ σ
+                    -> m:{Nat | m >= m0}
+                    -> e':{LDSL p (Btwn 0 m) | wfE e' && freshE e' σ}
+                    -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
-                    -> λ':LabelEnv p (Btwn 0 m)
-                    -> e':{LDSL p (Btwn 0 m) | freshE e' σ
-                                 && label' (CONST x) m0 λ = (m, e', λ')}
+                    -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
+                                            && sigmaVar m e' σ' = VF v} @-}
+wgCompleteConst :: (Fractional p, Eq p)
+                => Int -> p -> DSL p
+                -> NameValuation p -> p -> LabelEnv p Int -> WireValuation p
 
-                    -> { isJust (witnessGenE' m ρ σ e') } @-}
-wgCompleteConst :: (Fractional p, Ord p)
-                => Int -> Int -> p
-                -> NameValuation p -> LabelEnv p Int -> WireValuation p
+                -> Int -> LDSL p Int -> LabelEnv p Int
 
-                -> (Var -> Proof)
-
-                -> LabelEnv p Int
-                -> LDSL p Int
-
-                -> Proof
-wgCompleteConst m0 m x ρ λ σ π λ' e' = trivial
+                -> WireValuation p
+wgCompleteConst m0 x e ρ v λ σ m e' λ' = M.insert (outputWire e') x σ
 
 
-{-@ wgCompleteBool :: m0:Nat -> m:{Nat | m >= m0}
+{-@ wgCompleteBool :: m0:Nat
                    -> b:Bool
-                   -> ρ:{NameValuation p | isJust (eval (BOOL b) ρ)}
+                   -> e:{TypedDSL p | e = BOOL b}
+
+                   -> ρ:NameValuation p
+                   -> v:{p | eval e ρ = Just (VF v)}
                    -> λ:LabelEnv p (Btwn 0 m0)
                    -> σ:WireValuation p m0
 
-                   -> Agree λ ρ σ
+                   -> m:{Nat | m >= m0}
+                   -> e':{LDSL p (Btwn 0 m) | wfE e' && freshE e' σ}
+                   -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
-                   -> λ':LabelEnv p (Btwn 0 m)
-                   -> e':{LDSL p (Btwn 0 m) | freshE e' σ
-                                 && label' (BOOL b) m0 λ = (m, e', λ')}
+                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
+                                           && sigmaVar m e' σ' = VF v} @-}
+wgCompleteBool :: (Fractional p, Eq p)
+               => Int -> Bool -> DSL p
+               -> NameValuation p -> p -> LabelEnv p Int -> WireValuation p
 
-                   -> { isJust (witnessGenE' m ρ σ e') } @-}
-wgCompleteBool :: (Fractional p, Ord p)
-               => Int -> Int -> Bool
-               -> NameValuation p -> LabelEnv p Int -> WireValuation p
+               -> Int -> LDSL p Int -> LabelEnv p Int
 
-               -> (Var -> Proof)
+               -> WireValuation p
+wgCompleteBool m0 b e ρ v λ σ m e' λ' =
+  M.insert (outputWire e') (if b then 1 else 0) σ
 
-               -> LabelEnv p Int
-               -> LDSL p Int
 
-               -> Proof
-wgCompleteBool m0 m b ρ λ σ π λ' e' = if b then trivial else trivial
+{-@ typedScalarVar :: s:Var -> τ:ScalarTy
+                   -> { scalar (VAR s τ) } @-}
+typedScalarVar :: Var -> Ty -> Proof
+typedScalarVar s τ = case τ of
+  TF -> trivial
+  TBool -> trivial
+
+{-@ typedScalarConst :: x:p -> { scalar (CONST x) } @-}
+typedScalarConst :: p -> Proof
+typedScalarConst x = trivial
+
+{-@ typedScalarBool :: b:Bool -> { scalar (BOOL b) } @-}
+typedScalarBool :: Bool -> Proof
+typedScalarBool b = trivial
 
 
 -- workarounds to fix "crash: unknown constant" --------------------------------

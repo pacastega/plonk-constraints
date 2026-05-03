@@ -64,8 +64,11 @@ library
       Utils
       Vec
       WitnessGeneration
+      WitnessGenProof.Completeness
       WitnessGenProof.CompletenessBase
       WitnessGenProof.CompletenessOps
+      WitnessGenProof.CompletenessVec
+      WitnessGenProof.SemanticsLemmas
       WitnessGenProof.Soundness
       WitnessGenProof.SoundnessBase
       WitnessGenProof.WitnessGenLemmas
