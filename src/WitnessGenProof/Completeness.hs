@@ -29,6 +29,7 @@ import WitnessGenProof.WitnessGenLemmas
 import WitnessGenProof.SemanticsLemmas
 import WitnessGenProof.CompletenessBase
 import WitnessGenProof.CompletenessOps
+import WitnessGenProof.CompletenessDiv
 import WitnessGenProof.CompletenessVec
 
 import Language.Haskell.Liquid.ProofCombinators
@@ -127,7 +128,42 @@ auxBin :: (Fractional p, Ord p) => Int -> DSL p -> DSL p -> BinOp p
        -> WireValuation p
 auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = admit' m
   --                                      case op of
-  -- DIV -> admit' m
+  -- DIV -> σ' where
+  --   (m1,e1',λ1) = label' e1 m0 λ
+  --   v1 = evalDiv1 e1 e2 ρ v
+
+  --   (m2,e2',λ2) = label' e2 m1 λ1
+  --   v2 = evalDiv2 e1 e2 ρ v
+
+  --   wf1 = labelWF    e1 m0 λ m1 e1' λ1 -- e1' is well-formed
+  --   wt1 = labelTyped e1 m0 λ m1 e1' λ1 -- e1' is well-typed
+
+  --   wf2 = labelWF    e2 m1 λ1 m2 e2' λ2 -- e2' is well-formed
+  --   wt2 = labelTyped e2 m1 λ1 m2 e2' λ2 -- e2' is well-typed
+
+  --   size12 = sizeBin e1 e2 op
+
+  --   m_gt_m2 = labelIncBin op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
+  --   (w,i) = m_gt_m2 ?? labelDiv m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
+  --        ? labelTyped (BIN op e1 e2) m0 λ m e' λ' -- e' is well-typed
+
+  --   fresh1 = m_gt_m2 ?? freshDiv1 m e1' e2' w i σ
+  --   σ1 = size12 ?? wf1 ?? wt1 ?? fresh1 ?? wgLemma m1 m ρ σ e1'
+  --     ?? wgCompleteE m0 e1 ρ (VF v1) λ σ π m1 e1' λ1
+
+  --   π1 = wf1 ?? fresh1 ?? agreeLemma m0 m1 e1 ρ λ σ π λ1 e1' σ1
+
+  --   fresh2 = freshDiv2 m ρ e1' e2' w i σ σ1
+  --   σ2 = size12 ?? wf2 ?? wt2 ?? fresh2 ?? wgLemma m2 m ρ σ1 e2'
+  --     ?? wgCompleteE m1 e2 ρ (VF v2) λ1 σ1 π1 m2 e2' λ2
+
+  --   v' = typedScalarBin e1 e2 op ?? evalScalar (BIN op e1 e2) ρ v -- VF v' == v
+  --   σ' = m_gt_m2
+  --     ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
+  --     ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
+  --     ?? wgCompleteDiv m0 e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
+  --                      m1 e1' λ1 m2 e2' λ2 m  e'  λ' w i σ1 σ2
+
   -- EQL -> admit' m
   -- _   -> σ' where
 
@@ -165,8 +201,6 @@ auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = admit' m
   --     ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
   --     ?? wgCompleteBin m0 op e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
   --                      m1 e1' λ1 m2 e2' λ2 m  e'  λ' i σ1 σ2
-
-  -- _ -> admit' m -- case op of
 
 
 {-@ auxCons :: m0:Nat
