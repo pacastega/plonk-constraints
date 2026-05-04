@@ -63,39 +63,38 @@ auxUn :: (Fractional p, Ord p) => Int -> DSL p -> UnOp p
       -> LabelEnv p Int
 
       -> WireValuation p
-auxUn m0 e1 op ρ v λ σ π m e' λ' = admit' m
-  --                                  case op of
-  -- ISZERO  -> admit' m
-  --            -- wgCompleteE m0 m (UN (EQLC zero) e1) ρ λ σ π λ' e'
-  -- EQLC k  -> admit' m
-  --   --          case eval e1 ρ of
-  --   -- Just _ -> wgCompleteE m0 m1 e1 ρ λ σ π λ1 e1' ? wgLemma m1 m ρ σ e1' ?
-  --   --   case witnessGenE' m ρ σ e1' of Just _ -> trivial
-  --   --   where (m1, e1', λ1) = label' e1 m0 λ
-  -- BoolToF -> admit' m
-  --            -- wgCompleteE m0 m e1 ρ λ σ π λ' e'
-  -- _ -> σ' where
-  --   (m1,e1',λ1) = label' e1 m0 λ
-  --   v1 = evalUn e1 op ρ v
+auxUn m0 e1 op ρ v λ σ π m e' λ' = case op of
+  ISZERO  -> admit' m
+             -- wgCompleteE m0 m (UN (EQLC zero) e1) ρ λ σ π λ' e'
+  EQLC k  -> admit' m
+    --          case eval e1 ρ of
+    -- Just _ -> wgCompleteE m0 m1 e1 ρ λ σ π λ1 e1' ? wgLemma m1 m ρ σ e1' ?
+    --   case witnessGenE' m ρ σ e1' of Just _ -> trivial
+    --   where (m1, e1', λ1) = label' e1 m0 λ
+  BoolToF -> admit' m
+             -- wgCompleteE m0 m e1 ρ λ σ π λ' e'
+  _ -> σ' where
+    (m1,e1',λ1) = label' e1 m0 λ
+    v1 = evalUn e1 op ρ v
 
-  --   wf1 = labelWF    e1 m0 λ m1 e1' λ1 -- e1' is well-formed
-  --   wt1 = labelTyped e1 m0 λ m1 e1' λ1 -- e1' is well-typed
+    wf1 = labelWF    e1 m0 λ m1 e1' λ1 -- e1' is well-formed
+    wt1 = labelTyped e1 m0 λ m1 e1' λ1 -- e1' is well-typed
 
-  --   size1 = sizeUn e1 op
+    size1 = sizeUn e1 op
 
-  --   m_gt_m1 = labelIncUn op e1 m0 λ m1 e1' λ1 m e' λ'
-  --   i = m_gt_m1 ?? labelUn m0 e1 λ op m1 e1' λ1 m e' λ'
-  --     ? labelTyped (UN op e1) m0 λ m e' λ' -- e' is well-typed
+    m_gt_m1 = labelIncUn op e1 m0 λ m1 e1' λ1 m e' λ'
+    i = m_gt_m1 ?? labelUn m0 e1 λ op m1 e1' λ1 m e' λ'
+      ? labelTyped (UN op e1) m0 λ m e' λ' -- e' is well-typed
 
-  --   fresh1 = m_gt_m1 ?? freshUn m e1' op i σ
-  --   σ1 = size1 ?? wf1 ?? wt1 ?? fresh1 ?? wgLemma m1 m ρ σ e1'
-  --     ?? wgCompleteE m0 e1 ρ (VF v1) λ σ π m1 e1' λ1
+    fresh1 = m_gt_m1 ?? freshUn m e1' op i σ
+    σ1 = size1 ?? wf1 ?? wt1 ?? fresh1 ?? wgLemma m1 m ρ σ e1'
+      ?? wgCompleteE m0 e1 ρ (VF v1) λ σ π m1 e1' λ1
 
-  --   v' = typedScalarUn e1 op ?? evalScalar (UN op e1) ρ v -- VF v' == v
-  --   σ' = m_gt_m1
-  --     ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
-  --     ?? wgCompleteUn m0 op e1 (UN op e1) ρ v1 v' λ σ
-  --                     m1 e1' λ1 m e' λ' i σ1
+    v' = typedScalarUn e1 op ?? evalScalar (UN op e1) ρ v -- VF v' == v
+    σ' = m_gt_m1
+      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
+      ?? wgCompleteUn m0 op e1 (UN op e1) ρ v1 v' λ σ
+                      m1 e1' λ1 m e' λ' i σ1
 
 
 {-@ auxBin :: m0:Nat
@@ -126,81 +125,80 @@ auxBin :: (Fractional p, Ord p) => Int -> DSL p -> DSL p -> BinOp p
        -> LabelEnv p Int
 
        -> WireValuation p
-auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = admit' m
-  --                                      case op of
-  -- DIV -> σ' where
-  --   (m1,e1',λ1) = label' e1 m0 λ
-  --   v1 = evalDiv1 e1 e2 ρ v
+auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = case op of
+  DIV -> σ' where
+    (m1,e1',λ1) = label' e1 m0 λ
+    v1 = evalDiv1 e1 e2 ρ v
 
-  --   (m2,e2',λ2) = label' e2 m1 λ1
-  --   v2 = evalDiv2 e1 e2 ρ v
+    (m2,e2',λ2) = label' e2 m1 λ1
+    v2 = evalDiv2 e1 e2 ρ v
 
-  --   wf1 = labelWF    e1 m0 λ m1 e1' λ1 -- e1' is well-formed
-  --   wt1 = labelTyped e1 m0 λ m1 e1' λ1 -- e1' is well-typed
+    wf1 = labelWF    e1 m0 λ m1 e1' λ1 -- e1' is well-formed
+    wt1 = labelTyped e1 m0 λ m1 e1' λ1 -- e1' is well-typed
 
-  --   wf2 = labelWF    e2 m1 λ1 m2 e2' λ2 -- e2' is well-formed
-  --   wt2 = labelTyped e2 m1 λ1 m2 e2' λ2 -- e2' is well-typed
+    wf2 = labelWF    e2 m1 λ1 m2 e2' λ2 -- e2' is well-formed
+    wt2 = labelTyped e2 m1 λ1 m2 e2' λ2 -- e2' is well-typed
 
-  --   size12 = sizeBin e1 e2 op
+    size12 = sizeBin e1 e2 op
 
-  --   m_gt_m2 = labelIncBin op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
-  --   (w,i) = m_gt_m2 ?? labelDiv m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
-  --        ? labelTyped (BIN op e1 e2) m0 λ m e' λ' -- e' is well-typed
+    m_gt_m2 = labelIncBin op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
+    (w,i) = m_gt_m2 ?? labelDiv m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
+         ? labelTyped (BIN op e1 e2) m0 λ m e' λ' -- e' is well-typed
 
-  --   fresh1 = m_gt_m2 ?? freshDiv1 m e1' e2' w i σ
-  --   σ1 = size12 ?? wf1 ?? wt1 ?? fresh1 ?? wgLemma m1 m ρ σ e1'
-  --     ?? wgCompleteE m0 e1 ρ (VF v1) λ σ π m1 e1' λ1
+    fresh1 = m_gt_m2 ?? freshDiv1 m e1' e2' w i σ
+    σ1 = size12 ?? wf1 ?? wt1 ?? fresh1 ?? wgLemma m1 m ρ σ e1'
+      ?? wgCompleteE m0 e1 ρ (VF v1) λ σ π m1 e1' λ1
 
-  --   π1 = wf1 ?? fresh1 ?? agreeLemma m0 m1 e1 ρ λ σ π λ1 e1' σ1
+    π1 = wf1 ?? fresh1 ?? agreeLemma m0 m1 e1 ρ λ σ π λ1 e1' σ1
 
-  --   fresh2 = freshDiv2 m ρ e1' e2' w i σ σ1
-  --   σ2 = size12 ?? wf2 ?? wt2 ?? fresh2 ?? wgLemma m2 m ρ σ1 e2'
-  --     ?? wgCompleteE m1 e2 ρ (VF v2) λ1 σ1 π1 m2 e2' λ2
+    fresh2 = freshDiv2 m ρ e1' e2' w i σ σ1
+    σ2 = size12 ?? wf2 ?? wt2 ?? fresh2 ?? wgLemma m2 m ρ σ1 e2'
+      ?? wgCompleteE m1 e2 ρ (VF v2) λ1 σ1 π1 m2 e2' λ2
 
-  --   v' = typedScalarBin e1 e2 op ?? evalScalar (BIN op e1 e2) ρ v -- VF v' == v
-  --   σ' = m_gt_m2
-  --     ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
-  --     ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
-  --     ?? wgCompleteDiv m0 e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
-  --                      m1 e1' λ1 m2 e2' λ2 m  e'  λ' w i σ1 σ2
+    v' = typedScalarBin e1 e2 op ?? evalScalar (BIN op e1 e2) ρ v -- VF v' == v
+    σ' = m_gt_m2
+      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
+      ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
+      ?? wgCompleteDiv m0 e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
+                       m1 e1' λ1 m2 e2' λ2 m  e'  λ' w i σ1 σ2
 
-  -- EQL -> admit' m
-  -- _   -> σ' where
+  EQL -> admit' m
+  _   -> σ' where
 
-  --   (m1,e1',λ1) = label' e1 m0 λ
-  --   v1 = evalBin1 e1 e2 op ρ v -- isJust (eval e1 ρ) && isJust (eval e2 ρ)
+    (m1,e1',λ1) = label' e1 m0 λ
+    v1 = evalBin1 e1 e2 op ρ v -- isJust (eval e1 ρ) && isJust (eval e2 ρ)
 
-  --   (m2,e2',λ2) = label' e2 m1 λ1
-  --   v2 = evalBin2 e1 e2 op ρ v -- isJust (eval e1 ρ) && isJust (eval e2 ρ)
+    (m2,e2',λ2) = label' e2 m1 λ1
+    v2 = evalBin2 e1 e2 op ρ v -- isJust (eval e1 ρ) && isJust (eval e2 ρ)
 
-  --   wf1 = labelWF    e1 m0 λ m1 e1' λ1 -- e1' is well-formed
-  --   wt1 = labelTyped e1 m0 λ m1 e1' λ1 -- e1' is well-typed
+    wf1 = labelWF    e1 m0 λ m1 e1' λ1 -- e1' is well-formed
+    wt1 = labelTyped e1 m0 λ m1 e1' λ1 -- e1' is well-typed
 
-  --   wf2 = labelWF    e2 m1 λ1 m2 e2' λ2 -- e2' is well-formed
-  --   wt2 = labelTyped e2 m1 λ1 m2 e2' λ2 -- e2' is well-typed
+    wf2 = labelWF    e2 m1 λ1 m2 e2' λ2 -- e2' is well-formed
+    wt2 = labelTyped e2 m1 λ1 m2 e2' λ2 -- e2' is well-typed
 
-  --   size12 = sizeBin e1 e2 op
+    size12 = sizeBin e1 e2 op
 
-  --   m_gt_m2 = labelIncBin op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
-  --   i = m_gt_m2 ?? labelBin m0 e1 e2 λ op m1 e1' λ1 m2 e2' λ2 m e' λ'
-  --     ? labelTyped (BIN op e1 e2) m0 λ m e' λ' -- e' is well-typed
+    m_gt_m2 = labelIncBin op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
+    i = m_gt_m2 ?? labelBin m0 e1 e2 λ op m1 e1' λ1 m2 e2' λ2 m e' λ'
+      ? labelTyped (BIN op e1 e2) m0 λ m e' λ' -- e' is well-typed
 
-  --   fresh1 = m_gt_m2 ?? freshBin1 m e1' e2' op i σ
-  --   σ1 = size12 ?? wf1 ?? wt1 ?? fresh1 ?? wgLemma m1 m ρ σ e1'
-  --     ?? wgCompleteE m0 e1 ρ (VF v1) λ σ π m1 e1' λ1
+    fresh1 = m_gt_m2 ?? freshBin1 m e1' e2' op i σ
+    σ1 = size12 ?? wf1 ?? wt1 ?? fresh1 ?? wgLemma m1 m ρ σ e1'
+      ?? wgCompleteE m0 e1 ρ (VF v1) λ σ π m1 e1' λ1
 
-  --   π1 = wf1 ?? fresh1 ?? agreeLemma m0 m1 e1 ρ λ σ π λ1 e1' σ1
+    π1 = wf1 ?? fresh1 ?? agreeLemma m0 m1 e1 ρ λ σ π λ1 e1' σ1
 
-  --   fresh2 = freshBin2 m ρ e1' e2' op i σ σ1
-  --   σ2 = size12 ?? wf2 ?? wt2 ?? fresh2 ?? wgLemma m2 m ρ σ1 e2'
-  --     ?? wgCompleteE m1 e2 ρ (VF v2) λ1 σ1 π1 m2 e2' λ2
+    fresh2 = freshBin2 m ρ e1' e2' op i σ σ1
+    σ2 = size12 ?? wf2 ?? wt2 ?? fresh2 ?? wgLemma m2 m ρ σ1 e2'
+      ?? wgCompleteE m1 e2 ρ (VF v2) λ1 σ1 π1 m2 e2' λ2
 
-  --   v' = typedScalarBin e1 e2 op ?? evalScalar (BIN op e1 e2) ρ v -- VF v' == v
-  --   σ' = m_gt_m2
-  --     ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
-  --     ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
-  --     ?? wgCompleteBin m0 op e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
-  --                      m1 e1' λ1 m2 e2' λ2 m  e'  λ' i σ1 σ2
+    v' = typedScalarBin e1 e2 op ?? evalScalar (BIN op e1 e2) ρ v -- VF v' == v
+    σ' = m_gt_m2
+      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
+      ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
+      ?? wgCompleteBin m0 op e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
+                       m1 e1' λ1 m2 e2' λ2 m  e'  λ' i σ1 σ2
 
 
 {-@ auxCons :: m0:Nat
