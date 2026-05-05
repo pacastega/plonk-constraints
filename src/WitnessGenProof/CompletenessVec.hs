@@ -41,7 +41,7 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                          && sigmaVar m e' σ' = v } @-}
+                                          && evalWire m e' σ' = v } @-}
 wgCompleteNil :: (Fractional p, Ord p)
               => Int -> Ty -> DSL p
               -> NameValuation p -> DSLValue p
@@ -75,12 +75,12 @@ wgCompleteNil m0 τ e ρ v λ σ m e' λ' = σ
                    -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
                    -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1'
-                                           && sigmaVar m e1' σ1 = v1}
+                                           && evalWire m e1' σ1 = v1}
                    -> σ2:{WireValuation p m | Just σ2 = witnessGenE' m ρ σ1 e2'
-                                           && sigmaVar m e2' σ2 = v2}
+                                           && evalWire m e2' σ2 = v2}
 
                    -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                           && sigmaVar m e' σ' = v } @-}
+                                           && evalWire m e' σ' = v } @-}
 wgCompleteCons :: (Fractional p, Ord p)
                => Int -> DSL p -> DSL p -> DSL p
                -> NameValuation p -> DSLValue p -> DSLValue p -> DSLValue p
@@ -93,7 +93,7 @@ wgCompleteCons :: (Fractional p, Ord p)
                -> WireValuation p -> WireValuation p -> WireValuation p
 wgCompleteCons m0 e1 e2 e ρ v1 v2 v λ σ m1 e1' λ1 m2 e2' λ2 m e' λ' σ1 σ2 = σ2
   ? wgClosed  m ρ σ  e1' σ1            -- wires(e1') are bound in σ1
-  ?? sigmaVarIncr m e1' σ1 σ2 σ2_gt_σ1 -- σ2(e1') = σ1(e1') since σ2 ≥ σ1
+  ?? evalWireIncr m e1' σ1 σ2 σ2_gt_σ1 -- σ2(e1') = σ1(e1') since σ2 ≥ σ1
 
   where
     σ2_gt_σ1 = labelTyped e m0 λ m e' λ'   -- e' is well-typed

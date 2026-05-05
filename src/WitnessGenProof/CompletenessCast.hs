@@ -46,10 +46,10 @@ import Language.Haskell.Liquid.ProofCombinators
                    -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
                    -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1'
-                                           && sigmaVar m e1' σ1 = VF v1}
+                                           && evalWire m e1' σ1 = VF v1}
 
                    -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                           && sigmaVar m e' σ' = VF v } @-}
+                                           && evalWire m e' σ' = VF v } @-}
 wgCompleteCast :: (Fractional p, Ord p)
                => Int -> DSL p -> DSL p
                -> NameValuation p -> p -> p
@@ -63,7 +63,7 @@ wgCompleteCast :: (Fractional p, Ord p)
 wgCompleteCast m0 e1 e ρ v1 v λ σ m1 e1' λ1 m e' λ' σ1 = σ1
    ? labelTyped e m0 λ m e' λ' -- type(e') = type(e), so e' is also well-typed
   ?? wgClosed  m ρ σ  e1' σ1   -- wires(e1') are bound in σ1
-  ?? sigmaVarScalar m e1' σ1   -- sigmaVar(e1,σ1) = σ1[e1]
+  ?? evalWireScalar m e1' σ1   -- evalWire(e1,σ1) = σ1[e1]
 
 
 -- workarounds to fix "crash: unknown constant" --------------------------------

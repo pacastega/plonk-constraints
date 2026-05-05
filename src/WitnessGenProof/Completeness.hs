@@ -53,7 +53,7 @@ import Language.Haskell.Liquid.ProofCombinators
           -> λ':{LabelEnv p (Btwn 0 m) | label' (UN op e1) m0 λ = (m, e', λ')}
 
           -> { σ':WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                   && sigmaVar m e' σ' = v }
+                                   && evalWire m e' σ' = v }
            / [size (UN op e1), 0] @-}
 auxUn :: (Fractional p, Ord p) => Int -> DSL p -> UnOp p
       -> NameValuation p -> DSLValue p
@@ -86,7 +86,7 @@ auxUn m0 e1 op ρ v λ σ π m e' λ' = case op of
 
     v' = typedScalarUn e1 op ?? evalScalar (UN op e1) ρ v -- VF v' == v
     σ' = m_gt_m1
-      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
+      ?? evalWireLemma m1 m e1' σ1 -- evalWire ignores its first argument
       ?? wgCompleteIs0 m0 e1 (UN op e1) ρ v1 v' λ σ
                        m1 e1' λ1 m e' λ' w i σ1
 
@@ -109,7 +109,7 @@ auxUn m0 e1 op ρ v λ σ π m e' λ' = case op of
 
     v' = typedScalarUn e1 op ?? evalScalar (UN op e1) ρ v -- VF v' == v
     σ' = m_gt_m1
-      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
+      ?? evalWireLemma m1 m e1' σ1 -- evalWire ignores its first argument
       ?? wgCompleteEqlc m0 e1 k (UN op e1) ρ v1 v' λ σ
                         m1 e1' λ1 m e' λ' w i σ1
 
@@ -130,7 +130,7 @@ auxUn m0 e1 op ρ v λ σ π m e' λ' = case op of
 
     v' = typedScalarUn e1 op ?? evalScalar (UN op e1) ρ v -- VF v' == v
     σ' = m_gt_m1
-      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
+      ?? evalWireLemma m1 m e1' σ1 -- evalWire ignores its first argument
       ?? wgCompleteCast m0 e1 (UN BoolToF e1) ρ v1 v' λ σ m1 e1' λ1 m e' λ' σ1
 
   _ -> σ' where
@@ -152,7 +152,7 @@ auxUn m0 e1 op ρ v λ σ π m e' λ' = case op of
 
     v' = typedScalarUn e1 op ?? evalScalar (UN op e1) ρ v -- VF v' == v
     σ' = m_gt_m1
-      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
+      ?? evalWireLemma m1 m e1' σ1 -- evalWire ignores its first argument
       ?? wgCompleteUn m0 op e1 (UN op e1) ρ v1 v' λ σ
                       m1 e1' λ1 m e' λ' i σ1
 
@@ -172,7 +172,7 @@ auxUn m0 e1 op ρ v λ σ π m e' λ' = case op of
            -> λ':{LabelEnv p (Btwn 0 m) | label' (BIN op e1 e2) m0 λ = (m, e', λ')}
 
            -> { σ':WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                    && sigmaVar m e' σ' = v }
+                                    && evalWire m e' σ' = v }
             / [size (BIN op e1 e2), 0] @-}
 auxBin :: (Fractional p, Ord p) => Int -> DSL p -> DSL p -> BinOp p
        -> NameValuation p -> DSLValue p
@@ -217,8 +217,8 @@ auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = case op of
 
     v' = typedScalarBin e1 e2 op ?? evalScalar (BIN op e1 e2) ρ v -- VF v' == v
     σ' = m_gt_m2
-      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
-      ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
+      ?? evalWireLemma m1 m e1' σ1 -- evalWire ignores its first argument
+      ?? evalWireLemma m2 m e2' σ2 -- evalWire ignores its first argument
       ?? wgCompleteDiv m0 e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
                        m1 e1' λ1 m2 e2' λ2 m  e'  λ' w i σ1 σ2
 
@@ -253,8 +253,8 @@ auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = case op of
 
     v' = typedScalarBin e1 e2 op ?? evalScalar (BIN op e1 e2) ρ v -- VF v' == v
     σ' = m_gt_m2
-      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
-      ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
+      ?? evalWireLemma m1 m e1' σ1 -- evalWire ignores its first argument
+      ?? evalWireLemma m2 m e2' σ2 -- evalWire ignores its first argument
       ?? wgCompleteEql m0 e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
                        m1 e1' λ1 m2 e2' λ2 m e' λ' d w i σ1 σ2
 
@@ -289,8 +289,8 @@ auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = case op of
 
     v' = typedScalarBin e1 e2 op ?? evalScalar (BIN op e1 e2) ρ v -- VF v' == v
     σ' = m_gt_m2
-      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
-      ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
+      ?? evalWireLemma m1 m e1' σ1 -- evalWire ignores its first argument
+      ?? evalWireLemma m2 m e2' σ2 -- evalWire ignores its first argument
       ?? wgCompleteBin m0 op e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
                        m1 e1' λ1 m2 e2' λ2 m  e'  λ' i σ1 σ2
 
@@ -309,7 +309,7 @@ auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = case op of
             -> λ':{LabelEnv p (Btwn 0 m) | label' (CONS e1 e2) m0 λ = (m, e', λ')}
 
             -> { σ':WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                     && sigmaVar m e' σ' = v }
+                                     && evalWire m e' σ' = v }
              / [size (CONS e1 e2), 0] @-}
 auxCons :: (Fractional p, Ord p) => Int -> DSL p -> DSL p
         -> NameValuation p -> DSLValue p
@@ -351,8 +351,8 @@ auxCons m0 e1 e2 ρ v λ σ π m e' λ' = σ' where
 
   -- v' = typedScalarBin e1 e2 op ?? evalScalar (BIN op e1 e2) ρ v -- VF v' == v
   σ' = m_gt_m2
-    ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
-    ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
+    ?? evalWireLemma m1 m e1' σ1 -- evalWire ignores its first argument
+    ?? evalWireLemma m2 m e2' σ2 -- evalWire ignores its first argument
     ?? wgCompleteCons m0 e1 e2 (CONS e1 e2) ρ v1 v2 v λ σ
                       m1 e1' λ1 m2 e2' λ2 m  e'  λ' σ1 σ2
 
@@ -371,7 +371,7 @@ auxCons m0 e1 e2 ρ v λ σ π m e' λ' = σ' where
                 -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
                 -> { σ':WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                         && sigmaVar m e' σ' = v}
+                                         && evalWire m e' σ' = v}
                  / [size e, 1] @-}
 wgCompleteE :: (Fractional p, Ord p) => Int -> DSL p
             -> NameValuation p -> DSLValue p

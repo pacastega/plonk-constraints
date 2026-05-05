@@ -20,29 +20,29 @@ import Semantics
 import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
--- sigmaVar ignores its first argument -----------------------------------------
+-- evalWire ignores its first argument -----------------------------------------
 
-{-@ sigmaVarLemma :: m:Nat -> m':{Nat | m' >= m}
+{-@ evalWireLemma :: m:Nat -> m':{Nat | m' >= m}
                   -> e':LDSL p (Btwn 0 m) -> σ:WireValuation p m
-                  -> { sigmaVar m e' σ = sigmaVar m' e' σ } @-}
-sigmaVarLemma :: Int -> Int -> LDSL p Int -> WireValuation p -> Proof
-sigmaVarLemma m m' e' σ = case e' of
+                  -> { evalWire m e' σ = evalWire m' e' σ } @-}
+evalWireLemma :: Int -> Int -> LDSL p Int -> WireValuation p -> Proof
+evalWireLemma m m' e' σ = case e' of
   LNIL _ -> trivial
-  LCONS e1' e2' -> sigmaVarLemma m m' e1' σ ? sigmaVarLemma m m' e2' σ
+  LCONS e1' e2' -> evalWireLemma m m' e1' σ ? evalWireLemma m m' e2' σ
   _ -> trivial
 
 
-{-@ sigmaVarIncr :: m:Nat -> e:TypedLDSL p (Btwn 0 m)
+{-@ evalWireIncr :: m:Nat -> e:TypedLDSL p (Btwn 0 m)
                  -> σ:{WireValuation p m | closedExpr m σ e}
                  -> σ':WireValuation p m
                  -> MapGE σ' σ
-                 -> { sigmaVar m e σ = sigmaVar m e σ' } @-}
-sigmaVarIncr :: Int -> LDSL p Int -> WireValuation p -> WireValuation p
+                 -> { evalWire m e σ = evalWire m e σ' } @-}
+evalWireIncr :: Int -> LDSL p Int -> WireValuation p -> WireValuation p
              -> (Int -> Proof)
              -> Proof
-sigmaVarIncr m e σ σ' π = case e of
+evalWireIncr m e σ σ' π = case e of
   LNIL _ -> trivial
-  LCONS e1 e2 -> sigmaVarIncr m e1 σ σ' π ? sigmaVarIncr m e2 σ σ' π
+  LCONS e1 e2 -> evalWireIncr m e1 σ σ' π ? evalWireIncr m e2 σ σ' π
   _ -> case inferType' e of
     Just (TVec _) -> trivial
     Just _        -> π (outputWire e)
@@ -57,11 +57,11 @@ evalScalar :: (Fractional p, Eq p) => DSL p -> NameValuation p -> DSLValue p -> 
 evalScalar e ρ v = case inferType e of
   Just _ -> case eval e ρ of Just (VF x) -> x
 
-{-@ sigmaVarScalar :: m:Nat -> e':ScalarLDSL p (Btwn 0 m)
+{-@ evalWireScalar :: m:Nat -> e':ScalarLDSL p (Btwn 0 m)
                    -> σ:{WireValuation p m | closedExpr m σ e'}
-                   -> { sigmaVar m e' σ = VF (M.lookup' (outputWire e') σ) } @-}
-sigmaVarScalar :: Int -> LDSL p Int -> WireValuation p -> Proof
-sigmaVarScalar m e' σ = case e' of
+                   -> { evalWire m e' σ = VF (M.lookup' (outputWire e') σ) } @-}
+evalWireScalar :: Int -> LDSL p Int -> WireValuation p -> Proof
+evalWireScalar m e' σ = case e' of
   LNIL _ -> error "e' is scalar"
   LCONS _ _ -> error "e' is scalar"
   _ -> trivial

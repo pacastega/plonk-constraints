@@ -57,12 +57,12 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> w:Btwn 0 m -> i:{Btwn 0 m | e' = LDIV e1' e2' w i}
 
                   -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1'
-                                          && sigmaVar m e1' σ1 = VF v1}
+                                          && evalWire m e1' σ1 = VF v1}
                   -> σ2:{WireValuation p m | Just σ2 = witnessGenE' m ρ σ1 e2'
-                                          && sigmaVar m e2' σ2 = VF v2}
+                                          && evalWire m e2' σ2 = VF v2}
 
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                          && sigmaVar m e' σ' = VF v } @-}
+                                          && evalWire m e' σ' = VF v } @-}
 wgCompleteDiv :: (Fractional p, Ord p)
               => Int -> DSL p -> DSL p -> DSL p
               -> NameValuation p -> p -> p -> p
@@ -87,9 +87,9 @@ wgCompleteDiv m0 e1 e2 e ρ v1 v2 v λ σ m1 e1' λ1 m2 e2' λ2 m e' λ' w i σ1
   ?? wgKeysSet m ρ σ1 e2' σ2        -- keys(σ2) = keys(σ1) ∪ wires(e1')
   ?? wgClosed  m ρ σ1 e2' σ2        -- wires(e2') are bound in σ2
 
-  ?? sigmaVarScalar m e1' σ1 -- sigmaVar(e1,σ1) = σ1[e1]
-  ?? sigmaVarScalar m e2' σ2 -- sigmaVar(e2,σ2) = σ2[e2]
-  ?? sigmaVarScalar m e'  σ' -- sigmaVar(e',σ') = σ'[e']
+  ?? evalWireScalar m e1' σ1 -- evalWire(e1,σ1) = σ1[e1]
+  ?? evalWireScalar m e2' σ2 -- evalWire(e2,σ2) = σ2[e2]
+  ?? evalWireScalar m e'  σ' -- evalWire(e',σ') = σ'[e']
 
   ?? evalDiv e1 e2 ρ v v1 v2
   ?? σ'

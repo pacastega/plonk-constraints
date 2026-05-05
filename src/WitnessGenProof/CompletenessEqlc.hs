@@ -53,10 +53,10 @@ import Language.Haskell.Liquid.ProofCombinators
                    -> w:Btwn 0 m -> i:{Btwn 0 m | e' = LEQLC e1' k w i}
 
                    -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1'
-                                           && sigmaVar m e1' σ1 = VF v1}
+                                           && evalWire m e1' σ1 = VF v1}
 
                    -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                           && sigmaVar m e' σ' = VF v } @-}
+                                           && evalWire m e' σ' = VF v } @-}
 wgCompleteEqlc :: (Fractional p, Ord p)
                => Int -> DSL p -> p -> DSL p
                -> NameValuation p -> p -> p
@@ -76,8 +76,8 @@ wgCompleteEqlc m0 e1 k e ρ v1 v λ σ m1 e1' λ1 m e' λ' w i σ1 =
 
   ?? wgClosed m ρ σ e1' σ1 -- wires(e1') are bound in σ1
 
-  ?? sigmaVarScalar m e1' σ1 -- sigmaVar(e1,σ1) = σ1[e1]
-  ?? sigmaVarScalar m e'  σ' -- sigmaVar(e',σ') = σ'[e']
+  ?? evalWireScalar m e1' σ1 -- evalWire(e1,σ1) = σ1[e1]
+  ?? evalWireScalar m e'  σ' -- evalWire(e',σ') = σ'[e']
 
   ?? evalIsk e1 k ρ v v1 ?? liquidAssert (v == if v1 == k then one else zero)
 
@@ -120,10 +120,10 @@ evalIsk e1 k ρ v v1 = case eval (UN (EQLC k) e1) ρ of
                   -> w:Btwn 0 m -> i:{Btwn 0 m | e' = LEQLC e1' 0 w i}
 
                   -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1'
-                                          && sigmaVar m e1' σ1 = VF v1}
+                                          && evalWire m e1' σ1 = VF v1}
 
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                          && sigmaVar m e' σ' = VF v } @-}
+                                          && evalWire m e' σ' = VF v } @-}
 wgCompleteIs0 :: (Fractional p, Ord p)
               => Int -> DSL p -> DSL p
               -> NameValuation p -> p -> p

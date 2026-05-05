@@ -104,13 +104,13 @@ eqlFn :: (Num p, Eq p) => p -> p -> p
 eqlFn b c = if b == c then 1 else 0
 
 
-{-@ reflect sigmaVar @-}
-{-@ sigmaVar :: m:Nat -> e:TypedLDSL p (Btwn 0 m)
+{-@ reflect evalWire @-}
+{-@ evalWire :: m:Nat -> e:TypedLDSL p (Btwn 0 m)
              -> σ:{WireValuation p m | closedExpr m σ e} -> DSLValue p @-}
-sigmaVar :: Int -> LDSL p Int -> WireValuation p -> DSLValue p
-sigmaVar m e σ = case e of
+evalWire :: Int -> LDSL p Int -> WireValuation p -> DSLValue p
+evalWire m e σ = case e of
   LNIL _ -> VNil
-  LCONS e1 e2 -> VCons (sigmaVar m e1 σ) (sigmaVar m e2 σ)
+  LCONS e1 e2 -> VCons (evalWire m e1 σ) (evalWire m e2 σ)
   _ -> case inferType' e of
     Just (TVec _) -> error "all vector cases have been handled already"
     Just _        -> VF (M.lookup' (outputWire e) σ)

@@ -47,7 +47,7 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                          && sigmaVar m e' σ' = VF v} @-}
+                                          && evalWire m e' σ' = VF v} @-}
 wgCompleteVar :: (Fractional p, Ord p)
               => Int -> Var -> Ty -> DSL p
               -> NameValuation p -> p -> LabelEnv p Int -> WireValuation p
@@ -71,7 +71,7 @@ wgCompleteVar m0 s τ e ρ v λ σ π m e' λ' = case M.lookup s ρ of
            ?? elementLemma j value σ ?? lookupLemma j σ
            ?? case τ of
                TF -> σ
-               TBool -> if boolean value then sigmaVarScalar m e' σ ?? σ
+               TBool -> if boolean value then evalWireScalar m e' σ ?? σ
                         else error "value ∈ {0,1} because eval succeeds"
 
 
@@ -89,7 +89,7 @@ wgCompleteVar m0 s τ e ρ v λ σ π m e' λ' = case M.lookup s ρ of
                     -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
                     -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                            && sigmaVar m e' σ' = VF v} @-}
+                                            && evalWire m e' σ' = VF v} @-}
 wgCompleteConst :: (Fractional p, Eq p)
                 => Int -> p -> DSL p
                 -> NameValuation p -> p -> LabelEnv p Int -> WireValuation p
@@ -114,7 +114,7 @@ wgCompleteConst m0 x e ρ v λ σ m e' λ' = M.insert (outputWire e') x σ
                    -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
 
                    -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                           && sigmaVar m e' σ' = VF v} @-}
+                                           && evalWire m e' σ' = VF v} @-}
 wgCompleteBool :: (Fractional p, Eq p)
                => Int -> Bool -> DSL p
                -> NameValuation p -> p -> LabelEnv p Int -> WireValuation p

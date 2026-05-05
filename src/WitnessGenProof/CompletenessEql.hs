@@ -60,12 +60,12 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> i:{Btwn 0 m | e' = LEQLC (LBIN SUB e1' e2' d) 0 w i}
 
                   -> σ1:{WireValuation p m1 | Just σ1 = witnessGenE' m ρ σ e1'
-                                          && sigmaVar m e1' σ1 = VF v1}
+                                          && evalWire m e1' σ1 = VF v1}
                   -> σ2:{WireValuation p m2 | Just σ2 = witnessGenE' m ρ σ1 e2'
-                                          && sigmaVar m e2' σ2 = VF v2}
+                                          && evalWire m e2' σ2 = VF v2}
 
                   -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
-                                          && sigmaVar m e' σ' = VF v } @-}
+                                          && evalWire m e' σ' = VF v } @-}
 wgCompleteEql :: (Fractional p, Ord p)
               => Int -> DSL p -> DSL p -> DSL p
               -> NameValuation p -> p -> p -> p
@@ -80,7 +80,7 @@ wgCompleteEql :: (Fractional p, Ord p)
 wgCompleteEql m0 e1 e2 e ρ v1 v2 v λ σ m1 e1' λ1 m2 e2' λ2 m e' λ' d w i σ1 σ2 =
   e'_eq ??
   sub_closed ??
-  sigmaVarLemma m_sub m e'_sub σ_sub ??
+  evalWireLemma m_sub m e'_sub σ_sub ??
   wt_e_alt ??
   evalBinOp e1 e2 SUB ρ v_sub v1 v2 ??
   evalEqlIs0Sub e1 e2 e (UN (EQLC 0) e_sub) ρ ??
@@ -106,17 +106,17 @@ wgCompleteEql m0 e1 e2 e ρ v1 v2 v λ σ m1 e1' λ1 m2 e2' λ2 m e' λ' d w i �
 
       fresh1 = fresh_sub ?? freshBin1 m e1' e2' SUB d σ
       σ1_lemma = m_ge_m_sub ?? fresh1 ?? wgLemma m_sub m ρ σ e1'
-      sigmaVar1 = m_ge_m_sub ?? sigmaVarLemma m_sub m e1' σ1
+      evalWire1 = m_ge_m_sub ?? evalWireLemma m_sub m e1' σ1
 
       fresh2 = wf12 ?? fresh_sub ?? freshBin2 m ρ e1' e2' SUB d σ σ1
       σ2_lemma = m_ge_m_sub ?? fresh2 ?? wgLemma m_sub m ρ σ1 e2'
-      sigmaVar2 = m_ge_m_sub ?? sigmaVarLemma m_sub m e2' σ2
+      evalWire2 = m_ge_m_sub ?? evalWireLemma m_sub m e2' σ2
 
       d = labelBin m0 e1 e2 λ SUB m1 e1' λ1 m2 e2' λ2 m_sub e'_sub λ_sub
 
       σ_sub = m_ge_m_sub ?? m_sub_gt_m1_m2
-        ?? σ1_lemma ?? sigmaVar1
-        ?? σ2_lemma ?? sigmaVar2
+        ?? σ1_lemma ?? evalWire1
+        ?? σ2_lemma ?? evalWire2
 
         ?? wf_sub
         ?? wgLemma m_sub m ρ σ e'_sub
