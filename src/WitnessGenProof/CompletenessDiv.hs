@@ -105,7 +105,7 @@ evalDiv :: (Fractional p, Eq p) => DSL p -> DSL p
         -> NameValuation p -> p -> p -> p -> Proof
 evalDiv e1 e2 ρ v v1 v2 = case eval (BIN DIV e1 e2) ρ of
   Just _ -> case (eval e1 ρ, eval e2 ρ) of
-    (Just (VF _), Just (VF _)) -> if v2 /= 0 then trivial else error ""
+    (Just (VF _), Just (VF _)) -> liquidAssert (v == v1 / v2)
 
 
 -- workarounds to fix "crash: unknown constant" --------------------------------

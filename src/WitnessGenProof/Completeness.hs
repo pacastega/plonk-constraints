@@ -169,7 +169,7 @@ auxBin :: (Fractional p, Ord p) => Int -> DSL p -> DSL p -> BinOp p
 auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = case op of
   DIV -> σ' where
     (m1,e1',λ1) = label' e1 m0 λ
-    v1 = evalDiv1 e1 e2 ρ v
+    v1 = evalBin1 e1 e2 op ρ v
 
     (m2,e2',λ2) = label' e2 m1 λ1
     v2 = evalDiv2 e1 e2 ρ v

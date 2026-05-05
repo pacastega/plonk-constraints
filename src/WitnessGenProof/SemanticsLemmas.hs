@@ -69,14 +69,6 @@ sigmaVarScalar m e' σ = case e' of
 
 -- eval works inductively on subexpressions ------------------------------------
 
-{-@ evalDiv1 :: e1:DSL p -> e2:{DSL p | wellTyped (BIN DIV e1 e2)}
-             -> ρ:NameValuation p
-             -> v:{DSLValue p | eval (BIN DIV e1 e2) ρ = Just v}
-             -> {v1:p | eval e1 ρ = Just (VF v1)} @-}
-evalDiv1 :: (Fractional p, Eq p) => DSL p -> DSL p
-         -> NameValuation p -> DSLValue p -> p
-evalDiv1 e1 e2 ρ v = case eval e1 ρ of Just (VF v1) -> v1
-
 {-@ evalDiv2 :: e1:DSL p -> e2:{DSL p | wellTyped (BIN DIV e1 e2)}
              -> ρ:NameValuation p
              -> v:{DSLValue p | eval (BIN DIV e1 e2) ρ = Just v}
