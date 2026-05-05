@@ -238,8 +238,8 @@ auxBin m0 e1 e2 op ρ v λ σ π m e' λ' = case op of
       ?? sigmaVarLemma m2 m e2' σ2 -- sigmaVar ignores its first argument
       ?? wgCompleteEql m0 e1 e2 (BIN op e1 e2) ρ v1 v2 v' λ σ
                        m1 e1' λ1 m2 e2' λ2 m e' λ' d w i σ1 σ2
-  _   -> σ' where
 
+  _   -> σ' where
     (m1,e1',λ1) = label' e1 m0 λ
     v1 = evalBin1 e1 e2 op ρ v -- isJust (eval e1 ρ) && isJust (eval e2 ρ)
 
