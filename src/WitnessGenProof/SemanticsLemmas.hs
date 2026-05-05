@@ -85,8 +85,7 @@ evalDiv2 :: (Fractional p, Eq p) => DSL p -> DSL p
          -> NameValuation p -> DSLValue p -> p
 evalDiv2 e1 e2 ρ v = case eval e2 ρ of Just (VF v2) -> v2
 
-
-{-@ evalUn :: e1:DSL p -> op:{UnOp' p | wellTyped (UN op e1)}
+{-@ evalUn :: e1:DSL p -> op:{UnOp p | wellTyped (UN op e1)}
            -> ρ:NameValuation p
            -> v:{DSLValue p | eval (UN op e1) ρ = Just v}
            -> {v1:p | eval e1 ρ = Just (VF v1)} @-}
@@ -94,7 +93,7 @@ evalUn :: (Fractional p, Eq p) => DSL p -> UnOp p
        -> NameValuation p -> DSLValue p -> p
 evalUn e1 op ρ v = case eval e1 ρ of Just (VF v1) -> v1
 
-{-@ evalBin1 :: e1:DSL p -> e2:DSL p -> op:{BinOp' p | wellTyped (BIN op e1 e2)}
+{-@ evalBin1 :: e1:DSL p -> e2:DSL p -> op:{BinOp p | wellTyped (BIN op e1 e2)}
              -> ρ:NameValuation p
              -> v:{DSLValue p | eval (BIN op e1 e2) ρ = Just v}
              -> {v1:p | eval e1 ρ = Just (VF v1)} @-}
@@ -102,7 +101,7 @@ evalBin1 :: (Fractional p, Eq p) => DSL p -> DSL p -> BinOp p
          -> NameValuation p -> DSLValue p -> p
 evalBin1 e1 e2 op ρ v = case eval e1 ρ of Just (VF v1) -> v1
 
-{-@ evalBin2 :: e1:DSL p -> e2:DSL p -> op:{BinOp' p | wellTyped (BIN op e1 e2)}
+{-@ evalBin2 :: e1:DSL p -> e2:DSL p -> op:{BinOp p | wellTyped (BIN op e1 e2)}
              -> ρ:NameValuation p
              -> v:{DSLValue p | eval (BIN op e1 e2) ρ = Just v}
              -> {v2:p | eval e2 ρ = Just (VF v2)} @-}

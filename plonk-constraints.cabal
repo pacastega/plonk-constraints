@@ -69,6 +69,7 @@ library
       WitnessGenProof.CompletenessOps
       WitnessGenProof.CompletenessDiv
       WitnessGenProof.CompletenessEqlc
+      WitnessGenProof.CompletenessEql
       WitnessGenProof.CompletenessVec
       WitnessGenProof.SemanticsLemmas
       WitnessGenProof.Soundness

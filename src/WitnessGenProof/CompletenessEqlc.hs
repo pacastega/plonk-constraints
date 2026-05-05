@@ -97,6 +97,47 @@ evalIsk e1 k ρ v v1 = case eval (UN (EQLC k) e1) ρ of
     Just _ -> liquidAssert (v == eqlFn k v1)
 
 
+-- explicit instantiation for ISZERO
+
+{-@ wgCompleteIs0 :: m0:Nat
+                  -> e1:DSL p
+                  -> e:{TypedDSL p | e = UN ISZERO e1}
+
+                  -> ρ:NameValuation p
+                  -> v1:{p | eval e1 ρ = Just (VF v1)}
+                  -> v:{p | eval e ρ = Just (VF v)}
+                  -> λ:LabelEnv p (Btwn 0 m0)
+                  -> σ:WireValuation p m0
+
+                  -> m1:{Nat | m1 >= m0}
+                  -> e1':LDSL p (Btwn 0 m1)
+                  -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ = (m1, e1', λ1)}
+
+                  -> m:{Nat | m >= m1}
+                  -> e':{LDSL p (Btwn 0 m) | wfE e' && freshE e' σ}
+                  -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m, e', λ')}
+
+                  -> w:Btwn 0 m -> i:{Btwn 0 m | e' = LEQLC e1' 0 w i}
+
+                  -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ e1'
+                                          && sigmaVar m e1' σ1 = VF v1}
+
+                  -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'
+                                          && sigmaVar m e' σ' = VF v } @-}
+wgCompleteIs0 :: (Fractional p, Ord p)
+              => Int -> DSL p -> DSL p
+              -> NameValuation p -> p -> p
+              -> LabelEnv p Int -> WireValuation p
+
+              -> Int -> LDSL p Int -> LabelEnv p Int
+              -> Int -> LDSL p Int -> LabelEnv p Int
+
+              -> Int -> Int
+              -> WireValuation p -> WireValuation p
+wgCompleteIs0 m0 e1 _ ρ v1 v λ σ m1 e1' λ1 m e' λ' w i σ1 =
+  wgCompleteEqlc m0 e1 0 (UN (EQLC 0) e1) ρ v1 v λ σ m1 e1' λ1 m e' λ' w i σ1
+
+
 -- workarounds to fix "crash: unknown constant" --------------------------------
 
 {-@ reflect foo @-}

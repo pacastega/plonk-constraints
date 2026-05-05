@@ -136,7 +136,7 @@ labelCSE' p nextIndex λ = case M.lookup p λ of
         where (i'', [p1'], λ'') = labelCSE' p1 i   λ
               (i' , [p2'], λ')  = labelCSE' p2 i'' λ''
               w' = i'+1
-      EQL -> labelCSE' (UN ISZERO (BIN SUB p1 p2)) nextIndex λ
+      EQL -> labelCSE' (UN (EQLC zero) (BIN SUB p1 p2)) nextIndex λ
       _ -> (i'+1, [LBIN op p1' p2' i'], M.insert p i' λ')
         where (i'', [p1'], λ'') = labelCSE' p1 i   λ
               (i' , [p2'], λ')  = labelCSE' p2 i'' λ''
@@ -198,7 +198,7 @@ label' p i λ = case p of
         where (i1, p1', λ1) = label' p1 i  λ
               (i2, p2', λ2) = label' p2 i1 λ1
               w = i2+1
-      EQL -> label' (UN ISZERO (BIN SUB p1 p2)) i λ
+      EQL -> label' (UN (EQLC zero) (BIN SUB p1 p2)) i λ
       _ -> (i2+1, LBIN op p1' p2' i2, λ2)
         where (i1, p1', λ1) = label' p1 i  λ
               (i2, p2', λ2) = label' p2 i1 λ1
