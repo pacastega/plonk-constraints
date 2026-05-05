@@ -4,6 +4,7 @@
 {-@ LIQUID "--ple-with-undecided-guards" @-}
 module Semantics where
 
+import TypeAliases
 import DSL
 import Utils
 import Vec
@@ -12,14 +13,13 @@ import Vec
 import qualified Liquid.Data.Map as M
 #else
 import qualified Data.Map as M
+import qualified MapFunctions as M
 #endif
 
 import Language.Haskell.Liquid.ProofCombinators (withProof)
 
 data DSLValue p = VF p | VNil | VCons (DSLValue p) (DSLValue p)
   deriving Eq
-
-type NameValuation p = M.Map String p
 
 {-@ measure valSize @-}
 valSize :: DSLValue p -> Int
@@ -60,83 +60,57 @@ eval expr ρ = case expr of
   BOOL True  -> withProof (Just (VF 1)) (boolean 1)
   BOOL False -> withProof (Just (VF 0)) (boolean 0)
 
-  UN op p1 -> case op of
-    ADDC k    -> fmap' (add (VF k))   (eval p1 ρ)
-    MULC k    -> fmap' (mul (VF k))   (eval p1 ρ)
+  UN op p1 -> case eval p1 ρ of
+    Just (VF v1) -> case op of
+      ISZERO    -> Just (VF (eqlFn 0 v1))
+      EQLC k    -> Just (VF (eqlFn k v1))
+      BoolToF   -> Just (VF v1)
+      _ -> Just (VF (valueUnOp op v1))
 
-    NOT       -> fmap' notFn          (eval p1 ρ)
-    UnsafeNOT -> fmap' notFn          (eval p1 ρ)
+    _ -> Nothing -- the argument is undefined
 
-    ISZERO    -> fmap' (eqlFn (VF 0)) (eval p1 ρ)
-    EQLC k    -> fmap' (eqlFn (VF k)) (eval p1 ρ)
+  BIN op p1 p2 -> case (eval p1 ρ, eval p2 ρ) of
+    (Just (VF v1), Just (VF v2)) -> case op of
+      DIV -> if v2 /= 0 then Just (VF (v1 / v2)) else Nothing
+      EQL -> Just (VF (eqlFn v1 v2))
+      _ -> Just (VF (valueBinOp op v1 v2))
 
-    BoolToF   -> eval p1 ρ
-
-  BIN op p1 p2 -> case op of
-    ADD -> liftA2' add (eval p1 ρ) (eval p2 ρ)
-    SUB -> liftA2' sub (eval p1 ρ) (eval p2 ρ)
-    MUL -> liftA2' mul (eval p1 ρ) (eval p2 ρ)
-    DIV -> case (eval p1 ρ, eval p2 ρ) of
-      (Just (VF x), Just (VF y)) -> if y /= 0 then Just (VF (x / y)) else Nothing
-      _ -> Nothing
-
-    LINCOMB k1 k2 -> liftA2' (linCombFn k1 k2) (eval p1 ρ) (eval p2 ρ)
-
-    AND -> liftA2' andFn (eval p1 ρ) (eval p2 ρ)
-    OR  -> liftA2' orFn  (eval p1 ρ) (eval p2 ρ)
-    XOR -> liftA2' xorFn (eval p1 ρ) (eval p2 ρ)
-
-    UnsafeAND -> liftA2' andFn (eval p1 ρ) (eval p2 ρ)
-    UnsafeOR  -> liftA2' orFn  (eval p1 ρ) (eval p2 ρ)
-    UnsafeXOR -> liftA2' xorFn (eval p1 ρ) (eval p2 ρ)
-
-    EQL -> liftA2' eqlFn (eval p1 ρ) (eval p2 ρ)
+    _ -> Nothing -- at least one of the arguments is undefined
 
   NIL _     -> Just VNil
-  CONS h ts -> liftA2' VCons (eval h ρ) (eval ts ρ)
+  CONS h ts -> case (eval h ρ, eval ts ρ) of
+    (Just v, Just vs) -> Just (VCons v vs)
+    _ -> Nothing -- at least one of the arguments is undefined
 
-
-{-@ reflect linCombFn @-}
-{-@ linCombFn :: p -> p -> FValue p -> FValue p -> FValue p @-}
-linCombFn :: (Num p) => p -> p -> DSLValue p -> DSLValue p -> DSLValue p
-linCombFn k1 k2 (VF x) (VF y) = VF (k1*x + k2*y)
-
-{-@ reflect add @-}
-{-@ add :: FValue p -> FValue p -> FValue p @-}
-add :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-add (VF x) (VF y) = VF (x + y)
-
-{-@ reflect sub @-}
-{-@ sub :: FValue p -> FValue p -> FValue p @-}
-sub :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-sub (VF x) (VF y) = VF (x - y)
-
-{-@ reflect mul @-}
-{-@ mul :: FValue p -> FValue p -> FValue p @-}
-mul :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-mul (VF x) (VF y) = VF (x * y)
 
 {-@ reflect notFn @-}
-{-@ notFn :: BoolValue p -> BoolValue p @-}
-notFn :: (Num p) => DSLValue p -> DSLValue p
-notFn (VF b) = VF (1 - b)
+notFn :: (Num p) => p -> p
+notFn b = 1 - b
 
 {-@ reflect andFn @-}
-{-@ andFn :: BoolValue p -> BoolValue p -> BoolValue p @-}
-andFn :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-andFn (VF b) (VF c) = VF (b * c)
+andFn :: (Num p) => p -> p -> p
+andFn b c = b * c
 
 {-@ reflect orFn @-}
-{-@ orFn :: BoolValue p -> BoolValue p -> BoolValue p @-}
-orFn :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-orFn  (VF b) (VF c) = VF (b + c - b*c)
+orFn :: (Num p) => p -> p -> p
+orFn b c = b + c - b*c
 
 {-@ reflect xorFn @-}
-{-@ xorFn :: BoolValue p -> BoolValue p -> BoolValue p @-}
-xorFn :: (Num p) => DSLValue p -> DSLValue p -> DSLValue p
-xorFn (VF b) (VF c) = VF (b + c - 2*b*c)
+xorFn :: (Num p) => p -> p -> p
+xorFn b c = b + c - 2*b*c
 
 {-@ reflect eqlFn @-}
-{-@ eqlFn :: FValue p -> FValue p -> BoolValue p @-}
-eqlFn :: (Num p, Eq p) => DSLValue p -> DSLValue p -> DSLValue p
-eqlFn (VF b) (VF c) = VF (if b == c then 1 else 0)
+eqlFn :: (Num p, Eq p) => p -> p -> p
+eqlFn b c = if b == c then 1 else 0
+
+
+{-@ reflect evalWire @-}
+{-@ evalWire :: m:Nat -> e:TypedLDSL p (Btwn 0 m)
+             -> σ:{WireValuation p m | closedExpr m σ e} -> DSLValue p @-}
+evalWire :: Int -> LDSL p Int -> WireValuation p -> DSLValue p
+evalWire m e σ = case e of
+  LNIL _ -> VNil
+  LCONS e1 e2 -> VCons (evalWire m e1 σ) (evalWire m e2 σ)
+  _ -> case inferType' e of
+    Just (TVec _) -> error "all vector cases have been handled already"
+    Just _        -> VF (M.lookup' (outputWire e) σ)

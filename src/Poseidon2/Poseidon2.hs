@@ -7,7 +7,6 @@ module Poseidon2.Poseidon2 where
 import Utils
 import DSL
 import PlinkLib
-import Semantics
 import PlinkST
 import Poseidon2.Poseidon2Cnst
 

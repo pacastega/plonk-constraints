@@ -115,7 +115,7 @@ test programStore ρ = do
   let store' = store
 
   let (m, labeledBodies, labeledStore) = label program' store'
-  let labeledPrograms = labeledStore ++ labeledBodies
+  let labeledPrograms = (map LAss labeledStore) ++ (map LExpr labeledBodies)
 
   let circuit = concatMap (compile m) labeledPrograms
 
@@ -147,7 +147,7 @@ test' programStore ρ tikzFilename = do
   let ρ' = extend ρ hints
 
   let (m, labeledBodies, labeledStore) = label program store
-  let labeledPrograms = labeledStore ++ labeledBodies
+  let labeledPrograms = (map LAss labeledStore) ++ (map LExpr labeledBodies)
 
   let circuit = concatMap (compile m) labeledPrograms
   case witnessGen m labeledPrograms ρ' of

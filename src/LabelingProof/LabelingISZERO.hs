@@ -3,9 +3,6 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 {-@ LIQUID "--linear" @-}
-{-@ LIQUID "--eliminate=all" @-}
-
-{-@ LIQUID "--cores=1" @-}
 
 module LabelingProof.LabelingISZERO where
 
@@ -23,73 +20,54 @@ import Vec
 import DSL
 import Label
 import WitnessGeneration
-import Semantics
 
 import LabelingProof.LabelingLemmas
+import WitnessGenProof.WitnessGenLemmas
 
+import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
-
-{-@ labelProofISZERO  :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
-                  -> p1:{ScalarDSL p | wellTyped (UN ISZERO p1)}
+-- if agree_Λ1(ρ,σ1) then also agree_Λ'(ρ,σ') ----------------------------------
+{-@ agreeLemmaISZERO :: m0:Nat -> m1:{Nat | m1 >= m0} -> m:{Nat | m >= m1}
+                  -> p1:{DSL p | wellTyped (UN ISZERO p1)}
                   -> ρ:NameValuation p
                   -> λ:LabelEnv p (Btwn 0 m0)
                   -> λ1:LabelEnv p (Btwn 0 m1)
-                  -> σ:M.Map (Btwn 0 m0) p
+                  -> σ:WireValuation p m0
 
-                  -> Composable ρ λ σ
+                  -> Agree λ ρ σ
 
                   -> λ':LabelEnv p (Btwn 0 m)
-                  -> p1':{LDSL p (Btwn 0 m1) | label' p1 m0 λ = (m1, mkList1 p1', λ1)}
-                  -> e':{LDSL p (Btwn 0 m) | label' (UN ISZERO p1) m0 λ = (m, mkList1 e', λ')}
-                  -> σ':{M.Map (Btwn 0 m) p | Just σ' = witnessGen' m ρ σ e'}
-                  -> σ1:{M.Map (Btwn 0 m1) p | Just σ1 = witnessGen' m ρ σ p1'}
+                  -> p1':{LDSL p (Btwn 0 m1) | wfE p1'
+                                        && freshE p1' σ
+                                        && label' p1 m0 λ = (m1, p1', λ1)}
+                  -> e':{LDSL p (Btwn 0 m) | wfE e'
+                                        && freshE e' σ
+                                        && label' (UN ISZERO p1) m0 λ = (m, e', λ')}
+                  -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ e'}
+                  -> σ1:{WireValuation p m | Just σ1 = witnessGenE' m ρ σ p1'}
 
-                  -> v:p -> v1:{p | M.lookup (outputWire p1') σ1 == Just v1}
+                  -> Agree λ1 ρ σ1
 
-                  -> ({ eval p1 ρ = Just (VF v1) <=> M.lookup (outputWire p1') σ1 = Just v1 })
-                  -> Composable ρ λ1 σ1
-
-                  -> ({ eval (UN ISZERO p1) ρ = Just (VF v) <=>
-                      M.lookup (outputWire e') σ' = Just v },
-                    Composable ρ λ' σ') @-}
-labelProofISZERO :: (Fractional p, Eq p, Ord p)
+                  -> Agree λ' ρ σ' @-}
+agreeLemmaISZERO :: (Fractional p, Eq p, Ord p)
               => Int -> Int -> Int -> DSL p
               -> NameValuation p
               -> LabelEnv p Int
               -> LabelEnv p Int
-              -> M.Map Int p
+              -> WireValuation p
 
               -> (Var -> Proof)
 
               -> LabelEnv p Int
               -> LDSL p Int
               -> LDSL p Int
-              -> M.Map Int p
-              -> M.Map Int p
+              -> WireValuation p
+              -> WireValuation p
 
-              -> p -> p
-              -> Proof -> (Var -> Proof)
+              -> (Var -> Proof)
 
-              -> (Proof, Var -> Proof)
-labelProofISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 v v1 ih1 π1
- = if v1 == 0
-              then (ih1 ? (eval (UN ISZERO p1) ρ === fmap' (eqlFn (VF 0)) (eval p1 ρ) === Just (eqlFn (VF 0) (VF v1))),
-                   \x -> let j = M.lookup' x λ1
-                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
-                                 ? (M.lookup j σ'
-                                    === M.lookup j (M.insert w zero σ1)
-                                    === M.lookup j σ1))
-                   ? liquidAssert (σ' == M.insert i one (M.insert w zero σ1))
-              else (ih1 ? (eval (UN ISZERO p1) ρ === fmap' (eqlFn (VF 0)) (eval p1 ρ) === Just (eqlFn (VF 0) (VF v1))),
-                   \x -> let j = M.lookup' x λ1
-                         in π1 x ? notElemLemma' x i λ1 ? notElemLemma' x w λ1
-                                 ? (M.lookup j σ'
-                                    === M.lookup j (M.insert w (1/v1) σ1)
-                                    === M.lookup j σ1))
-                   ? liquidAssert (σ' == M.insert i zero (M.insert w (1/v1) σ1))
-      where (LEQLC _ _ w i) = e'
-            (m1, ps1, λ1) = label' p1 m0 λ
-            p1' = case ps1 of [x] -> x
-            σ1 = case witnessGen' m1 ρ σ p1' ? wgLemma m1 m ρ p1' σ of Just s -> s
-            v1 = case M.lookup (outputWire p1') σ1 of Just v -> v
+              -> (Var -> Proof)
+agreeLemmaISZERO m0 m1 m p1 ρ λ λ1 σ π λ' p1' e' σ' σ1 π1 x =
+  π1 x ? notElemLemma x i λ1 ? notElemLemma x w λ1
+  where (LEQLC _ _ w i) = e'

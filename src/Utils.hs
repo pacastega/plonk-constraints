@@ -4,6 +4,7 @@ module Utils where
 
 import TypeAliases
 import Language.Haskell.Liquid.ProofCombinators ((?))
+import qualified Data.Set as S
 
 {-@ reflect fst' @-}
 fst' :: (a, b) -> a
@@ -74,6 +75,8 @@ any' p (Just x) = p x
 liquidAssert :: Bool -> ()
 liquidAssert _ = ()
 
+-- {-@ reflect (??) @-}
+{-@ define (??) x y = (y) @-}
 {-@ (??) :: x:b -> y:a -> {v:a | v == y} @-}
 (??) :: b -> a -> a
 _ ?? y = y
@@ -142,3 +145,12 @@ all' p (x:xs) = p x && all' p xs
 elem' :: Eq a => a -> [a] -> Bool
 elem' _  []     = False
 elem' x' (x:xs) = x' == x || elem' x' xs
+
+{-@ reflect disjoint @-}
+disjoint :: (Ord a) => S.Set a -> S.Set a -> Bool
+disjoint a b = S.null (S.intersection a b)
+
+{-@ measure isJust @-}
+isJust :: Maybe a -> Bool
+isJust (Just _) = True
+isJust Nothing  = False

@@ -1,149 +1,159 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, ScopedTypeVariables #-}
 {-# OPTIONS -Wno-name-shadowing #-}
 {-@ LIQUID "--reflection" @-}
-module WitnessGeneration (extend, witnessGen, witnessGen') where
+{-@ LIQUID "--ple" @-}
+module WitnessGeneration where
 
 import Prelude hiding (flip)
 
-import Data.Foldable (foldlM)
-import Utils (boolean, zero, one)
+import TypeAliases
+import Utils
 import Vec
 import DSL
-import Semantics
+
+import qualified Data.Set as S
 
 #if LiquidOn
 import qualified Liquid.Data.Map as M
 #else
 import qualified Data.Map as M
+import qualified MapFunctions as M
 #endif
 
-
-{-@ reflect updateWith @-}
-updateWith :: Eq p => Maybe p -> Maybe p -> Maybe p
-updateWith Nothing  _        = Nothing
-updateWith (Just x) Nothing  = Just x
-updateWith (Just x) (Just y) = if x == y then Just x else Nothing
+import MapLemmas
+import Language.Haskell.Liquid.ProofCombinators
 
 extend :: NameValuation p -> (NameValuation p -> NameValuation p)
        -> NameValuation p
 extend ρ hints = M.union ρ (hints ρ)
 
+
+{-@ reflect freshE @-}
+freshE :: (Ord i) => LDSL p i -> M.Map i p -> Bool
+freshE e σ = disjoint (wiresE e) (M.keysSet σ)
+
+{-@ inline freshA @-}
+freshA :: (Ord i) => LAss p i -> M.Map i p -> Bool
+freshA a σ = disjoint (wiresA a) (M.keysSet σ)
+
+{-@ inline freshProgram @-}
+freshProgram :: (Ord i) => LProg p i -> M.Map i p -> Bool
+freshProgram pr σ = disjoint (wires pr) (M.keysSet σ)
+
+{-@ inline freshPrograms @-}
+freshPrograms :: (Ord i) => [LProg p i] -> M.Map i p -> Bool
+freshPrograms ps σ = disjoint (wiress ps) (M.keysSet σ)
+
 {-@ reflect witnessGen @-}
 {-@ witnessGen :: m:Nat
-               -> [LDSL p (Btwn 0 m)]
+               -> {ps:[LProg p (Btwn 0 m)] | wfs ps}
                -> NameValuation p
-               -> Maybe (VecN p m) @-}
-witnessGen :: (Eq p, Fractional p) =>
-              Int -> [LDSL p Int] -> NameValuation p -> Maybe (Vec p)
-witnessGen m programs ρ = toVector m <$> σ where
-  σ = foldlM (witnessGen' m ρ) M.empty programs
+               -> Maybe (WireValuation p m) @-}
+witnessGen :: forall p. (Eq p, Fractional p) => Int
+           -> [LProg p Int] -> NameValuation p -> Maybe (WireValuation p)
+witnessGen m programs ρ = witnessGenStar m ρ M.empty programs
+
+{-@ reflect witnessGenStar @-}
+{-@ witnessGenStar :: m:Nat
+                   -> NameValuation p
+                   -> σ:WireValuation p m
+                   -> ps:{[LProg p (Btwn 0 m)] | wfs ps && freshPrograms ps σ}
+                   -> Maybe ({σ':WireValuation p m |
+                               M.keysSet σ' = S.union (M.keysSet σ) (wiress ps)}) @-}
+witnessGenStar :: (Eq p, Fractional p) => Int
+               -> NameValuation p -> WireValuation p -> [LProg p Int]
+               -> Maybe (WireValuation p)
+witnessGenStar m ρ σ [] = Just σ
+witnessGenStar m ρ σ programs@(p:ps) = case witnessGen' m ρ σ p of
+  Nothing -> Nothing
+  Just σ' -> wfs programs ?? witnessGenStar m ρ σ' ps
+
 
 {-@ reflect witnessGen' @-}
 {-@ witnessGen' :: m:Nat
-                -> NameValuation p -> M.Map (Btwn 0 m) p -> LDSL p (Btwn 0 m)
-                -> Maybe (M.Map (Btwn 0 m) p) @-}
+                -> NameValuation p -> σ:WireValuation p m
+                -> {pr:LProg p (Btwn 0 m) | wf pr && freshProgram pr σ}
+                -> Maybe ({σ':WireValuation p m |
+                            M.keysSet σ' = S.union (M.keysSet σ) (wires pr)}) @-}
 witnessGen' :: (Eq p, Fractional p) => Int
-    -> NameValuation p -> M.Map Int p -> LDSL p Int -> Maybe (M.Map Int p)
-witnessGen' m _ σ (LWIRE τ i) = case M.lookup i σ of
-  Nothing -> Nothing -- wire is not defined
-  Just value -> case τ of
-    TF -> Just σ -- no restrictions
-    TBool -> if boolean value then Just σ else Nothing
-witnessGen' m ρ σ (LVAR s τ i) = case M.lookup s ρ of
-  Nothing -> Nothing -- variable is not defined in environment
-  Just value -> case τ of
-    TF -> Just (M.insert i value σ)
-    TBool -> if boolean value then Just (M.insert i value σ) else Nothing
-witnessGen' m _  σ (LCONST x i) = Just (M.insert i x σ)
-witnessGen' m ρ σ (LDIV p1 p2 w i) =
-  case witnessGen' m ρ σ p1 of
+            -> NameValuation p -> WireValuation p -> LProg p Int
+            -> Maybe (WireValuation p)
+witnessGen' m ρ σ (LExpr e) = freshE e σ ?? witnessGenE' m ρ σ e
+witnessGen' m ρ σ (LAss a) = freshA a σ ?? witnessGenA' m ρ σ a
+
+{-@ reflect witnessGenE' @-}
+{-@ witnessGenE' :: m:Nat
+                 -> NameValuation p -> σ:WireValuation p m
+                 -> {e:TypedLDSL p (Btwn 0 m) | wfE e && freshE e σ}
+                 -> Maybe ({σ':WireValuation p m | closedExpr m σ' e &&
+                             M.keysSet σ' = S.union (M.keysSet σ) (wiresE e)}) @-}
+witnessGenE' :: (Eq p, Fractional p) => Int
+             -> NameValuation p -> WireValuation p -> LDSL p Int
+             -> Maybe (WireValuation p)
+witnessGenE' m ρ σ e = case e of
+  LWIRE τ i -> case M.lookup i σ of
+    Nothing -> Nothing -- wire hasn't appeared before
+    Just value -> elementLemma i value σ ?? case τ of
+      TF -> Just σ -- no restrictions
+      TBool -> if boolean value -- Always true, but that's challenging to prove.
+               then Just σ -- Leave this just to prove the booleanity invariant.
+               else Nothing
+  LVAR s τ i -> case M.lookup s ρ of
+    Nothing -> Nothing -- variable is not defined in environment
+    Just value -> case τ of
+      TF -> Just (M.insert i value σ)
+      TBool -> if boolean value then Just (M.insert i value σ) else Nothing
+  LCONST x i -> Just (M.insert i x σ)
+  LBOOL  b i -> Just (M.insert i (if b then 1 else 0) σ)
+  LDIV p1 p2 w i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 -> case witnessGen' m ρ σ1 p2 of
+    Just σ1 -> case witnessGenE' m ρ σ1 p2 of
       Nothing -> Nothing
-      Just σ2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 σ1, M.lookup i2 σ2)
-        of (Just x1, Just x2) ->
-             if x2 == 0 then Nothing else
-               let σ3 = M.insert i (x1 / x2) σ2
-               in Just (M.insert w (1 / x2) σ3)
-           _                  -> Nothing
-witnessGen' m ρ σ (LUN op p1 i) =
-  case witnessGen' m ρ σ p1 of
+      Just σ2 -> if x2 == 0 then Nothing else
+                   let σ3 = M.insert i (x1 / x2) σ2
+                   in Just (M.insert w (1 / x2) σ3)
+        where x1 = M.lookup' (outputWire p1) σ1
+              x2 = M.lookup' (outputWire p2) σ2
+  LUN op p1 i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 ->
-      let i1 = outputWire p1
-      in case M.lookup i1 σ1
-      of Just x1 ->
-           let value = case op of
-                 ADDC k1 -> k1 + x1
-                 MULC k1 -> k1 * x1
-                 NOT -> 1 - x1
-                 UnsafeNOT -> 1 - x1
-           in Just (M.insert i value σ1)
-         _       -> Nothing
-witnessGen' m ρ σ (LBIN op p1 p2 i) =
-  case witnessGen' m ρ σ p1 of
+    Just σ1 -> Just (M.insert i (valueUnOp op x1) σ1)
+      where x1 = M.lookup' (outputWire p1) σ1
+  LBIN op p1 p2 i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 -> case witnessGen' m ρ σ1 p2 of
+    Just σ1 -> case witnessGenE' m ρ σ1 p2 of
       Nothing -> Nothing
-      Just σ2 ->
-        let i1 = outputWire p1; i2 = outputWire p2
-        in case (M.lookup i1 σ1, M.lookup i2 σ2)
-        of (Just x1, Just x2) ->
-             let value = case op of
-                   ADD -> x1 + x2
-                   SUB -> x1 - x2
-                   MUL -> x1 * x2
-                   LINCOMB k1 k2 -> k1*x1 + k2*x2
-                   AND -> x1 * x2
-                   OR  -> x1 + x2 -   x1*x2
-                   XOR -> x1 + x2 - 2*x1*x2
-                   UnsafeAND -> x1 * x2
-                   UnsafeOR  -> x1 + x2 -   x1*x2
-                   UnsafeXOR -> x1 + x2 - 2*x1*x2
-             in Just (M.insert i value σ2)
-           _                  -> Nothing
+      Just σ2 -> Just (M.insert i (valueBinOp op x1 x2) σ2)
+        where x1 = M.lookup' (outputWire p1) σ1
+              x2 = M.lookup' (outputWire p2) σ2
 
-witnessGen' m ρ σ (LEQLC p1 k w i) =
-  case witnessGen' m ρ σ p1 of
+  LBoolToF p1 -> witnessGenE' m ρ σ p1
+  LEQLC p1 k w i -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 ->
-      let i1 = outputWire p1
-      in case M.lookup i1 σ1
-      of Just x1 -> if x1 == k
-           then let σ2 = M.insert w zero σ1
-                in Just (M.insert i one σ2)
-           else let σ2 = M.insert w (1/(x1-k)) σ1
-                in Just (M.insert i zero σ2)
-         _       -> Nothing
+    Just σ1 -> Just (M.insert i value (M.insert w witness σ1))
+      where x1 = M.lookup' (outputWire p1) σ1
+            value = if x1 == k then one else zero -- think True or False
+            witness = if x1 == k then zero else 1/(x1-k)
 
-witnessGen' m ρ σ (LNZERO p1 w) =
-  case witnessGen' m ρ σ p1 of
+  LNIL _ -> Just σ
+  LCONS p1 p2 -> case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 ->
-      let i1 = outputWire p1
-      in case M.lookup i1 σ1
-      of Just x1 -> if x1 /= 0 then Just (M.insert w (1/x1) σ1)
-                    else Nothing
-         _       -> Nothing
-witnessGen' m ρ σ (LBOOLEAN p1) = witnessGen' m ρ σ p1
-witnessGen' m ρ σ (LEQA p1 p2) =
-  case witnessGen' m ρ σ p1 of
+    Just σ1 -> witnessGenE' m ρ σ1 p2
+
+{-@ reflect witnessGenA' @-}
+{-@ witnessGenA' :: m:Nat
+                 -> NameValuation p -> σ:WireValuation p m
+                 -> {a:LAss p (Btwn 0 m) | wfA a && freshA a σ}
+                 -> Maybe ({σ':WireValuation p m |
+                             M.keysSet σ' = S.union (M.keysSet σ) (wiresA a)}) @-}
+witnessGenA' :: (Eq p, Fractional p) => Int
+             -> NameValuation p -> WireValuation p -> LAss p Int
+             -> Maybe (WireValuation p)
+witnessGenA' m ρ σ a = case a of
+  LNZERO p1 w -> scalar' p1 ?? case witnessGenE' m ρ σ p1 of
     Nothing -> Nothing
-    Just σ1 -> witnessGen' m ρ σ1 p2
-
-
-{-@ reflect toVector @-}
-{-@ toVector :: m:Nat -> M.Map (Btwn 0 m) p -> VecN p m @-}
-toVector :: Num p => Int -> M.Map Int p -> Vec p
-toVector m σ = toVector' m m σ Nil
-
-{-@ reflect toVector' @-}
-{-@ toVector' :: m:Nat -> l:Nat -> M.Map (Btwn 0 m) p
-              -> {v:Vec p | vvlen v = (m-l)}
-              -> VecN p m / [l] @-}
-toVector' :: Num p => Int -> Int -> M.Map Int p -> Vec p -> Vec p
-toVector' m 0 val acc = acc
-toVector' m l val acc = toVector' m (l-1) val
-                         (Cons (M.findWithDefault zero (l-1) val) acc)
+    Just σ1 -> if x1 /= 0 then Just (M.insert w (1/x1) σ1) else Nothing
+      where x1 = M.lookup' (outputWire p1) σ1
+  LBOOLEAN p1 -> scalar' p1 ?? witnessGenE' m ρ σ p1
+  LEQA p1 p2 -> case scalar' p1 ?? witnessGenE' m ρ σ p1 of
+    Nothing -> Nothing
+    Just σ1 -> scalar' p2 ?? witnessGenE' m ρ σ1 p2

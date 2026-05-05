@@ -3,7 +3,8 @@
 module Liquid.Data.Map where
 
 import Prelude hiding (lookup)
-import Utils (elem')
+
+import qualified Data.Set as S
 
 data Map k v = MTip | MBin k v (Map k v)
   deriving (Show, Eq)
@@ -35,6 +36,8 @@ alter f k (MBin k' v' m)
     | otherwise = MBin k' v' (alter f k m)
 
 {-@ reflect insert @-}
+{-@ insert :: key:k -> v -> m:Map k v
+           -> {m':Map k v | keysSet m' = S.union (keysSet m) (S.singleton key)} @-}
 insert :: k -> v -> Map k v -> Map k v
 insert k v m = MBin k v m
 
@@ -59,10 +62,19 @@ fromList :: [(k,v)] -> Map k v
 fromList []        = MTip
 fromList ((k,v):m) = MBin k v (fromList m)
 
+{-@ reflect member @-}
+member :: Ord k => k -> Map k v -> Bool
+member k m = S.member k (keysSet m)
+
 {-@ reflect keys @-}
 keys :: Map k v -> [k]
 keys MTip         = []
 keys (MBin k v m) = k : keys m
+
+{-@ measure keysSet @-}
+keysSet :: (Ord k) => Map k v -> S.Set k
+keysSet MTip = S.empty
+keysSet (MBin k v m) = S.singleton k `S.union` keysSet m
 
 {-@ reflect elems @-}
 elems :: Map k v -> [v]
@@ -70,6 +82,6 @@ elems MTip         = []
 elems (MBin k v m) = v : elems m
 
 {-@ reflect lookup' @-}
-{-@ lookup' :: key:k -> {m:Map k v | elem' key (keys m)} -> v @-}
-lookup' :: Eq k => k -> Map k v -> v
+{-@ lookup' :: key:k -> {m:Map k v | member key m} -> v @-}
+lookup' :: Ord k => k -> Map k v -> v
 lookup' k' (MBin k v m) = if k == k' then v else lookup' k' m
