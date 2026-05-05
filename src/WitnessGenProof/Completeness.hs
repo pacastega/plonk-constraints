@@ -29,6 +29,7 @@ import WitnessGenProof.WitnessGenLemmas
 import WitnessGenProof.SemanticsLemmas
 import WitnessGenProof.CompletenessBase
 import WitnessGenProof.CompletenessOps
+import WitnessGenProof.CompletenessCast
 import WitnessGenProof.CompletenessDiv
 import WitnessGenProof.CompletenessEqlc
 import WitnessGenProof.CompletenessEql
@@ -112,8 +113,26 @@ auxUn m0 e1 op ρ v λ σ π m e' λ' = case op of
       ?? wgCompleteEqlc m0 e1 k (UN op e1) ρ v1 v' λ σ
                         m1 e1' λ1 m e' λ' w i σ1
 
-  BoolToF -> admit' m
-             -- wgCompleteE m0 m e1 ρ λ σ π λ' e'
+  BoolToF -> σ' where
+    (m1,e1',λ1) = label' e1 m0 λ
+    v1 = evalUn e1 op ρ v
+
+    wf1 = labelWF    e1 m0 λ m1 e1' λ1 -- e1' is well-formed
+    wt1 = labelTyped e1 m0 λ m1 e1' λ1 -- e1' is well-typed
+
+    size1 = sizeUn e1 op
+
+    m_gt_m1 = labelIncUn op e1 m0 λ m1 e1' λ1 m e' λ'
+
+    fresh1 = labelCast m0 e1 λ m1 e1' λ1 m e' λ' ?? freshCast m e1' σ
+    σ1 = size1 ?? wf1 ?? wt1 ?? fresh1 ?? wgLemma m1 m ρ σ e1'
+      ?? wgCompleteE m0 e1 ρ (VF v1) λ σ π m1 e1' λ1
+
+    v' = typedScalarUn e1 op ?? evalScalar (UN op e1) ρ v -- VF v' == v
+    σ' = m_gt_m1
+      ?? sigmaVarLemma m1 m e1' σ1 -- sigmaVar ignores its first argument
+      ?? wgCompleteCast m0 e1 (UN BoolToF e1) ρ v1 v' λ σ m1 e1' λ1 m e' λ' σ1
+
   _ -> σ' where
     (m1,e1',λ1) = label' e1 m0 λ
     v1 = evalUn e1 op ρ v

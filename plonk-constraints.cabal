@@ -67,6 +67,7 @@ library
       WitnessGenProof.Completeness
       WitnessGenProof.CompletenessBase
       WitnessGenProof.CompletenessOps
+      WitnessGenProof.CompletenessCast
       WitnessGenProof.CompletenessDiv
       WitnessGenProof.CompletenessEqlc
       WitnessGenProof.CompletenessEql
