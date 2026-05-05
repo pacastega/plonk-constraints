@@ -398,12 +398,3 @@ wgCompleteE m0 e ρ v λ σ π m e' λ' = case e of
   NIL τ -> wgCompleteNil m0 τ e ρ v λ σ m e' λ'
   CONS e1 e2 -> wellTypedCons e1 e2
              ?? auxCons m0 e1 e2 ρ v λ σ π m e' λ'
-
-
-{-@ assume admit :: () -> { False } @-}
-admit :: () -> ()
-admit _ = ()
-
-{-@ assume admit' :: m:Nat -> { σ:WireValuation p m | False } @-}
-admit' :: (Eq p, Fractional p) => Int -> WireValuation p
-admit' _ = M.MTip
