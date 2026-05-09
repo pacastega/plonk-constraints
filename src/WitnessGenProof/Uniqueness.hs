@@ -95,14 +95,18 @@ evalWireUnique m0 m' e ρ λ m e' λ' σ π v γ γ' h_boolean = case inferType'
     BIN op e1 e2 -> case op of
       DIV -> admit ()
       EQL -> admit ()
-      _ -> evalWireUnique m0 m' e1 ρ λ  m1 e1' λ1 σ π v1 γ  γ1 h_boolean
-         ? evalWireUnique m1 m' e2 ρ λ1 m2 e2' λ2 σ π v2 γ1 γ2 h_boolean
+      _ -> evalWireUnique m0 m' e1 ρ λ  m1 e1' λ1 σ π1 v1 γ  γ1 h_1
+         ? evalWireUnique m1 m' e2 ρ λ1 m2 e2' λ2 σ π2 v2 γ1 γ2 h_2
         where (m1,e1',λ1) = label' e1 m0 λ
               (m2,e2',λ2) = label' e2 m1 λ1
               v1 = evalWire m' e1' σ
               v2 = evalWire m' e2' σ
-              Just γ1 = tyEnv'_ e1' γ
-              Just γ2 = tyEnv'_ e2' γ1
+
+              γ1 = case tyEnv'_ e1' γ  of Just g -> g
+              γ2 = case tyEnv'_ e2' γ1 of Just g -> g
+              --FIXME: could be the following instead, but that crashes:
+              -- Just γ1 = tyEnv'_ e1' γ
+              -- Just γ2 = tyEnv'_ e2' γ1
 
               {-@ π1 :: Agree λ1 ρ σ @-}
               π1 :: String -> Proof
