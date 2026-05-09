@@ -76,25 +76,27 @@ tyEnv'_ e γ = case inferType' e of --FIXME: this could be a let binding, but th
     LCONST _ i -> insertIfCompatible i τ γ
     LBOOL  _ i -> insertIfCompatible i τ γ
 
-    LDIV e1 e2 w i -> case tyEnv'_ e1 γ of
-      Nothing -> Nothing; Just γ1 -> case tyEnv'_ e2 γ1 of
-        Nothing -> Nothing; Just γ2 -> case insertIfCompatible w TF γ2 of
-          Nothing -> Nothing; Just γw -> insertIfCompatible i τ γw
+    LDIV e1 e2 w i | Just γ1 <- tyEnv'_ e1 γ
+                   , Just γ2 <- tyEnv'_ e2 γ1
+                   , Just γw <- insertIfCompatible w TF γ2
+                  -> insertIfCompatible i τ γw
 
-    LUN _ e1 i -> case tyEnv'_ e1 γ of
-      Nothing -> Nothing; Just γ1 -> insertIfCompatible i τ γ1
-    LBIN _ e1 e2 i -> case tyEnv'_ e1 γ of
-      Nothing -> Nothing; Just γ1 -> case tyEnv'_ e2 γ1 of
-        Nothing -> Nothing; Just γ2 -> insertIfCompatible i τ γ2
+    LUN _ e1 i | Just γ1 <- tyEnv'_ e1 γ
+              -> insertIfCompatible i τ γ1
+    LBIN _ e1 e2 i | Just γ1 <- tyEnv'_ e1 γ
+                   , Just γ2 <- tyEnv'_ e2 γ1
+                  -> insertIfCompatible i τ γ2
 
     LBoolToF e1 -> tyEnv'_ e1 γ
-    LEQLC e1 _ w i -> case tyEnv'_ e1 γ of
-      Nothing -> Nothing; Just γ1 -> case insertIfCompatible w TF γ1 of
-        Nothing -> Nothing; Just γw -> insertIfCompatible i τ γw
+    LEQLC e1 _ w i | Just γ1 <- tyEnv'_ e1 γ
+                   , Just γw <- insertIfCompatible w TF γ1
+                  -> insertIfCompatible i τ γw
 
     LNIL _ -> Just γ
-    LCONS e1 e2 -> case tyEnv'_ e1 γ of
-      Nothing -> Nothing; Just γ1 -> tyEnv'_ e2 γ1
+    LCONS e1 e2 | Just γ1 <- tyEnv'_ e1 γ
+               -> tyEnv'_ e2 γ1
+
+    _ -> Nothing
 
 
 {-@ reflect wfEWire @-}
