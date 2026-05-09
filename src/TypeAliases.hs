@@ -41,5 +41,5 @@ type LabelEnv p i = M.Map String i
 
 -- "Greater than or equal" relation between maps ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-{-@ type MapGE M2 M1 = k:{Int | M.member k M1}
+{-@ type MapGE M2 M1 = k:{_ | M.member k M1}
                     -> { M.member k M2 && M.lookup' k M1 = M.lookup' k M2 } @-}
