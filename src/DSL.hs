@@ -32,6 +32,9 @@ import Language.Haskell.Liquid.ProofCombinators
 data Ty = TF | TBool | TVec Ty deriving (Eq, Ord, Show)
 {-@ type ScalarTy = {τ:Ty | scalarType τ} @-}
 
+type TyEnv = M.Map Var Ty
+{-@ type TyEnv = M.Map Var ScalarTy @-} -- variables can only have scalar types
+
 {-@ measure scalarType @-}
 scalarType :: Ty -> Bool
 scalarType TF       = True
@@ -141,6 +144,32 @@ vector p = case inferType p of
   Nothing      -> False
   Just TVec {} -> True
   Just _       -> False
+
+
+{-@ reflect tyEnv @-}
+tyEnv :: DSL p -> Maybe TyEnv
+tyEnv e = tyEnv_ e M.empty
+
+{-@ reflect tyEnv_ @-}
+tyEnv_ :: DSL p -> TyEnv -> Maybe TyEnv
+tyEnv_ e γ = case e of
+  VAR x τ -> case M.lookup x γ of
+    Nothing -> Just (M.insert x τ γ) -- Γ' := Γ, x:τ
+    Just τ' -> if τ == τ'
+               then Just γ  -- the type matches: no need to update Γ
+               else Nothing -- mismatch (x used with different types)
+  CONST _ -> Just γ
+  BOOL  _ -> Just γ
+
+  UN  _ e1    -> tyEnv_ e1 γ
+  BIN _ e1 e2 -> case tyEnv_ e1 γ of
+    Just γ' -> tyEnv_ e2 γ'
+    Nothing -> Nothing
+
+  NIL _ -> Just γ
+  CONS e1 e2 -> case tyEnv_ e1 γ of
+    Just γ' -> tyEnv_ e2 γ'
+    Nothing -> Nothing
 
 
 {-@ reflect inferType @-}
