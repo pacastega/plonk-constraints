@@ -343,6 +343,16 @@ labelCons :: (Num p, Ord p) => Int -> DSL p -> DSL p -> LabelEnv p Int
 labelCons m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 _m e' _λ' = case e' of
    LCONS _ _ -> trivial
 
+-- if NIL τ ↝ e' then e' = LNIL τ
+{-@ labelNil :: m0:Nat -> τ:Ty -> λ:LabelEnv p (Btwn 0 m0)
+             -> m:{Int | m >= m0}
+             -> e':LDSL p (Btwn 0 m)
+             -> λ':{LabelEnv p (Btwn 0 m) | label' (NIL τ) m0 λ = (m, e', λ')}
+             -> { e' = LNIL τ } @-}
+labelNil :: (Num p, Ord p) => Int -> Ty -> LabelEnv p Int
+         -> Int -> LDSL p Int -> LabelEnv p Int -> Proof
+labelNil m0 τ λ  _m e' _λ' = case e' of LNIL _ -> trivial
+
 
 -- labeling never decreases the bound on used wires ----------------------------
 
