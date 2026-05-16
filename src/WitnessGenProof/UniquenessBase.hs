@@ -31,7 +31,6 @@ import WitnessGenProof.WitnessGenLemmas
 import WitnessGenProof.SemanticsLemmas
 
 import WitnessGenProof.UniquenessLemmas
-import WitnessGenProof.Uniqueness2 hiding (foo, barOp) --FIXME: these lemmas should go somewhere else
 
 import Language.Haskell.Liquid.ProofCombinators
 

@@ -80,6 +80,7 @@ library
       WitnessGenProof.Uniqueness
       WitnessGenProof.Uniqueness2
       WitnessGenProof.UniquenessBase
+      WitnessGenProof.UniquenessOps
   other-modules:
       Treekz
       Paths_plonk_constraints

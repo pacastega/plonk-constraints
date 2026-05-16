@@ -31,6 +31,7 @@ import WitnessGenProof.SemanticsLemmas
 import WitnessGenProof.UniquenessLemmas
 
 import WitnessGenProof.UniquenessBase
+import WitnessGenProof.UniquenessOps
 import WitnessGenProof.Uniqueness2 --FIXME: these lemmas should go somewhere else
 
 import Language.Haskell.Liquid.ProofCombinators
@@ -51,8 +52,8 @@ import Language.Haskell.Liquid.ProofCombinators
           -> Agree λ' ρ σ
           -> v:{DSLValue p | evalWire m' e' σ = v}
 
-          -> γ:TyEnv' (Btwn 0 m')
-          -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnv'_ e' γ}
+          -> γ:TyEnv' (Btwn 0 m0)
+          -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' γ}
           -> ( j:{Btwn 0 m | S.member j (elemsSet λ')
                           && M.lookup j γ' = Just TBool}
                  -> { boolean (M.lookup' j σ) } )
@@ -67,57 +68,34 @@ auxUn :: (Fractional p, Ord p) => Int -> Int -> UnOp p -> DSL p
 
       -> TyEnv' Int -> TyEnv' Int -> (Int -> Proof)
       -> Proof
-auxUn m0 m' op e1 e ρ λ m e' λ' τ σ π v γ γ' h_boolean =
-  sizeUn e1 op ??
-  let (m1,e1',λ1) = label' e1 m0 λ
-      m_gt_m1 = labelIncUn op e1 m0 λ m1 e1' λ1 m e' λ'
-  in case op of
-      ISZERO -> admit ()
-      EQLC _ -> admit ()
-      BoolToF -> admit ()
-      _ -> m_gt_m1 -- m ≥ m1
+auxUn m0 m' op e1 e ρ λ m e' λ' τ σ π v γ γ' h_boolean = ()
+  ?? m_gt_m1 -- m ≥ m1
+  ?? wf1
+  ?? uniqueUn m0 m' op e1 e ρ λ m1 e1' λ1 m e' λ' σ (v1 ? ih1) v
 
-        ?? coherentE m' e' σ -- σ ⊢ e1'
+  where (m1,e1',λ1) = label' e1 m0 λ
+        v1 = m_gt_m1
+          ?? labelTyped e1 m0 λ m1 e1' λ1
+          ?? wires1
+          ?? evalWire m' e1' σ
 
-        ?? λ'_λ1 -- λ' == λ1
+        m_gt_m1 = labelIncUn op e1 m0 λ m1 e1' λ1 m e' λ'
 
-        ?? labelWF e1 m0 λ  m1 e1' λ1 -- e1' is well-formed
-        ?? evalWireUnique m0 m' e1 ρ λ  m1 e1' λ1 σ π v1 γ  γ1 h_1 -- IH1: v1 = eval e1 ρ
+        γ1 = tyEnvUn1 m0 op e1 e λ m e' λ' m1 e1' λ1 γ γ'
+        h1 = booleanUn1 m0 m' op e1 e λ m e' λ' m1 e1' λ1 γ γ1 γ' σ h_boolean
+        wf1 = labelWF e1 m0 λ  m1 e1' λ1 -- e1' is well-formed
+        λ'_λ1 = labelEnvUn e1 op m0 λ m1 e1' λ1 m e' λ'
+        wires1 = wiresUn e1 op m0 λ m1 e1' λ1 m e' λ'
+        coherent1 = coherentUn m0 m' op e1 e λ m e' λ' m1 e1' λ1 σ
 
-        ?? scalarUn m' e1' op i -- e1' is scalar
+        {-@ π1 :: Agree λ' ρ σ @-}
+        π1 :: String -> Proof
+        π1 x = λ'_λ1 ?? π x
 
-        ?? evalWireScalar m' e1' σ -- v1 = evalWire m' e1' σ = Just (σ[outputWire e1'])
-
-        ?? wires1 -- the wires of e1' are also wires of e'
-
-        ?? typedScalarLUn m' op e1' i -- e' is scalar
-        ?? evalWireScalar m' e' σ -- evalWire m' e' σ = Just (σ[i])
-        ?? eval e ρ -- eval e ρ = Just (valueBinOp op v1 v2)
-
-        ?? liquidAssert (i == outputWire e')
-
-        where wires1 = wiresUn m' e1' op i (LUN op e1' i)
-
-              v1 = m_gt_m1
-                ?? labelTyped e1 m0 λ  m1 e1' λ1
-                ?? wires1
-                ?? evalWire m' e1' σ
-
-              γ1 = tyEnvUn m' e1' op i τ γ γ'
-
-              i = labelUn m0 e1 λ op m1 e1' λ1 m e' λ'
-
-              {-@ h_1 :: j:{Btwn 0 m | S.member j (elemsSet λ1)
-                                    && M.lookup j γ1 = Just TBool}
-                      -> { boolean (M.lookup' j σ) } @-}
-              h_1 :: Int -> Proof
-              h_1 j = liquidAssert (Just γ' == insertIfCompatible i τ γ1)
-                   ?? lookupInsertIC i τ γ1 γ' j
-                   ?? λ'_λ1
-                   ?? h_boolean j
-
-              {-@ λ'_λ1 :: { λ' = λ1 } @-}
-              λ'_λ1 = labelEnvUn e1 op m0 λ m1 e1' λ1 m e' λ'
+        ih1 = sizeUn e1 op
+           ?? wf1
+           ?? coherent1
+           ?? evalWireUnique m0 m' e1 ρ λ m1 e1' λ1 σ π1 v1 γ  γ1 h1
 
 
 {-@ auxBin :: m0:Nat -> m':Nat -> op:BinOp p -> e1:TypedDSL p -> e2:TypedDSL p
@@ -135,8 +113,8 @@ auxUn m0 m' op e1 e ρ λ m e' λ' τ σ π v γ γ' h_boolean =
            -> Agree λ' ρ σ
            -> v:{DSLValue p | evalWire m' e' σ = v}
 
-           -> γ:TyEnv' (Btwn 0 m')
-           -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnv'_ e' γ}
+           -> γ:TyEnv' (Btwn 0 m0)
+           -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' γ}
            -> ( j:{Btwn 0 m | S.member j (elemsSet λ')
                            && M.lookup j γ' = Just TBool}
                   -> { boolean (M.lookup' j σ) } )
@@ -151,83 +129,56 @@ auxBin :: (Fractional p, Ord p) => Int -> Int -> BinOp p -> DSL p -> DSL p
 
        -> TyEnv' Int -> TyEnv' Int -> (Int -> Proof)
        -> Proof
-auxBin m0 m' op e1 e2 e ρ λ m e' λ' τ σ π v γ γ' h_boolean =
-  sizeBin e1 e2 op ?? case op of
-      DIV -> admit ()
-      EQL -> admit ()
-      _ -> m_gt_m1_m2 -- m ≥ m2 ≥ m1
+auxBin m0 m' op e1 e2 e ρ λ m e' λ' τ σ π v γ γ' h_boolean = ()
+        ?? m_gt_m1_m2 -- m ≥ m2 ≥ m1
+        ?? wf1 ?? wf2
+        ?? uniqueBin m0 m' op e1 e2 e ρ λ m1 e1' λ1 m2 e2' λ2 m e' λ' σ (v1 ? ih1) (v2 ? ih2) v
 
-        ?? coherentE m' e' σ -- σ ⊢ e1', σ ⊢ e2'
+  where (m1,e1',λ1) = label' e1 m0 λ
+        (m2,e2',λ2) = label' e2 m1 λ1
+        v1 = m_gt_m1_m2
+          ?? labelTyped e1 m0 λ  m1 e1' λ1
+          ?? wires12
+          ?? evalWire m' e1' σ
+        v2 = m_gt_m1_m2
+          ?? labelTyped e2 m1 λ1 m2 e2' λ2
+          ?? wires12
+          ?? evalWire m' e2' σ
 
-        ?? labelWF e1 m0 λ  m1 e1' λ1 -- e1' is well-formed
-        ?? evalWireUnique m0 m' e1 ρ λ  m1 e1' λ1 σ π1 v1 γ  γ1 h_1 -- IH1: v1 = eval e1 ρ
+        m_gt_m1_m2 = labelIncBin op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-        ?? λ'_λ2 -- λ' == λ2
+        γ1 = tyEnvBin1 m0 op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ'
+        γ2 = tyEnvBin2 m0 op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' γ1
 
-        ?? labelWF e2 m1 λ1 m2 e2' λ2 -- e2' is well-formed
-        ?? evalWireUnique m1 m' e2 ρ λ1 m2 e2' λ2 σ π  v2 γ1 γ2 h_2 -- IH2: v2 = eval e2 ρ
+        h1 = booleanBin1 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h_boolean
+        h2 = booleanBin2 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h_boolean
 
-        ?? scalarBin m' e1' e2' op i -- e1' and e2' are scalars
+        wf1 = labelWF e1 m0 λ  m1 e1' λ1 -- e1' is well-formed
+        wf2 = labelWF e2 m1 λ1 m2 e2' λ2 -- e2' is well-formed
 
-        ?? evalWireScalar m' e1' σ -- v1 = evalWire m' e1' σ = Just (σ[outputWire e1'])
-        ?? evalWireScalar m' e2' σ -- v2 = evalWire m' e2' σ = Just (σ[outputWire e2'])
+        λ'_λ2 = labelEnvBin e1 e2 op m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-        ?? wires1 ?? wires2 -- the wires of e1', e2' are also wires of e'
+        wires12 = wiresBin e1 e2 op m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-        ?? typedScalarLBin m' op e1' e2' i -- e' is scalar
-        ?? evalWireScalar m' e' σ -- evalWire m' e' σ = Just (σ[i])
-        ?? eval e ρ -- eval e ρ = Just (valueBinOp op v1 v2)
+        coherent12 = coherentBin m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 σ
 
-        ?? liquidAssert (i == outputWire e')
+        {-@ π1 :: Agree λ1 ρ σ @-}
+        π1 :: String -> Proof
+        π1 x = labelIncrEnv e2 m1 λ1 m2 e2' λ2 x
+            ?? λ'_λ2 ?? π2 x
 
-        where (m1,e1',λ1) = label' e1 m0 λ
-              (m2,e2',λ2) = label' e2 m1 λ1
-              v1 = m_gt_m1_m2
-                ?? labelTyped e1 m0 λ  m1 e1' λ1
-                ?? wires1
-                ?? evalWire m' e1' σ
-              v2 = m_gt_m1_m2
-                ?? labelTyped e2 m1 λ1 m2 e2' λ2
-                ?? wires2
-                ?? evalWire m' e2' σ
+        {-@ π2 :: Agree λ' ρ σ @-}
+        π2 :: String -> Proof
+        π2 x = π x
 
-              wires1 = wiresBin1 m' e1' e2' op i (LBIN op e1' e2' i)
-              wires2 = wiresBin2 m' e1' e2' op i (LBIN op e1' e2' i)
-
-              γ1 = tyEnvBin1 m' e1' e2' op i   γ γ'
-              γ2 = tyEnvBin2 m' e1' e2' op i τ γ γ' γ1
-
-              m_gt_m1_m2 = labelIncBin op e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
-
-              {-@ π1 :: Agree λ1 ρ σ @-}
-              π1 :: String -> Proof
-              π1 x = labelIncrEnv e2 m1 λ1 m2 e2' λ2 x
-                  ?? λ'_λ2
-                  ?? π x
-
-              i = labelBin m0 e1 e2 λ op m1 e1' λ1 m2 e2' λ2 m e' λ'
-
-              {-@ h_2 :: j:{Btwn 0 m | S.member j (elemsSet λ2)
-                                    && M.lookup j γ2 = Just TBool}
-                      -> { boolean (M.lookup' j σ) } @-}
-              h_2 :: Int -> Proof
-              h_2 j = liquidAssert (Just γ' == insertIfCompatible i τ γ2)
-                   ?? lookupInsertIC i τ γ2 γ' j
-                   ?? λ'_λ2
-                   ?? h_boolean j
-
-              {-@ h_1 :: j:{Btwn 0 m | S.member j (elemsSet λ1)
-                                   && M.lookup j γ1 = Just TBool}
-                      -> { boolean (M.lookup' j σ) } @-}
-              h_1 :: Int -> Proof
-              h_1 j = elementLemma j TBool γ1
-                   ?? tyEnv'_incr e2' γ1 γ2 j
-                   ?? lookupLemma j γ1 ?? lookupLemma j γ2
-                   ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
-                   ?? h_2 j
-
-              {-@ λ'_λ2 :: { λ' = λ2 }  @-}
-              λ'_λ2 = labelEnvBin e1 e2 op m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
+        ih1 = sizeBin e1 e2 op
+           ?? wf1
+           ?? coherent12
+           ?? evalWireUnique m0 m' e1 ρ λ m1 e1' λ1 σ π1 v1 γ  γ1 h1
+        ih2 = sizeBin e1 e2 op
+           ?? wf2
+           ?? coherent12
+           ?? evalWireUnique m1 m' e2 ρ λ1 m2 e2' λ2 σ π2 v2 γ1 γ2 h2
 
 
 {-@ auxCons :: m0:Nat -> m':Nat -> e1:TypedDSL p -> e2:TypedDSL p
@@ -245,8 +196,8 @@ auxBin m0 m' op e1 e2 e ρ λ m e' λ' τ σ π v γ γ' h_boolean =
             -> Agree λ' ρ σ
             -> v:{DSLValue p | evalWire m' e' σ = v}
 
-            -> γ:TyEnv' (Btwn 0 m')
-            -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnv'_ e' γ}
+            -> γ:TyEnv' (Btwn 0 m0)
+            -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' γ}
             -> ( j:{Btwn 0 m | S.member j (elemsSet λ')
                             && M.lookup j γ' = Just TBool}
                    -> { boolean (M.lookup' j σ) } )
@@ -261,84 +212,56 @@ auxCons :: (Fractional p, Ord p) => Int -> Int -> DSL p -> DSL p
 
         -> TyEnv' Int -> TyEnv' Int -> (Int -> Proof)
         -> Proof
-auxCons m0 m' e1 e2 e ρ λ m e' λ' τ σ π v γ γ' h_boolean =
-           sizeCons e1 e2
+auxCons m0 m' e1 e2 e ρ λ m e' λ' τ σ π v γ γ' h_boolean = ()
         ?? m_gt_m1_m2 -- m ≥ m2 ≥ m1
-        ?? wires1 ?? wires2 -- the wires of e1', e2' are also wires of e'
+        ?? wf1 ?? wf2
+        ?? uniqueCons m0 m' e1 e2 e ρ λ m1 e1' λ1 m2 e2' λ2 m e' λ' σ (v1 ? ih1) (v2 ? ih2) v
 
-        ?? coherentE m' e' σ -- σ ⊢ e1', σ ⊢ e2'
+  where (m1,e1',λ1) = label' e1 m0 λ
+        (m2,e2',λ2) = label' e2 m1 λ1
+        v1 = m_gt_m1_m2
+          ?? labelTyped e1 m0 λ  m1 e1' λ1
+          ?? wires12
+          ?? evalWire m' e1' σ
+        v2 = m_gt_m1_m2
+          ?? labelTyped e2 m1 λ1 m2 e2' λ2
+          ?? wires12
+          ?? evalWire m' e2' σ
 
-        ?? labelWF e1 m0 λ  m1 e1' λ1 -- e1' is well-formed
-        ?? evalWireUnique m0 m' e1 ρ λ  m1 e1' λ1 σ π1 v1 γ  γ1 h_1 -- IH1: v1 = eval e1 ρ
+        m_gt_m1_m2 = labelIncCons e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-        ?? λ'_λ2 -- λ' == λ2
+        γ1 = tyEnvCons1 m0 e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ'
+        γ2 = tyEnvCons2 m0 e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' γ1
 
-        ?? labelWF e2 m1 λ1 m2 e2' λ2 -- e2' is well-formed
-        ?? evalWireUnique m1 m' e2 ρ λ1 m2 e2' λ2 σ π  v2 γ1 γ2 h_2 -- IH2: v2 = eval e2 ρ
+        h1 = booleanCons1 m0 m' e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h_boolean
+        h2 = booleanCons2 m0 m' e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h_boolean
 
-        ?? evalWire m' e' σ
-        ?? eval e ρ -- eval e ρ = Just (valueBinOp op v1 v2)
-        ?? trivial
+        wf1 = labelWF e1 m0 λ  m1 e1' λ1 -- e1' is well-formed
+        wf2 = labelWF e2 m1 λ1 m2 e2' λ2 -- e2' is well-formed
 
-        -- ?? liquidAssert (i == outputWire e')
+        λ'_λ2 = labelEnvCons e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-        where (m1,e1',λ1) = label' e1 m0 λ
-              (m2,e2',λ2) = label' e2 m1 λ1
-              v1 = m_gt_m1_m2
-                ?? labelTyped e1 m0 λ  m1 e1' λ1
-                ?? wires1
-                ?? liquidAssert (S.isSubsetOf (wiresE e1' `S.union` wWiresE e1')
-                                              (wiresE e' `S.union` wWiresE e'))
-                ?? liquidAssert (S.isSubsetOf (wiresE e' `S.union` wWiresE e')
-                                              (M.keysSet σ))
-                ?? evalWire m' e1' σ
-              v2 = m_gt_m1_m2
-                ?? labelTyped e2 m1 λ1 m2 e2' λ2
-                ?? wires2
-                ?? liquidAssert (S.isSubsetOf (wiresE e2' `S.union` wWiresE e2')
-                                              (wiresE e' `S.union` wWiresE e'))
-                ?? liquidAssert (S.isSubsetOf (wiresE e' `S.union` wWiresE e')
-                                              (M.keysSet σ))
-                ?? evalWire m' e2' σ
+        wires12 = wiresCons e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-              wires1 = cons_thm ?? wiresCons1 m' e1' e2' (LCONS e1' e2')
-              wires2 = cons_thm ?? wiresCons2 m' e1' e2' (LCONS e1' e2')
+        coherent12 = coherentCons m0 m' e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 σ
 
-              γ1 = cons_thm ?? tyEnvCons1 m' e1' e2' γ γ'
-              γ2 = cons_thm ?? tyEnvCons2 m' e1' e2' γ γ' γ1
+        {-@ π1 :: Agree λ1 ρ σ @-}
+        π1 :: String -> Proof
+        π1 x = labelIncrEnv e2 m1 λ1 m2 e2' λ2 x
+            ?? λ'_λ2 ?? π2 x
 
-              m_gt_m1_m2 = labelIncCons e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
+        {-@ π2 :: Agree λ' ρ σ @-}
+        π2 :: String -> Proof
+        π2 x = π x
 
-              cons_thm = labelCons m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
-
-              {-@ π1 :: Agree λ1 ρ σ @-}
-              π1 :: String -> Proof
-              π1 x = labelIncrEnv e2 m1 λ1 m2 e2' λ2 x
-                  ?? λ'_λ2
-                  ?? π x
-
-              {-@ h_2 :: j:{Btwn 0 m | S.member j (elemsSet λ')
-                                    && M.lookup j γ' = Just TBool}
-                      -> { boolean (M.lookup' j σ) } @-}
-              h_2 :: Int -> Proof
-              h_2 j = ()
-                      -- liquidAssert (Just γ' == insertIfCompatible i τ γ2)
-                   -- ?? lookupInsertIC i τ γ2 γ' j
-                   ?? λ'_λ2
-                   ?? h_boolean j
-
-              {-@ h_1 :: j:{Btwn 0 m | S.member j (elemsSet λ1)
-                                   && M.lookup j γ1 = Just TBool}
-                      -> { boolean (M.lookup' j σ) } @-}
-              h_1 :: Int -> Proof
-              h_1 j = elementLemma j TBool γ1
-                   ?? tyEnv'_incr e2' γ1 γ2 j
-                   ?? lookupLemma j γ1 ?? lookupLemma j γ'
-                   ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
-                   ?? h_2 j
-
-              {-@ λ'_λ2 :: { λ' = λ2 }  @-}
-              λ'_λ2 = labelEnvCons e1 e2 m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
+        ih1 = sizeCons e1 e2
+           ?? wf1
+           ?? coherent12
+           ?? evalWireUnique m0 m' e1 ρ λ m1 e1' λ1 σ π1 v1 γ  γ1 h1
+        ih2 = sizeCons e1 e2
+           ?? wf2
+           ?? coherent12
+           ?? evalWireUnique m1 m' e2 ρ λ1 m2 e2' λ2 σ π2 v2 γ1 γ2 h2
 
 
 {-@ evalWireUnique :: m0:Nat -> m':Nat
@@ -354,8 +277,8 @@ auxCons m0 m' e1 e2 e ρ λ m e' λ' τ σ π v γ γ' h_boolean =
                    -> Agree λ' ρ σ
                    -> v:{DSLValue p | evalWire m' e' σ = v}
 
-                   -> γ:TyEnv' (Btwn 0 m')
-                   -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnv'_ e' γ}
+                   -> γ:TyEnv' (Btwn 0 m0)
+                   -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' γ}
                    -> ( j:{Btwn 0 m | S.member j (elemsSet λ')
                                    && M.lookup j γ' = Just TBool}
                           -> { boolean (M.lookup' j σ) } )
