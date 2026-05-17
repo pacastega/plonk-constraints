@@ -345,8 +345,3 @@ evalWireUnique m0 m' e ρ λ m e' λ' σ π v γ γ' h_boolean = case inferType'
                ?? auxCons m0 m' e1 e2 e ρ λ m e' λ' τ σ π v γ γ' h_boolean
 
   _ -> liquidAssert (wellTyped' e') ?? error "impossible"
-
-
-{-@ assume admit :: () -> { False } @-}
-admit :: () -> ()
-admit _ = ()
