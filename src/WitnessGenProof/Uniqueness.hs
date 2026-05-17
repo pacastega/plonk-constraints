@@ -36,6 +36,41 @@ import WitnessGenProof.Uniqueness2 --FIXME: these lemmas should go somewhere els
 
 import Language.Haskell.Liquid.ProofCombinators
 
+{-@ evalWireUnique2 :: m0:Nat -> e:TypedDSL p
+                    -> ρ:NameValuation p -> LabelEnv p (Btwn 0 m0)
+
+                    -> m:{Nat | m0 <= m}
+                    -> e':{TypedLDSL p (Btwn 0 m) | wfE e'}
+                    -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 M.MTip = (m, e', λ')}
+
+                    -> σ:{WireValuation p m | closedExpr m σ e' && coherentE m e' σ}
+                    -> Agree λ' ρ σ
+                    -> v:{DSLValue p | evalWire m e' σ = v}
+
+                    -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' M.MTip}
+                    -> { eval e ρ = Just v } @-}
+evalWireUnique2 :: (Fractional p, Ord p) => Int -> DSL p
+                -> NameValuation p -> LabelEnv p Int
+
+                -> Int -> LDSL p Int -> LabelEnv p Int
+
+                -> WireValuation p -> (String -> Proof) -> DSLValue p
+
+                -> TyEnv' Int
+                -> Proof
+evalWireUnique2 m0 e ρ _ m e' λ' σ π v γ' =
+  evalWireUnique m0 m e ρ λ m e' λ' σ π v M.MTip γ' h_bool where
+
+  λ :: LabelEnv p Int -- somehow needed for the proof to pass
+  λ = M.MTip
+
+  {-@ h_bool :: j:{Btwn 0 m | S.member j (elemsSet λ')
+                           && M.lookup j γ' = Just TBool}
+                   -> { boolean (M.lookup' j σ) } @-}
+  h_bool j = labelWFWire' e m0 λ m e' λ'
+          ?? liquidAssert (S.isSubsetOf (elemsSet λ') (S.union (elemsSet λ) (wiresE e')))
+          ?? booleanProof' m σ e' M.MTip γ' j
+
 
 {-@ auxUn :: m0:Nat -> m':Nat -> op:UnOp p -> e1:TypedDSL p
           -> e:{TypedDSL p | e = UN op e1}
