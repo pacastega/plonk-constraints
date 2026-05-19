@@ -29,14 +29,13 @@ isWire Free  = False
 {-@ type Gate p M = (ListN (Wire (Btwn 0 M)) 3, ListN p 5) @-}
 type Gate p = ([Wire Int], [p])
 
-{-@ type Circuit p N M = ListN ({g:Gate p M | realGate M g}) N @-}
+{-@ type Circuit p N M = ListN ({g:Gate p M | wfGate M g}) N @-}
 type Circuit p = [Gate p]
 
-
-{-@ reflect realGate @-}
-{-@ realGate :: m:Nat -> Gate p m -> Bool @-}
-realGate :: (Eq p, Num p) => Int -> Gate p -> Bool
-realGate _ ([a,b,c], [qL,qR,qO,qM,qC]) = (isWire a || qL == 0 && qM == 0)
+{-@ reflect wfGate @-}
+{-@ wfGate :: m:Nat -> Gate p m -> Bool @-}
+wfGate :: (Eq p, Num p) => Int -> Gate p -> Bool
+wfGate _ ([a,b,c], [qL,qR,qO,qM,qC]) = (isWire a || qL == 0 && qM == 0)
                                       && (isWire b || qR == 0 && qM == 0)
                                       && (isWire c || qO == 0)
 
@@ -69,7 +68,7 @@ closedCirc n m σ c = S.isSubsetOf (wiresC n m c) (M.keysSet σ)
 
 {-@ reflect checkGate @-}
 {-@ checkGate :: m:Nat -> σ:WireValuation p m
-              -> {g:Gate p m | realGate m g && closedGate m σ g} -> Bool @-}
+              -> {g:Gate p m | wfGate m g && closedGate m σ g} -> Bool @-}
 checkGate :: (Eq p, Num p) => Int -> WireValuation p -> Gate p -> Bool
 checkGate m σ ([a,b,c], [qL,qR,qO,qM,qC]) =
   qL*xa + qR*xb + qO*xc + qM*xa*xb + qC == 0
