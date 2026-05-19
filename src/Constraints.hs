@@ -11,6 +11,8 @@ import qualified Data.Map as M
 import qualified MapFunctions as M
 #endif
 
+import qualified Data.Set as S
+
 import TypeAliases
 
 
@@ -41,19 +43,29 @@ realGate _ ([a,b,c], [qL,qR,qO,qM,qC]) = (isWire a || qL == 0 && qM == 0)
 {-@ reflect closedGate @-}
 {-@ closedGate :: m:Nat -> WireValuation p m -> Gate p m -> Bool @-}
 closedGate :: Int -> WireValuation p -> Gate p -> Bool
-closedGate m σ ([a,b,c], _) = boundWire σ a && boundWire σ b && boundWire σ c
+closedGate m σ g = S.isSubsetOf (wiresG m g) (M.keysSet σ)
 
-{-@ reflect boundWire @-}
-boundWire :: WireValuation p -> Wire Int -> Bool
-boundWire σ Free  = True
-boundWire σ (Wire i) = M.member i σ
+{-@ reflect wiresG @-}
+{-@ wiresG :: m:Nat -> Gate p m -> S.Set Int @-}
+wiresG :: Int -> Gate p -> S.Set Int
+wiresG _ ([a,b,c], _) = wireW a `S.union` wireW b `S.union` wireW c
+
+{-@ reflect wireW @-}
+wireW :: Wire Int -> S.Set Int
+wireW Free = S.empty
+wireW (Wire i) = S.singleton i
+
+{-@ reflect wiresC @-}
+{-@ wiresC :: n:Nat -> m:Nat -> Circuit p n m -> S.Set Int @-}
+wiresC :: Int -> Int -> Circuit p -> S.Set Int
+wiresC _ _ []     = S.empty
+wiresC n m (g:gs) = wiresG m g `S.union` wiresC (n-1) m gs
+
 
 {-@ reflect closedCirc @-}
 {-@ closedCirc :: n:Nat -> m:Nat -> WireValuation p m -> Circuit p n m -> Bool @-}
 closedCirc :: Int -> Int -> WireValuation p -> Circuit p -> Bool
-closedCirc _ _ _ []     = True
-closedCirc n m σ (g:gs) = closedGate m σ g && closedCirc (n-1) m σ gs
-
+closedCirc n m σ c = S.isSubsetOf (wiresC n m c) (M.keysSet σ)
 
 {-@ reflect checkGate @-}
 {-@ checkGate :: m:Nat -> σ:WireValuation p m
@@ -64,7 +76,8 @@ checkGate m σ ([a,b,c], [qL,qR,qO,qM,qC]) =
     where xa = wireValue m σ a; xb = wireValue m σ b; xc = wireValue m σ c
 
 {-@ reflect wireValue @-}
-{-@ wireValue :: m:Nat -> σ:WireValuation p m -> {w:Wire Int | boundWire σ w} -> p @-}
+{-@ wireValue :: m:Nat -> σ:WireValuation p m
+              -> ({w:Wire Int | S.isSubsetOf (wireW w) (M.keysSet σ)}) -> p @-}
 wireValue :: (Eq p, Num p) => Int -> WireValuation p -> Wire Int -> p
 -- since any 'free' wire doesn't contribute, we arbitrarily map it to 0
 wireValue _ σ Free = 0
