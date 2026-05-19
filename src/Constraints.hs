@@ -77,7 +77,7 @@ checkGate m σ ([a,b,c], [qL,qR,qO,qM,qC]) =
 {-@ reflect wireValue @-}
 {-@ wireValue :: m:Nat -> σ:WireValuation p m
               -> ({w:Wire Int | S.isSubsetOf (wireW w) (M.keysSet σ)}) -> p @-}
-wireValue :: (Eq p, Num p) => Int -> WireValuation p -> Wire Int -> p
+wireValue :: (Num p) => Int -> WireValuation p -> Wire Int -> p
 -- since any 'free' wire doesn't contribute, we arbitrarily map it to 0
 wireValue _ σ Free = 0
 wireValue _ σ (Wire i) = M.lookup' i σ
