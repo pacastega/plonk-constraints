@@ -651,10 +651,10 @@ valueBinOp op x1 x2 = case op of
    SUB -> x1 - x2
    MUL -> x1 * x2
    LINCOMB k1 k2 -> k1*x1 + k2*x2
-   AND -> if x1 == 0 || x2 == 0 then 0 else 1
+   AND -> if x1 == 1 && x2 == 1 then 1 else 0
    OR  -> if x1 == 1 || x2 == 1 then 1 else 0
    XOR -> if x1 /= x2 then 1 else 0
-   UnsafeAND -> if x1 == 0 || x2 == 0 then 0 else 1
+   UnsafeAND -> if x1 == 1 && x2 == 1 then 1 else 0
    UnsafeOR  -> if x1 == 1 || x2 == 1 then 1 else 0
    UnsafeXOR -> if x1 /= x2 then 1 else 0
 
