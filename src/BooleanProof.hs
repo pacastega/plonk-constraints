@@ -102,7 +102,7 @@ tyEnv'_ e γ = case inferType' e of --FIXME: this could be a let binding, but th
 {-@ reflect wfEWire @-}
 {-@ wfEWire :: TypedLDSL p i -> Bool @-}
 wfEWire :: (Ord i) => LDSL p i -> Bool
-wfEWire e = wWiresE e `S.isSubsetOf` wiresE e
+wfEWire e = wWiresE e `S.isSubsetOf` wiresE e --FIXME: this should be `wfWire'_ S.empty e`
          && isJust (tyEnv' e)
 
 
