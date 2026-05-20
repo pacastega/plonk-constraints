@@ -29,6 +29,7 @@ library
       BooleanProof
       Circuits
       CompilerProof
+      CompilerLemmas
       Constraints
       DSL
       Examples
