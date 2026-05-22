@@ -7,7 +7,13 @@ import Utils
 import DSL
 import Semantics
 
+#if LiquidOn
 import qualified Liquid.Data.Map as M
+#else
+import qualified Data.Map as M
+import qualified MapFunctions as M
+#endif
+
 import qualified Data.Set as S
 
 import MapLemmas
