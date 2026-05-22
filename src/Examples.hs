@@ -42,7 +42,8 @@ import DSL
 import Label
 import WitnessGeneration
 import Optimizations
-import Semantics (NameValuation)
+import TypeAliases
+import Semantics
 
 import Treekz
 import SHA256
@@ -109,8 +110,8 @@ test programStore ρ = do
 
   let ρ' = extend ρ hints
 
-  let (m, labeledBodies, labeledStore) = label program store
-  let labeledPrograms = (map LAss labeledStore) ++ (map LExpr labeledBodies)
+  let (m, labeledBody, labeledStore) = label program store
+  let labeledPrograms = (map LAss labeledStore) ++ [LExpr labeledBody]
 
   let circuit = concatMap (compile m) labeledPrograms
 
@@ -123,7 +124,7 @@ test programStore ρ = do
     Nothing -> do putStrLn "Witness generation failed"
                   putStrLn $ replicate 80 '='
     Just input -> do
-      let output = map (\p -> input ! outputWire p) labeledBodies
+      let output = evalWire m labeledBody input
       -- let output' = map (\p -> input ! outputWire p) labeledStore
 
       -- putStrLn $ "Input:                " ++ show input
@@ -141,14 +142,15 @@ test' programStore ρ tikzFilename = do
 
   let ρ' = extend ρ hints
 
-  let (m, labeledBodies, labeledStore) = label program store
-  let labeledPrograms = (map LAss labeledStore) ++ (map LExpr labeledBodies)
+  let (m, labeledBody, labeledStore) = label program store
+  let labeledPrograms = (map LAss labeledStore) ++ [LExpr labeledBody]
 
   let circuit = concatMap (compile m) labeledPrograms
   case witnessGen m labeledPrograms ρ' of
-    Nothing -> putStrLn "Witness generation failed"
+    Nothing -> do putStrLn "Witness generation failed"
+                  putStrLn $ replicate 80 '='
     Just input -> do
-      let output = map (\p -> input ! outputWire p) labeledBodies
+      let output = evalWire m labeledBody input
       -- let output' = map (\p -> input ! outputWire p) labeledStore
 
       -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
