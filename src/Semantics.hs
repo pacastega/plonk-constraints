@@ -21,6 +21,13 @@ import Language.Haskell.Liquid.ProofCombinators (withProof)
 data DSLValue p = VF p | VNil | VCons (DSLValue p) (DSLValue p)
   deriving Eq
 
+instance Show p => Show (DSLValue p) where
+  show (VF x) = show x
+  show v = "⟨" ++ show_ v ++ "⟩" where
+    show_ (VNil)         = " "
+    show_ (VCons x VNil) = show x
+    show_ (VCons x xs)   = show x ++ "," ++ show_ xs
+
 {-@ measure valSize @-}
 valSize :: DSLValue p -> Int
 valSize (VF _)       = 1
