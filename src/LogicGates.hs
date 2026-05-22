@@ -69,7 +69,11 @@ xorGate _ [a,b,c] =
   -- Gate 3. b * b == b (b is boolean)
 
 
--- Unsafe boolean gates (assume the inputs are boolean) ------------------------
+-- These boolean gates are "unsafe" because they are only correct when their
+-- inputs take values in {0,1}, but they don't add constraints to enforce it.
+
+-- This means that they may produce under-constrained circuits if used on their
+-- own, but they are used safely by the Plink compiler (as proven in CompilerProof.hs)
 {-@ reflect unsafeNotGate @-}
 {-@ unsafeNotGate :: m:Nat ->
                      ListN (Btwn 0 m) 2 ->
