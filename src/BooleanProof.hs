@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 module BooleanProof where
