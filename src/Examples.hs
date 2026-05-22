@@ -109,17 +109,12 @@ test programStore ρ = do
 
   let ρ' = extend ρ hints
 
-  -- let program' = constantFolding program
-  let program' = program
-  -- let store' = mapMaybe constantFolding' store
-  let store' = store
-
-  let (m, labeledBodies, labeledStore) = label program' store'
+  let (m, labeledBodies, labeledStore) = label program store
   let labeledPrograms = (map LAss labeledStore) ++ (map LExpr labeledBodies)
 
   let circuit = concatMap (compile m) labeledPrograms
 
-  -- putStrLn $ "Program (after optimizations):   " ++ show program' ++ ", " ++ show store'
+  -- putStrLn $ "Program (after optimizations):   " ++ show program ++ ", " ++ show store
   -- putStrLn $ "Preprocessed program: " ++ show labeledPrograms
   -- putStrLn $ "Compiled circuit: " ++ show circuit
   putStrLn $ "Compiled circuit has " ++ cyan (show $ length circuit) ++ " constraints"
