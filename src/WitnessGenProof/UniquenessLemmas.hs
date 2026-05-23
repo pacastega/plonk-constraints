@@ -20,8 +20,6 @@ import Label
 import MapLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
-import CompilerLemmas -- for the definition of wfWire'_
-
 
 {-@ reflect elemsSet @-}
 elemsSet :: (Ord v) => M.Map k v -> S.Set v
@@ -88,7 +86,6 @@ labelIncrEnv e m0 λ m e' λ' x = case e of
 
 
 --TODO: this feels like it belongs in LabelingLemmas
---TODO: wfWire'_ is currently in CompilerLemmas... maybe it should be in DSL
 {-@ labelWFWire' :: e:TypedDSL p -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
                  -> m:{Nat | m >= m0} -> e':LDSL p (Btwn 0 m)
                  -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m,e',λ')}
@@ -138,34 +135,3 @@ labelWFWire' e m0 λ m e' λ' = case e of
                              e2'
     where (m1,e1',λ1) = label' e1 m0 λ
           (m2,e2',λ2) = label' e2 m1 λ1
-
-
-{-@ wfWire'_incr :: ws:S.Set i -> ws':{S.Set i | S.isSubsetOf ws ws'}
-                 -> e:{LDSL p i | wfWire'_ ws e}
-                 -> { wfWire'_ ws' e } @-}
-wfWire'_incr :: (Ord i) => S.Set i -> S.Set i -> LDSL p i -> Proof
-wfWire'_incr ws ws' e = case e of
-  PTR _ _ -> trivial
-  LVAR _ _ _ -> trivial
-  LCONST _ _ -> trivial
-  LBOOL  _ _ -> trivial
-
-  LDIV e1 e2 _ _ -> wfWire'_incr ws ws' e1
-                 ?? wfWire'_incr (ws  `S.union` wiresE e1)
-                                 (ws' `S.union` wiresE e1)
-                                 e2
-
-  LUN _ e1 _ -> wfWire'_incr ws ws' e1
-  LBIN _ e1 e2 _ -> wfWire'_incr ws ws' e1
-                 ?? wfWire'_incr (ws  `S.union` wiresE e1)
-                                 (ws' `S.union` wiresE e1)
-                                 e2
-
-  LBoolToF e1 -> wfWire'_incr ws ws' e1
-  LEQLC e1 _ _ _ -> wfWire'_incr ws ws' e1
-
-  LNIL _ -> trivial
-  LCONS e1 e2 -> wfWire'_incr ws ws' e1
-              ?? wfWire'_incr (ws  `S.union` wiresE e1)
-                              (ws' `S.union` wiresE e1)
-                              e2
