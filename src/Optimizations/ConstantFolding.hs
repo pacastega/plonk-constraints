@@ -26,13 +26,13 @@ constantFolding (BIN op (CONST k1) (CONST k2)) = case op of
   _ -> Nothing
 
 constantFolding (BIN op (BOOL b1) (BOOL b2)) = case op of
-  AND -> Just (BOOL (b1 && b2)); UnsafeAND -> Just (BOOL (b1 && b2))
-  OR  -> Just (BOOL (b1 || b2)); UnsafeOR  -> Just (BOOL (b1 || b2))
-  XOR -> Just (BOOL (b1 /= b2)); UnsafeXOR -> Just (BOOL (b1 /= b2))
+  AND -> Just (BOOL (b1 && b2))
+  OR  -> Just (BOOL (b1 || b2))
+  XOR -> Just (BOOL (b1 /= b2))
   _ -> Nothing
 
 constantFolding (UN op (BOOL b)) = case op of
-  NOT -> Just (BOOL (not b)); UnsafeNOT -> Just (BOOL (not b))
+  NOT -> Just (BOOL (not b))
   BoolToF -> if b then Just (CONST 1) else Just (CONST 0)
   _ -> Nothing
 
@@ -60,12 +60,12 @@ constantFoldingProof _ (BIN op (CONST _) (CONST _)) _ = case op of
   EQL -> trivial
 
 constantFoldingProof _ (BIN op (BOOL _) (BOOL _)) _ = case op of
-  AND -> (); UnsafeAND -> ()
-  OR  -> (); UnsafeOR  -> ()
-  XOR -> (); UnsafeXOR -> ()
+  AND -> ()
+  OR  -> ()
+  XOR -> ()
 
 constantFoldingProof _ (UN op (BOOL _)) _ = case op of
-  NOT -> (); UnsafeNOT -> ()
+  NOT -> ()
   BoolToF -> ()
 
 constantFoldingProof _ (UN op (CONST _)) _ = case op of

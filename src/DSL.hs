@@ -41,16 +41,14 @@ scalarType TF       = True
 scalarType TBool    = True
 scalarType TVec {}  = False
 
-data UnOp p = ADDC p | MULC p
-            | NOT    | UnsafeNOT
+data UnOp p = ADDC p | MULC p | NOT
             | ISZERO | EQLC p
             | BoolToF
   deriving (Show, Eq, Ord)
 
 data BinOp p = ADD | SUB | MUL | DIV
              | LINCOMB p p -- linear combination
-             | AND       | OR       | XOR
-             | UnsafeAND | UnsafeOR | UnsafeXOR
+             | AND | OR | XOR
              | EQL
   deriving (Show, Eq, Ord)
 
@@ -182,8 +180,7 @@ inferType (UN op p) = case op of
   ADDC _ -> if inferType p == Just TF then Just TF else Nothing
   MULC _ -> if inferType p == Just TF then Just TF else Nothing
 
-  NOT       -> if inferType p == Just TBool then Just TBool else Nothing
-  UnsafeNOT -> if inferType p == Just TBool then Just TBool else Nothing
+  NOT -> if inferType p == Just TBool then Just TBool else Nothing
 
   ISZERO -> if inferType p == Just TF then Just TBool else Nothing
   EQLC _ -> if inferType p == Just TF then Just TBool else Nothing
@@ -201,10 +198,6 @@ inferType (BIN op p1 p2) = case op of
   AND -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
   OR  -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
   XOR -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
-
-  UnsafeAND -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
-  UnsafeOR  -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
-  UnsafeXOR -> if inferType p1 == Just TBool && inferType p2 == Just TBool then Just TBool else Nothing
 
   EQL -> if inferType p1 == Just TF && inferType p2 == Just TF then Just TBool else Nothing
 
@@ -356,8 +349,7 @@ inferType' e = case e of
     ADDC _ -> if inferType' e1 == Just TF then Just TF else Nothing
     MULC _ -> if inferType' e1 == Just TF then Just TF else Nothing
 
-    NOT       -> if inferType' e1 == Just TBool then Just TBool else Nothing
-    UnsafeNOT -> if inferType' e1 == Just TBool then Just TBool else Nothing
+    NOT -> if inferType' e1 == Just TBool then Just TBool else Nothing
 
   LBIN op e1 e2 _ -> case op of
     ADD -> if inferType' e1 == Just TF && inferType' e2 == Just TF then Just TF else Nothing
@@ -369,10 +361,6 @@ inferType' e = case e of
     AND -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
     OR  -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
     XOR -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
-
-    UnsafeAND -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
-    UnsafeOR  -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
-    UnsafeXOR -> if inferType' e1 == Just TBool && inferType' e2 == Just TBool then Just TBool else Nothing
 
   LBoolToF e1 -> if inferType' e1 == Just TBool then Just TF else Nothing
   LEQLC e1 _ _ _ -> if inferType' e1 == Just TF then Just TBool else Nothing
@@ -500,11 +488,10 @@ nGatesE (LBOOL  _ _)     = 1
 nGatesE (LDIV p1 p2 _ _) = 2 + nGatesE p1 + nGatesE p2
 
 nGatesE (LUN  op p  _)    = nGatesE p + case op of
-  ADDC _ -> 1; MULC _ -> 1; NOT -> 2; UnsafeNOT -> 1
+  ADDC _ -> 1; MULC _ -> 1; NOT -> 1
 nGatesE (LBIN op p1 p2 _) = nGatesE p1 + nGatesE p2 + case op of
   ADD -> 1; SUB -> 1; MUL -> 1; LINCOMB _ _ -> 1
-  AND -> 3; OR  -> 3; XOR -> 3
-  UnsafeAND -> 1; UnsafeOR -> 1; UnsafeXOR -> 1
+  AND -> 1; OR  -> 1; XOR -> 1
 
 nGatesE (LBoolToF p1) = nGatesE p1
 nGatesE (LEQLC p1 _ _ _) = 2 + nGatesE p1
@@ -551,10 +538,9 @@ compileE m (LDIV p1 p2 w i) = append' (divGate m [i1, i2, i, w]) c'
     c' = append' c1 c2
 
 compileE m (LUN op p1 i) = case op of
-  ADDC k    -> append' (addGateConst  m k [i1, i]) c1
-  MULC k    -> append' (mulGateConst  m k [i1, i]) c1
-  NOT       -> append' (notGate       m   [i1, i]) c1
-  UnsafeNOT -> append' (unsafeNotGate m   [i1, i]) c1
+  ADDC k -> append' (addGateConst  m k [i1, i]) c1
+  MULC k -> append' (mulGateConst  m k [i1, i]) c1
+  NOT    -> append' (unsafeNotGate m   [i1, i]) c1
   where
     c1 = compileE m p1; i1 = outputWire p1
 
@@ -565,13 +551,10 @@ compileE m (LBIN op p1 p2 i) = case op of
 
   LINCOMB k1 k2 -> append' (linCombGate m [k1, k2] [i1, i2, i]) c'
 
-  AND -> append' (andGate m [i1, i2, i]) c'
-  OR  -> append' (orGate  m [i1, i2, i]) c'
-  XOR -> append' (xorGate m [i1, i2, i]) c'
+  AND -> append' (unsafeAndGate m [i1, i2, i]) c'
+  OR  -> append' (unsafeOrGate  m [i1, i2, i]) c'
+  XOR -> append' (unsafeXorGate m [i1, i2, i]) c'
 
-  UnsafeAND -> append' (unsafeAndGate m [i1, i2, i]) c'
-  UnsafeOR  -> append' (unsafeOrGate  m [i1, i2, i]) c'
-  UnsafeXOR -> append' (unsafeXorGate m [i1, i2, i]) c'
   where
     c1 = compileE m p1; c2 = compileE m p2
     i1 = outputWire p1; i2 = outputWire p2
@@ -641,7 +624,6 @@ valueUnOp op x1 = case op of
    ADDC k1 -> k1 + x1
    MULC k1 -> k1 * x1
    NOT -> if x1 == 1 then 0 else 1
-   UnsafeNOT -> if x1 == 1 then 0 else 1
 
 {-@ reflect valueBinOp @-}
 {-@ valueBinOp :: BinOp' p -> p -> p -> p @-}
@@ -654,9 +636,6 @@ valueBinOp op x1 x2 = case op of
    AND -> if x1 == 1 && x2 == 1 then 1 else 0
    OR  -> if x1 == 1 || x2 == 1 then 1 else 0
    XOR -> if x1 /= x2 then 1 else 0
-   UnsafeAND -> if x1 == 1 && x2 == 1 then 1 else 0
-   UnsafeOR  -> if x1 == 1 || x2 == 1 then 1 else 0
-   UnsafeXOR -> if x1 /= x2 then 1 else 0
 
 
 {-@ reflect coherentE @-}

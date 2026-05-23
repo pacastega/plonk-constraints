@@ -56,7 +56,6 @@ parseE = \case
     ADDC k    -> N ("$+" ++ show k ++ "$" ++ wire [i]) [parseE p1]
     MULC k    -> N ("$*" ++ show k ++ "$" ++ wire [i]) [parseE p1]
     NOT       -> N ("$\\neg$" ++ wire [i])             [parseE p1]
-    UnsafeNOT -> N ("$\\hat\\neg$" ++ wire [i])        [parseE p1]
 
   LBIN op p1 p2 i -> case op of
     ADD -> N ("$+$" ++ wire [i])       [parseE p1, parseE p2]
@@ -68,10 +67,6 @@ parseE = \case
     AND -> N ("$\\wedge$" ++ wire [i]) [parseE p1, parseE p2]
     OR  -> N ("$\\vee$" ++ wire [i])   [parseE p1, parseE p2]
     XOR -> N ("$\\oplus$" ++ wire [i]) [parseE p1, parseE p2]
-
-    UnsafeAND -> N ("$\\hat\\wedge$" ++ wire [i]) [parseE p1, parseE p2]
-    UnsafeOR  -> N ("$\\hat\\vee$" ++ wire [i])   [parseE p1, parseE p2]
-    UnsafeXOR -> N ("$\\hat\\oplus$" ++ wire [i]) [parseE p1, parseE p2]
 
   LBoolToF p1 -> parseE p1
   LEQLC p1 k i w -> N ("$=" ++ show k ++ "?$" ++ wire [i, w]) [parseE p1]

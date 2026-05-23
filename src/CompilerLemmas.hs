@@ -180,14 +180,11 @@ compWiresLemma m e = case e of
                   ? outputWire e1 ? outputWire e2
     where n1 = nGatesE e1; n2 = nGatesE e2
   LUN op e1 _ -> case op of
-    ADDC k    -> proof; MULC k    -> proof
-    NOT       -> proof; UnsafeNOT -> proof
+    ADDC k -> proof; MULC k -> proof; NOT -> proof
     where proof = compWiresLemma m e1 ? outputWire e1
   LBIN op e1 e2 _ -> case op of
     ADD -> proof; SUB -> proof; MUL -> proof; LINCOMB _ _ -> proof;
-
     AND -> proof; OR  -> proof; XOR -> proof;
-    UnsafeAND -> proof; UnsafeOR  -> proof; UnsafeXOR -> proof;
 
     where proof = compWiresLemma m e1 ? compWiresLemma m e2
                 ? wiresCDistr n1 n2 (n1+n2) m (compileE m e1) (compileE m e2)

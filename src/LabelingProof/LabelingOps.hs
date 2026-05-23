@@ -65,7 +65,6 @@ agreeLemmaUn m0 m1 m p1 op ρ λ λ1 σ λ' p1' e' σ' σ1 π1 =
   MULC k -> \x -> π1 x ? notElemLemma x (outputWire e') λ1
 
   NOT ->       \x -> π1 x ? notElemLemma x (outputWire e') λ1
-  UnsafeNOT -> \x -> π1 x ? notElemLemma x (outputWire e') λ1
 
 
 -- BINARY OPERATORS ============================================================
@@ -119,9 +118,6 @@ agreeLemmaBin m0 m1 m2 m p1 p2 op ρ λ λ1 λ2 σ π λ' p1' p2' e' σ' σ1 σ2
   AND -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
   OR  -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
   XOR -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
-  UnsafeAND -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
-  UnsafeOR  -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
-  UnsafeXOR -> \x -> π2 x ? notElemLemma x (outputWire e') λ2
 
 
 -- workarounds to fix "crash: unknown constant" ================================

@@ -133,8 +133,6 @@ compileProofE_ m e γ γ' σ ws π = case e of
       ADDC _ -> proof; MULC _ -> proof;
       NOT -> proof
           ?? booleanLemma1 m e1 σ γ γ1 ws π1
-      UnsafeNOT -> proof
-                ?? booleanLemma1 m e1 σ γ γ1 ws π1
 
       where
         {-@ ih1 :: { coherentE m e1 σ <=> satisfies n1 m σ (compileE m e1) } @-}
@@ -160,23 +158,12 @@ compileProofE_ m e γ γ' σ ws π = case e of
         AND -> proof
             ?? booleanLemma1 m e1 σ γ γ1 ws π1
             ?? booleanLemma2 m op e1 e2 i e σ γ γ1 γ2 γ' ws π1 π2
-        UnsafeAND -> proof
-                  ?? booleanLemma1 m e1 σ γ γ1 ws π1
-                  ?? booleanLemma2 m op e1 e2 i e σ γ γ1 γ2 γ' ws π1 π2
-
         OR  -> proof
             ?? booleanLemma1 m e1 σ γ γ1 ws π1
             ?? booleanLemma2 m op e1 e2 i e σ γ γ1 γ2 γ' ws π1 π2
-        UnsafeOR -> proof
-                 ?? booleanLemma1 m e1 σ γ γ1 ws π1
-                 ?? booleanLemma2 m op e1 e2 i e σ γ γ1 γ2 γ' ws π1 π2
-
         XOR -> proof
             ?? booleanLemma1 m e1 σ γ γ1 ws π1
             ?? booleanLemma2 m op e1 e2 i e σ γ γ1 γ2 γ' ws π1 π2
-        UnsafeXOR -> proof
-                  ?? booleanLemma1 m e1 σ γ γ1 ws π1
-                  ?? booleanLemma2 m op e1 e2 i e σ γ γ1 γ2 γ' ws π1 π2
 
         where
           {-@ ih1 :: { coherentE m e1 σ <=> satisfies n1 m σ (compileE m e1) } @-}

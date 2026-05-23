@@ -202,22 +202,22 @@ vChunk τ n xs      = let (ys, zs) = vTakeDrop τ n xs in ys : (vChunk τ n zs)
 -- Bitwise operations ----------------------------------------------------------
 {-@ vNot :: u:VecDSL p TBool
          -> w:{VecDSL p TBool | vlength w = vlength u} @-}
-vNot = vMap TBool TBool (UN UnsafeNOT)
+vNot = vMap TBool TBool (UN NOT)
 
 {-@ vAnd :: u:VecDSL p TBool
          -> v:{VecDSL p TBool | vlength v = vlength u}
          -> w:{VecDSL p TBool | vlength w = vlength u} @-}
-vAnd = vZipWith TBool TBool TBool (BIN UnsafeAND)
+vAnd = vZipWith TBool TBool TBool (BIN AND)
 
 {-@ vOr :: u:VecDSL p TBool
         -> v:{VecDSL p TBool | vlength v = vlength u}
         -> w:{VecDSL p TBool | vlength w = vlength u} @-}
-vOr = vZipWith TBool TBool TBool (BIN UnsafeOR)
+vOr = vZipWith TBool TBool TBool (BIN OR)
 
 {-@ vXor :: u:VecDSL p TBool
          -> v:{VecDSL p TBool | vlength v = vlength u}
          -> w:{VecDSL p TBool | vlength w = vlength u} @-}
-vXor = vZipWith TBool TBool TBool (BIN UnsafeXOR)
+vXor = vZipWith TBool TBool TBool (BIN XOR)
 
 -- Shift & rotate --------------------------------------------------------------
 {-@ rotateL :: τ:Ty

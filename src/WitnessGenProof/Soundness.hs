@@ -104,8 +104,7 @@ wgSoundE m ρ σ e σ' = case e of
           π2 = wgIncrDiv m e1 e2 w i e ρ σ σ' σ1 σ2
 
   LUN op e1 i -> case op of
-    ADDC k -> proof; MULC k -> proof; UnsafeNOT -> proof;
-    NOT -> proof;
+    ADDC k -> proof; MULC k -> proof; NOT -> proof;
     where σ1 = σ1Un m m ρ σ e1 op i e σ'
           proof = wf1 -- e1 is well-formed and well-typed
 
@@ -134,7 +133,6 @@ wgSoundE m ρ σ e σ' = case e of
   LBIN op e1 e2 i -> case op of
     ADD -> proof; SUB -> proof; MUL -> proof; LINCOMB _ _ -> proof;
     AND -> proof; OR  -> proof; XOR -> proof;
-    UnsafeAND -> proof; UnsafeOR  -> proof; UnsafeXOR -> proof;
     where σ1 = σ1Bin m m ρ σ e1 e2 op i e σ'
           σ2 = σ2Bin m m ρ σ e1 e2 op i e σ' σ1
           proof = wf12 -- e1,e2 are well-formed and well-typed
