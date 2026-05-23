@@ -43,10 +43,6 @@ labelWFWire :: (Ord p, Fractional p) => DSL p -> Int
 labelWFWire e m0 m e' λ' = labelWFWire' e m0 M.empty m e' λ'
 
 
-{-@ type EnvGE Λ2 Λ1 = s:{_ | M.member s Λ1}
-                    -> { M.member s Λ2 && M.lookup' s Λ1 = M.lookup' s Λ2 } @-}
-
-
 {-@ labelIncrEnv :: e:TypedDSL p -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
                  -> m:{Nat | m >= m0} -> e':LDSL p (Btwn 0 m)
                  -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m,e',λ')}
