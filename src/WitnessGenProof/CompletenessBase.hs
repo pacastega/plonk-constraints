@@ -63,7 +63,7 @@ wgCompleteVar m0 s τ e ρ v λ σ π m e' λ' = case M.lookup s ρ of
       TBool -> if boolean value
                then M.insert (outputWire e') value σ
                else error "value ∈ {0,1} because eval succeeds"
-    Just j -> elementLemma s j λ     -- YES: we get "LWIRE τ j"
+    Just j -> elementLemma s j λ     -- YES: we get "PTR τ j"
            ?? π s ?? lookupLemma s λ -- value == ρ[s] == σ[Λ[s]] == σ[j]
            ?? evalVar s τ ρ v
 

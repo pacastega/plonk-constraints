@@ -80,13 +80,13 @@ labelStoreCSE' assertion nextIndex λ = let i = nextIndex in case assertion of
       where (i', p1', λ') = labelCSE' p1 i λ
     EQA p1 p2 -> case M.lookup p1 λ of
       Just i1 -> case M.lookup p2 λ of
-        Just i2 -> (i, LEQA (LWIRE τ1 i1) (LWIRE τ2 i2), λ) -- both are labeled: can't relabel them
+        Just i2 -> (i, LEQA (PTR τ1 i1) (LWIRE τ2 i2), λ) -- both are labeled: can't relabel them
           where Just τ1 = inferType p1; Just τ2 = inferType p2
-        Nothing -> (i', LEQA (LWIRE τ1 i1) p2', λ')
+        Nothing -> (i', LEQA (PTR τ1 i1) p2', λ')
           where (i', p2', λ') = labelCSE' p2 i λ
                 Just τ1 = inferType p1
       Nothing -> case M.lookup p2 λ of
-        Just i2 -> (i', LEQA p1' (LWIRE τ2 i2), λ')
+        Just i2 -> (i', LEQA p1' (PTR τ2 i2), λ')
           where (i', p1', λ') = labelCSE' p1 i λ
                 Just τ2 = inferType p2
         Nothing -> (i'', LEQA p1' p2', λ'')
@@ -97,7 +97,7 @@ labelStoreCSE' assertion nextIndex λ = let i = nextIndex in case assertion of
 labelCSE' :: (Num p, Ord p) => DSL p -> Int -> ExtLabelEnv p Int
           -> (Int, LDSL p Int, ExtLabelEnv p Int)
 labelCSE' p nextIndex λ = case M.lookup p λ of
-  Just i  -> let Just τ = inferType p in (nextIndex, LWIRE τ i, λ)
+  Just i  -> let Just τ = inferType p in (nextIndex, PTR τ i, λ)
   Nothing -> let i = nextIndex in case p of
 
     VAR s τ -> (i+1, LVAR s τ i, M.insert p i λ)
@@ -161,7 +161,7 @@ label' :: (Num p, Ord p) => DSL p -> Int -> LabelEnv p Int
 label' p i λ = case p of
     VAR s τ -> case M.lookup s λ of
       Nothing -> (i+1, LVAR s τ i, M.insert s i λ)
-      Just j -> (i, LWIRE τ j, λ)
+      Just j -> (i, PTR τ j, λ)
 
     CONST x -> (i+1, LCONST x i, λ)
     BOOL b -> (i+1, LBOOL b i, λ)

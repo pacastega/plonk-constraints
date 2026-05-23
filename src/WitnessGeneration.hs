@@ -91,7 +91,7 @@ witnessGenE' :: (Eq p, Fractional p) => Int
              -> NameValuation p -> WireValuation p -> LDSL p Int
              -> Maybe (WireValuation p)
 witnessGenE' m ρ σ e = case e of
-  LWIRE τ i -> case M.lookup i σ of
+  PTR τ i -> case M.lookup i σ of
     Nothing -> Nothing -- wire hasn't appeared before
     Just value -> elementLemma i value σ ?? case τ of
       TF -> Just σ -- no restrictions

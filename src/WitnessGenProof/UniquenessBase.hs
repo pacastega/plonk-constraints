@@ -74,7 +74,7 @@ uniqueVar m0 m' s τ e ρ λ m e' λ' σ π v γ γ' h_boolean =
       Just (TVec _) -> error "variables are scalars"
       Just _ -> π s ?? evalWireScalar m' e' σ ?? lookupLemma i σ
         where i = M.lookup' s λ'
-    Just j -> case τ of            -- YES: we get "LWIRE τ j"
+    Just j -> case τ of            -- YES: we get "PTR τ j"
         TF -> proof
         TBool -> proof ?? outputWireBool e' γ γ'
               ?? labelWFWire' e m0 λ m e' λ' -- FIXME: could be called "labelEnvElems"

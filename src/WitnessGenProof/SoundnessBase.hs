@@ -26,10 +26,10 @@ import Language.Haskell.Liquid.ProofCombinators
                 -> ρ:NameValuation p
                 -> σ:WireValuation p m
 
-                -> τ:ScalarTy -> {i:Btwn 0 m | freshE (LWIRE τ i) σ}
+                -> τ:ScalarTy -> {i:Btwn 0 m | freshE (PTR τ i) σ}
 
-                -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ (LWIRE τ i)}
-                -> { coherentE m (LWIRE τ i) σ' } @-}
+                -> σ':{WireValuation p m | Just σ' = witnessGenE' m ρ σ (PTR τ i)}
+                -> { coherentE m (PTR τ i) σ' } @-}
 wgSoundWire :: (Eq p, Fractional p)
             => Int -> NameValuation p -> WireValuation p
             -> Ty -> Int

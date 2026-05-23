@@ -37,7 +37,7 @@ elementLemma2 k v (M.MBin k' v' m') =
 {-@ labelWFWire :: e:TypedDSL p -> m0:Nat
                 -> m:{Nat | m >= m0} -> e':LDSL p (Btwn 0 m)
                 -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 M.empty = (m,e',λ')}
-                -> { S.isSubsetOf (wWiresE e') (wiresE e') } @-}
+                -> { S.isSubsetOf (ptrsE e') (wiresE e') } @-}
 labelWFWire :: (Ord p, Fractional p) => DSL p -> Int
             -> Int -> LDSL p Int -> LabelEnv p Int -> Proof
 labelWFWire e m0 m e' λ' = labelWFWire' e m0 M.empty m e' λ'
@@ -94,7 +94,7 @@ labelIncrEnv e m0 λ m e' λ' x = case e of
                  -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m,e',λ')}
                  -> { S.isSubsetOf (elemsSet λ) (elemsSet λ')
                         && S.isSubsetOf (elemsSet λ') (S.union (elemsSet λ) (wiresE e'))
-                        && S.isSubsetOf (wWiresE e') (elemsSet λ')}
+                        && S.isSubsetOf (ptrsE e') (elemsSet λ')}
                   / [size e] @-}
 labelWFWire' :: (Ord p, Fractional p) => DSL p -> Int -> LabelEnv p Int
              -> Int -> LDSL p Int -> LabelEnv p Int -> Proof

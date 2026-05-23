@@ -29,7 +29,7 @@ import Language.Haskell.Liquid.ProofCombinators
 wgLemma :: (Eq p, Fractional p) => Int -> Int
         -> NameValuation p -> WireValuation p -> LDSL p Int -> Proof
 wgLemma m m' ρ σ e = case e of
-  LWIRE {} -> trivial
+  PTR {}  -> trivial
   LVAR {} -> trivial
   LCONST {} -> trivial
   LBOOL  {} -> trivial
@@ -58,8 +58,8 @@ wgLemma m m' ρ σ e = case e of
 wgBoolean :: (Eq p, Fractional p) => Int -> NameValuation p -> WireValuation p
           -> LDSL p Int -> WireValuation p -> Proof
 wgBoolean m ρ σ e σ' = case e of
-  LWIRE  τ i -> elementLemma i value σ ? lookupLemma i σ
-              ? witnessGenE' m ρ σ (LWIRE τ i)
+  PTR τ i -> elementLemma i value σ ? lookupLemma i σ
+           ? witnessGenE' m ρ σ (PTR τ i)
     where value = case M.lookup i σ of Just v -> v
   LVAR _ _ i -> trivial
   LBOOL  {} -> trivial
@@ -85,7 +85,7 @@ wgBoolean m ρ σ e σ' = case e of
 wgIncr :: (Eq p, Fractional p) => Int -> NameValuation p -> WireValuation p
        -> LDSL p Int -> WireValuation p -> (Int -> Proof)
 wgIncr m ρ σ e σ' j = case e of
-  LWIRE  τ i -> trivial ? witnessGenE' m ρ σ e
+  PTR    τ i -> trivial ? witnessGenE' m ρ σ e
   LVAR s τ i -> case τ of
     TF -> trivial
     TBool -> trivial

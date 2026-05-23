@@ -265,7 +265,7 @@ freshCons2 m ρ e1 e2 σ σ1 = case witnessGenE' m ρ σ e1 of
 coherentEIncr :: (Eq p, Fractional p) => Int -> LDSL p Int -> WireValuation p
               -> WireValuation p -> (Int -> Proof) -> Proof
 coherentEIncr m e σ1 σ2 π = case e of
-  LWIRE  _ i -> trivial
+  PTR    _ i -> trivial
   LVAR _ τ i -> case τ of
     TF -> trivial
     TBool -> π i

@@ -45,7 +45,7 @@ wgSoundE :: (Ord p, Fractional p)
          => Int -> NameValuation p -> WireValuation p -> LDSL p Int
          -> WireValuation p -> Proof
 wgSoundE m ρ σ e σ' = case e of
-  LWIRE τ i -> wgSoundWire m ρ σ τ i σ'
+  PTR   τ i -> wgSoundWire m ρ σ τ i σ'
   LVAR s τ i -> wgSoundVar m ρ σ s τ i σ'
   LCONST x i -> wgSoundConst m ρ σ x i σ'
   LBOOL b i -> wgSoundBool m ρ σ b i σ'

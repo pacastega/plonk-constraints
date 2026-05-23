@@ -42,8 +42,8 @@ import Language.Haskell.Liquid.ProofCombinators
             -> m:Nat -> e':LDSL p (Btwn 0 m)
             -> λ':{LabelEnv p (Btwn 0 m) | (m,e',λ') = label' (UN op e1) m0 λ}
 
-            -> { S.isSubsetOf (S.union (wiresE e1') (wWiresE e1'))
-                              (S.union (wiresE e')  (wWiresE e') ) } @-}
+            -> { S.isSubsetOf (S.union (wiresE e1') (ptrsE e1'))
+                              (S.union (wiresE e')  (ptrsE e') ) } @-}
 wiresUn :: (Ord p, Num p)
         => DSL p -> UnOp p -> Int -> LabelEnv p Int
         -> Int -> LDSL p Int -> LabelEnv p Int
@@ -67,10 +67,10 @@ wiresUn e1 op m0 λ m1 e1' λ1 m e' λ' = case op of
              -> m:Nat -> e':LDSL p (Btwn 0 m)
              -> λ':{LabelEnv p (Btwn 0 m) | (m,e',λ') = label' (BIN op e1 e2) m0 λ}
 
-             -> { S.isSubsetOf (S.union (wiresE e1') (wWiresE e1'))
-                               (S.union (wiresE e')  (wWiresE e') ) &&
-                  S.isSubsetOf (S.union (wiresE e2') (wWiresE e2'))
-                               (S.union (wiresE e')  (wWiresE e') ) } @-}
+             -> { S.isSubsetOf (S.union (wiresE e1') (ptrsE e1'))
+                               (S.union (wiresE e')  (ptrsE e') ) &&
+                  S.isSubsetOf (S.union (wiresE e2') (ptrsE e2'))
+                               (S.union (wiresE e')  (ptrsE e') ) } @-}
 wiresBin :: (Ord p, Num p)
          => DSL p -> DSL p -> BinOp p -> Int -> LabelEnv p Int
          -> Int -> LDSL p Int -> LabelEnv p Int
@@ -94,10 +94,10 @@ wiresBin e1 e2 op m0 λ m1 e1' λ1 m2 e2' λ2 m e' λ' = case op of
               -> m:Nat -> e':LDSL p (Btwn 0 m)
               -> λ':{LabelEnv p (Btwn 0 m) | (m,e',λ') = label' (CONS e1 e2) m0 λ}
 
-              -> { S.isSubsetOf (S.union (wiresE e1') (wWiresE e1'))
-                                (S.union (wiresE e')  (wWiresE e') ) &&
-                   S.isSubsetOf (S.union (wiresE e2') (wWiresE e2'))
-                                (S.union (wiresE e')  (wWiresE e') ) } @-}
+              -> { S.isSubsetOf (S.union (wiresE e1') (ptrsE e1'))
+                                (S.union (wiresE e')  (ptrsE e') ) &&
+                   S.isSubsetOf (S.union (wiresE e2') (ptrsE e2'))
+                                (S.union (wiresE e')  (ptrsE e') ) } @-}
 wiresCons :: (Ord p, Num p)
           => DSL p -> DSL p -> Int -> LabelEnv p Int
           -> Int -> LDSL p Int -> LabelEnv p Int

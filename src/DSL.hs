@@ -235,7 +235,7 @@ type LDSL p i = LDSLI p i i
 
 -- Labeled DSL
 data LDSLI p i j =
-    LWIRE      Ty j
+    PTR        Ty j
   | LVAR   Var Ty i
   | LCONST p      i
   | LBOOL  Bool   i
@@ -254,7 +254,7 @@ data LDSLI p i j =
 
 {-@
 data LDSLI p i j =
-    LWIRE      ScalarTy j
+    PTR        ScalarTy j
   | LVAR   Var ScalarTy i
   | LCONST p            i
   | LBOOL  Bool         i
@@ -274,7 +274,7 @@ data LDSLI p i j =
 
 {-@ reflect wiresE @-}
 wiresE :: (Ord i) => LDSLI p i j -> S.Set i
-wiresE (LWIRE {})    = S.empty
+wiresE (PTR {})      = S.empty
 wiresE (LVAR  _ _ i) = S.singleton i
 wiresE (LCONST  _ i) = S.singleton i
 wiresE (LBOOL   _ i) = S.singleton i
@@ -288,28 +288,27 @@ wiresE (LEQLC e1 _ w i) = wiresE e1 `S.union` S.singleton w `S.union` S.singleto
 wiresE (LNIL _) = S.empty
 wiresE (LCONS e es) = wiresE e `S.union` wiresE es
 
-{-@ reflect wWiresE @-}
-wWiresE :: (Ord j) => LDSLI p i j -> S.Set j
-wWiresE (LWIRE _ i)      = S.singleton i
-wWiresE (LVAR {})        = S.empty
-wWiresE (LCONST {})      = S.empty
-wWiresE (LBOOL {})       = S.empty
-wWiresE (LDIV e1 e2 _ _) = wWiresE e1 `S.union` wWiresE e2
-wWiresE (LUN _ e1 _)     = wWiresE e1
-wWiresE (LBIN _ e1 e2 _) = wWiresE e1 `S.union` wWiresE e2
-wWiresE (LBoolToF e1)    = wWiresE e1
-wWiresE (LEQLC e1 _ _ _) = wWiresE e1
-wWiresE (LNIL _)         = S.empty
-wWiresE (LCONS e es)     = wWiresE e  `S.union` wWiresE es
+{-@ reflect ptrsE @-}
+ptrsE :: (Ord j) => LDSLI p i j -> S.Set j
+ptrsE (PTR _ i)        = S.singleton i
+ptrsE (LVAR {})        = S.empty
+ptrsE (LCONST {})      = S.empty
+ptrsE (LBOOL {})       = S.empty
+ptrsE (LDIV e1 e2 _ _) = ptrsE e1 `S.union` ptrsE e2
+ptrsE (LUN _ e1 _)     = ptrsE e1
+ptrsE (LBIN _ e1 e2 _) = ptrsE e1 `S.union` ptrsE e2
+ptrsE (LBoolToF e1)    = ptrsE e1
+ptrsE (LEQLC e1 _ _ _) = ptrsE e1
+ptrsE (LNIL _)         = S.empty
+ptrsE (LCONS e es)     = ptrsE e  `S.union` ptrsE es
 
---FIXME: a LWIRE on its own isn't well-formed, so that case should be False
 -- A labeled expression is well-formed when
 -- a. sibling subexpressions don't have wire clashes between themselves
 -- b. new wires don't clash with subexpressions
 -- c. subexpressions are recursively well-formed
 {-@ reflect wfE @-}
 wfE :: (Ord i) => LDSLI p i j -> Bool
-wfE (LWIRE  _ _) = True
+wfE (PTR  _ _)   = True
 wfE (LVAR _ _ i) = True
 wfE (LCONST _ i) = True
 wfE (LBOOL _ i)  = True
@@ -327,17 +326,11 @@ wfE (LNIL _) = True
 wfE (LCONS e es) = wfE e && wfE es && disjoint (wiresE e) (wiresE es)
 
 
--- every output wire of a LWIRE also appears as an output wire of a "real" expression
-{-@ reflect wfLWireE @-}
-wfLWireE :: (Ord i) => LDSL p i -> Bool
-wfLWireE e = wWiresE e `S.isSubsetOf` wiresE e
-
-
 {-@ reflect inferType' @-}
 {-@ inferType' :: LDSLI p i j -> Maybe Ty @-}
 inferType' :: LDSLI p i j -> Maybe Ty
 inferType' e = case e of
-  LWIRE  τ _ -> Just τ
+  PTR    τ _ -> Just τ
   LVAR _ τ _ -> Just τ
   LCONST _ _ -> Just TF
   LBOOL  _ _ -> Just TBool
@@ -413,11 +406,11 @@ wiresA (LNZERO e1 w) = wiresE e1 `S.union` S.singleton w
 wiresA (LBOOLEAN e1) = wiresE e1
 wiresA (LEQA e1 e2)  = wiresE e1 `S.union` wiresE e2
 
-{-@ reflect wWiresA @-}
-wWiresA :: (Ord i) => LAss p i -> S.Set i
-wWiresA (LNZERO e1 _) = wWiresE e1
-wWiresA (LBOOLEAN e1) = wWiresE e1
-wWiresA (LEQA e1 e2)  = wWiresE e1 `S.union` wWiresE e2
+{-@ reflect ptrsA @-}
+ptrsA :: (Ord i) => LAss p i -> S.Set i
+ptrsA (LNZERO e1 _) = ptrsE e1
+ptrsA (LBOOLEAN e1) = ptrsE e1
+ptrsA (LEQA e1 e2)  = ptrsE e1 `S.union` ptrsE e2
 
 {-@ reflect wfA @-}
 wfA :: (Ord i) => LAss p i -> Bool
@@ -433,10 +426,10 @@ wires :: (Ord i) => LProg p i -> S.Set i
 wires (LExpr e) = wiresE e
 wires (LAss a) = wiresA a
 
-{-@ reflect wWires @-}
-wWires :: (Ord i) => LProg p i -> S.Set i
-wWires (LExpr e) = wWiresE e
-wWires (LAss a) = wWiresA a
+{-@ reflect ptrs @-}
+ptrs :: (Ord i) => LProg p i -> S.Set i
+ptrs (LExpr e) = ptrsE e
+ptrs (LAss a) = ptrsA a
 
 --TODO: not sure if this is _really_ needed
 {-@ reflect wiress @-}
@@ -458,9 +451,9 @@ wfs (p:ps) = wf p && disjoint (wires p) (wiress ps) && wfs ps
 
 {-@ reflect outputWire @-}
 {-@ outputWire :: e:{LDSLI p i i | scalar' e}
-               -> {v:i | S.member v (S.union (wiresE e) (wWiresE e))} @-}
+               -> {v:i | S.member v (S.union (wiresE e) (ptrsE e))} @-}
 outputWire :: LDSLI p i i -> i
-outputWire (LWIRE _ i)    = i
+outputWire (PTR   _ i)    = i
 
 outputWire (LVAR _ _ i)   = i
 outputWire (LCONST _ i)   = i
@@ -479,7 +472,7 @@ outputWire (LEQLC _ _ _ i) = i
 {-@ measure nGatesE @-}
 {-@ nGatesE :: LDSLI p i j -> Nat @-}
 nGatesE :: LDSLI p i j -> Int
-nGatesE (LWIRE _ _)      = 0
+nGatesE (PTR   _ _)      = 0
 
 nGatesE (LVAR _ τ _)     = case τ of TF -> 0; TBool -> 1
 nGatesE (LCONST _ _)     = 1
@@ -523,7 +516,7 @@ compile m (LAss a) = compileA m a
 {-@ reflect compileE @-}
 {-@ compileE :: m:Nat -> e:TypedLDSL p (Btwn 0 m) -> Circuit p (nGatesE e) m @-}
 compileE :: (Fractional p, Eq p) => Int -> LDSLI p Int Int -> Circuit p
-compileE m (LWIRE _ _)    = emptyCircuit m
+compileE m (PTR   _ _)    = emptyCircuit m
 compileE m (LVAR _ τ i)   = case τ of
   TF     -> emptyCircuit m
   TBool  -> boolGate m i
@@ -594,19 +587,19 @@ compileA m (LEQA p1 p2) = c
 {-@ inline closedExpr @-}
 {-@ closedExpr :: m:Nat -> σ:WireValuation p m -> e:LDSL p (Btwn 0 m) -> Bool @-}
 closedExpr :: Int -> WireValuation p -> LDSL p Int -> Bool
-closedExpr m σ e = (wiresE e `S.union` wWiresE e) `S.isSubsetOf` M.keysSet σ
+closedExpr m σ e = (wiresE e `S.union` ptrsE e) `S.isSubsetOf` M.keysSet σ
 
 
 {-@ inline closedAssertion @-}
 {-@ closedAssertion :: m:Nat -> WireValuation p m -> a:LAss p (Btwn 0 m) -> Bool @-}
 closedAssertion :: Int -> WireValuation p -> LAss p Int -> Bool
-closedAssertion m σ a = (wiresA a `S.union` wWiresA a) `S.isSubsetOf` M.keysSet σ
+closedAssertion m σ a = (wiresA a `S.union` ptrsA a) `S.isSubsetOf` M.keysSet σ
 
 
 {-@ inline closedProg @-}
 {-@ closedProg :: m:Nat -> WireValuation p m -> LProg p (Btwn 0 m) -> Bool @-}
 closedProg :: Int -> WireValuation p -> LProg p Int -> Bool
-closedProg m σ pr = (wires pr `S.union` wWires pr) `S.isSubsetOf` M.keysSet σ
+closedProg m σ pr = (wires pr `S.union` ptrs pr) `S.isSubsetOf` M.keysSet σ
 
 
 {-@ reflect coherent @-}
@@ -643,7 +636,7 @@ valueBinOp op x1 x2 = case op of
               -> {σ:WireValuation p m | closedExpr m σ e} -> Bool @-}
 coherentE :: (Eq p, Fractional p) => Int -> LDSL p Int -> WireValuation p -> Bool
 coherentE m e σ = case e of
-  LWIRE _ i -> True
+  PTR   _ i -> True
   LVAR _ τ i -> case τ of
     TF -> True          -- field-typed variables don't have restrictions
     TBool -> boolean vi -- bool-typed variables must be boolean

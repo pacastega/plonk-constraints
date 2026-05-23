@@ -66,7 +66,7 @@ insertICIncr k v m m' j = case M.lookup k m of
 
 {-@ reflect tyEnv' @-}
 {-@ tyEnv' :: e:TypedLDSL p i -> Maybe ({γ:TyEnv' i | M.keysSet γ =
-                                           S.union (wiresE e) (wWiresE e)}) @-}
+                                           S.union (wiresE e) (ptrsE e)}) @-}
 tyEnv' :: (Ord i) => LDSL p i -> Maybe (TyEnv' i)
 tyEnv' e = tyEnv'_ e M.MTip --FIXME: this should be M.empty instead, but that crashes
 
@@ -74,11 +74,11 @@ tyEnv' e = tyEnv'_ e M.MTip --FIXME: this should be M.empty instead, but that cr
 {-@ tyEnv'_ :: e:TypedLDSL p i -> γ:TyEnv' i
             -> Maybe ({γ':TyEnv' i |
                       M.keysSet γ' = S.union (M.keysSet γ)
-                                             (S.union (wiresE e) (wWiresE e))}) @-}
+                                             (S.union (wiresE e) (ptrsE e))}) @-}
 tyEnv'_ :: (Ord i) => LDSL p i -> TyEnv' i -> Maybe (TyEnv' i)
 tyEnv'_ e γ = case inferType' e of --FIXME: this could be a let binding, but that crashes
   Just τ -> case e of
-    LWIRE  _ i -> insertIfCompatible i τ γ
+    PTR    _ i -> insertIfCompatible i τ γ
     LVAR _ _ i -> insertIfCompatible i τ γ
     LCONST _ i -> insertIfCompatible i τ γ
     LBOOL  _ i -> insertIfCompatible i τ γ
@@ -109,7 +109,7 @@ tyEnv'_ e γ = case inferType' e of --FIXME: this could be a let binding, but th
 {-@ reflect wfEWire @-}
 {-@ wfEWire :: TypedLDSL p i -> Bool @-}
 wfEWire :: (Ord i) => LDSL p i -> Bool
-wfEWire e = wWiresE e `S.isSubsetOf` wiresE e --FIXME: this should be `wfWire'_ S.empty e`
+wfEWire e = ptrsE e `S.isSubsetOf` wiresE e --FIXME: this should be `wfWire'_ S.empty e`
          && isJust (tyEnv' e)
 
 
@@ -119,7 +119,7 @@ wfEWire e = wWiresE e `S.isSubsetOf` wiresE e --FIXME: this should be `wfWire'_ 
                    -> { M.lookup (outputWire e) γ' = Just TBool } @-}
 outputWireBool :: (Ord i) => LDSL p i -> TyEnv' i -> TyEnv' i -> Proof
 outputWireBool e γ γ' = case e of
-  LWIRE  _ i -> lookupInsertIC i TBool γ γ' i
+  PTR    _ i -> lookupInsertIC i TBool γ γ' i
   LVAR _ _ i -> lookupInsertIC i TBool γ γ' i
   LBOOL  _ i -> lookupInsertIC i TBool γ γ' i
 
@@ -150,7 +150,7 @@ booleanProof'' m σ e = case tyEnv' e of
 tyEnv'_incr :: LDSL p Int -> TyEnv' Int -> TyEnv' Int -> (Int -> Proof)
 tyEnv'_incr e γ γ' j = case inferType' e of
   Just τ -> case e of
-    LWIRE  _ i -> insertICIncr i τ γ γ' j
+    PTR    _ i -> insertICIncr i τ γ γ' j
     LVAR _ _ i -> insertICIncr i τ γ γ' j
     LCONST _ i -> insertICIncr i τ γ γ' j
     LBOOL  _ i -> insertICIncr i τ γ γ' j
@@ -201,7 +201,7 @@ booleanProof' :: (Fractional p, Eq p)
 booleanProof' m σ e γ γ' j = case inferType' e of
   Just τ -> case e of
     LVAR _ τ i -> lookupInsertIC i τ γ γ' j
-    LWIRE _ _ -> error "impossible"
+    PTR   _ _ -> error "impossible"
     LCONST _ i -> lookupInsertIC i TF γ γ' j ?? error ""
     LBOOL _ _ -> trivial
 

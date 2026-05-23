@@ -44,7 +44,7 @@ parse (LAss a) = parseA a
 
 parseE :: (Show p, Show i) => LDSL p i -> Tree String
 parseE = \case
-  LWIRE _ i      -> N (wire [i])                []
+  PTR   _ i      -> N (wire [i])                []
 
   LVAR s _ i     -> N ("$" ++ s ++ "$" ++ wire [i])         []
   LCONST x i     -> N (show x ++ wire [i])      []

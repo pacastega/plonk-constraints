@@ -108,7 +108,7 @@ booleanLemma2 m op e1 e2 i e σ γ γ1 γ2 γ' ws π1 π2 = outputWireBool e2 γ
 {-@ reflect wfWire'_ @-}
 wfWire'_ :: (Ord i) => S.Set i -> LDSL p i -> Bool
 wfWire'_ ws e = case e of
-  LWIRE _ j -> S.member j ws -- j appears in the accumulated set of wires
+  PTR _ j -> S.member j ws -- j appears in the accumulated set of wires
   LVAR _ _ _ -> True
   LCONST _ _ -> True
   LBOOL _ _ -> True
@@ -130,10 +130,10 @@ wfWire'_ ws e = case e of
 
 {-@ wfWireLemma :: ws:S.Set i
                 -> e:{LDSL p i | wfWire'_ ws e}
-                -> { S.isSubsetOf (wWiresE e) (S.union (wiresE e) ws) } @-}
+                -> { S.isSubsetOf (ptrsE e) (S.union (wiresE e) ws) } @-}
 wfWireLemma :: (Ord i) => S.Set i -> LDSL p i -> Proof
 wfWireLemma ws e = case e of
-  LWIRE _ j -> trivial
+  PTR _ j -> trivial
   LVAR _ _ _ -> trivial
   LCONST _ _ -> trivial
   LBOOL _ _ -> trivial
@@ -165,10 +165,10 @@ wiresCDistr n1 n2 n m (g:gs) c2 = wiresCDistr (n1-1) n2 (n-1) m gs c2
 
 {-@ compWiresLemma :: m:Nat -> e:TypedLDSL p (Btwn 0 m)
                 -> { S.isSubsetOf (wiresC (nGatesE e) m (compileE m e))
-                                  (S.union (wiresE e) (wWiresE e)) } @-}
+                                  (S.union (wiresE e) (ptrsE e)) } @-}
 compWiresLemma :: (Fractional p, Eq p) => Int -> LDSL p Int -> Proof
 compWiresLemma m e = case e of
-  LWIRE _ _ -> trivial
+  PTR _ _ -> trivial
   LVAR _ τ _ -> case τ of
     TF -> trivial
     TBool -> trivial

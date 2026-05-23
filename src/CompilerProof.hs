@@ -75,7 +75,7 @@ compileProofE_ :: (Eq p, Fractional p) => Int -> LDSL p Int
               -> TyEnv' Int -> TyEnv' Int
               -> WireValuation p -> S.Set Int -> (Int -> Proof) -> Proof
 compileProofE_ m e γ γ' σ ws π = case e of
-  LWIRE _ i -> trivial
+  PTR _ i -> trivial
   LVAR s τ i -> case τ of
     TF -> trivial
     TBool -> trivial
