@@ -90,6 +90,7 @@ labelIncrEnv e m0 λ m e' λ' x = case e of
                  -> m:{Nat | m >= m0} -> e':LDSL p (Btwn 0 m)
                  -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m,e',λ')}
                  -> { S.isSubsetOf (elemsSet λ') (S.union (elemsSet λ) (wiresE e'))
+                      && S.isSubsetOf (elemsSet λ) (elemsSet λ')
                       && wfWire'_ (elemsSet λ) e' }
                   / [size e] @-}
 labelWFWire' :: (Ord p, Fractional p) => DSL p -> Int -> LabelEnv p Int
