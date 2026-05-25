@@ -44,7 +44,7 @@ import Language.Haskell.Liquid.ProofCombinators
                    -> ρ:NameValuation p
 
                    -> m:{Nat | m0 <= m}
-                   -> e':{TypedLDSL p (Btwn 0 m) | isJust (tyEnv' e')}
+                   -> e':TypedLDSL p (Btwn 0 m)
                    -> λ:{LabelEnv p (Btwn 0 m) | label' e m0 M.MTip = (m, e', λ)}
 
                    -> v:{DSLValue p | eval e ρ = Just v}
