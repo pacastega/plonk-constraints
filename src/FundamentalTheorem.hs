@@ -26,6 +26,7 @@ import qualified MapFunctions as M
 import MapLemmas
 import LabelingProof.LabelingLemmas
 import LabelingProof.RecursiveLemmas
+import LabelingProof.AgreeLemma
 import WitnessGenProof.WitnessGenLemmas
 import WitnessGenProof.SemanticsLemmas
 import WitnessGenProof.UniquenessLemmas
@@ -39,7 +40,6 @@ import WitnessGenProof.Uniqueness2 --FIXME: these lemmas should go somewhere els
 import Language.Haskell.Liquid.ProofCombinators
 
 
---TODO: missing "agree" property
 {-@ fundamentalThmA :: m0:Nat -> e:TypedDSL p
                    -> ρ:NameValuation p
 
@@ -49,16 +49,19 @@ import Language.Haskell.Liquid.ProofCombinators
 
                    -> v:{DSLValue p | eval e ρ = Just v}
 
-                   -> {σ:WireValuation p m | coherentE m e' σ
-                                          && evalWire m e' σ = v} @-}
+                   -> (σ::{σ:WireValuation p m | coherentE m e' σ
+                                              && evalWire m e' σ = v},
+                       x:{String | M.member x λ} ->
+                          { v:() | M.lookup x ρ = M.lookup (M.lookup' x λ) σ }) @-}
 fundamentalThmA :: (Fractional p, Ord p) => Int -> DSL p
                -> NameValuation p
 
                -> Int -> LDSL p Int -> LabelEnv p Int
                -> DSLValue p
 
-               -> WireValuation p
-fundamentalThmA m0 e ρ m e' λ v = σ ? wgSoundE m ρ σ0 e' σ
+               -> (WireValuation p, String -> Proof)
+fundamentalThmA m0 e ρ m e' λ v = ( σ ? wgSoundE m ρ σ0 e' σ
+                                  , agreeLemma m0 m e ρ λ0 σ0 (\_ -> ()) λ e' σ )
   where
     λ0 = M.MTip
     σ0 = M.MTip
