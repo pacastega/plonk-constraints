@@ -44,7 +44,7 @@ import Language.Haskell.Liquid.ProofCombinators
                    -> ρ:NameValuation p
 
                    -> m:{Nat | m0 <= m}
-                   -> e':TypedLDSL p (Btwn 0 m)
+                   -> e':LDSL p (Btwn 0 m)
                    -> λ:{LabelEnv p (Btwn 0 m) | label' e m0 M.MTip = (m, e', λ)}
 
                    -> v:{DSLValue p | eval e ρ = Just v}
@@ -60,13 +60,15 @@ fundamentalThmA :: (Fractional p, Ord p) => Int -> DSL p
                -> DSLValue p
 
                -> (WireValuation p, String -> Proof)
-fundamentalThmA m0 e ρ m e' λ v = ( σ ? wgSoundE m ρ σ0 e' σ
+fundamentalThmA m0 e ρ m e' λ v = ( σ ? sound
                                   , agreeLemma m0 m e ρ λ0 σ0 (\_ -> ()) λ e' σ )
   where
     λ0 = M.MTip
     σ0 = M.MTip
 
     wf = labelWF e m0 λ0 m e' λ
+    wt = labelTyped e m0 λ0 m e' λ
+    sound = wf ?? wt ?? wgSoundE m ρ σ0 e' σ
     σ = wf ?? wgCompleteE m0 e ρ v λ0 σ0 (\_ -> ()) m e' λ
 
 --TODO: missing part B of the theorem
