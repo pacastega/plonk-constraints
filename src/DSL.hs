@@ -450,60 +450,61 @@ wfs (p:ps) = wf p && disjoint (wires p) (wiress ps) && wfs ps
 
 
 -- Pointer well-formedness predicate
-{-@ reflect wfWire'_ @-}
-wfWire'_ :: (Ord i) => S.Set i -> LDSL p i -> Bool
-wfWire'_ ws e = case e of
+{-@ reflect wfPtrE @-}
+wfPtrE :: (Ord i) => S.Set i -> LDSL p i -> Bool
+wfPtrE ws e = case e of
   PTR _ j -> S.member j ws -- j appears in the accumulated set of wires
   LVAR _ _ _ -> True
   LCONST _ _ -> True
   LBOOL _ _ -> True
 
-  LDIV e1 e2 _ _ -> wfWire'_ ws                       e1
-                 && wfWire'_ (ws `S.union` wiresE e1) e2
+  LDIV e1 e2 _ _ -> wfPtrE ws                       e1
+                 && wfPtrE (ws `S.union` wiresE e1) e2
 
-  LUN _ e1 _ -> wfWire'_ ws e1
-  LBIN _ e1 e2 _ -> wfWire'_ ws                       e1
-                 && wfWire'_ (ws `S.union` wiresE e1) e2
+  LUN _ e1 _ -> wfPtrE ws e1
+  LBIN _ e1 e2 _ -> wfPtrE ws                       e1
+                 && wfPtrE (ws `S.union` wiresE e1) e2
 
-  LBoolToF e1 -> wfWire'_ ws e1
-  LEQLC e1 _ _ _ -> wfWire'_ ws e1
+  LBoolToF e1 -> wfPtrE ws e1
+  LEQLC e1 _ _ _ -> wfPtrE ws e1
 
   LNIL _ -> True
-  LCONS e1 e2 -> wfWire'_ ws                       e1
-              && wfWire'_ (ws `S.union` wiresE e1) e2
+  LCONS e1 e2 -> wfPtrE ws                       e1
+              && wfPtrE (ws `S.union` wiresE e1) e2
 
-{-@ wfWire'_incr :: ws:S.Set i -> ws':{S.Set i | S.isSubsetOf ws ws'}
-                 -> e:{LDSL p i | wfWire'_ ws e}
-                 -> { wfWire'_ ws' e } @-}
-wfWire'_incr :: (Ord i) => S.Set i -> S.Set i -> LDSL p i -> Proof
-wfWire'_incr ws ws' e = case e of
+
+{-@ wfPtrEIncr :: ws:S.Set i -> ws':{S.Set i | S.isSubsetOf ws ws'}
+                 -> e:{LDSL p i | wfPtrE ws e}
+                 -> { wfPtrE ws' e } @-}
+wfPtrEIncr :: (Ord i) => S.Set i -> S.Set i -> LDSL p i -> Proof
+wfPtrEIncr ws ws' e = case e of
   PTR _ _ -> trivial
   LVAR _ _ _ -> trivial
   LCONST _ _ -> trivial
   LBOOL  _ _ -> trivial
 
-  LDIV e1 e2 _ _ -> wfWire'_incr ws ws' e1
-                 ?? wfWire'_incr (ws  `S.union` wiresE e1)
+  LDIV e1 e2 _ _ -> wfPtrEIncr ws ws' e1
+                 ?? wfPtrEIncr (ws  `S.union` wiresE e1)
                                  (ws' `S.union` wiresE e1)
                                  e2
 
-  LUN _ e1 _ -> wfWire'_incr ws ws' e1
-  LBIN _ e1 e2 _ -> wfWire'_incr ws ws' e1
-                 ?? wfWire'_incr (ws  `S.union` wiresE e1)
+  LUN _ e1 _ -> wfPtrEIncr ws ws' e1
+  LBIN _ e1 e2 _ -> wfPtrEIncr ws ws' e1
+                 ?? wfPtrEIncr (ws  `S.union` wiresE e1)
                                  (ws' `S.union` wiresE e1)
                                  e2
 
-  LBoolToF e1 -> wfWire'_incr ws ws' e1
-  LEQLC e1 _ _ _ -> wfWire'_incr ws ws' e1
+  LBoolToF e1 -> wfPtrEIncr ws ws' e1
+  LEQLC e1 _ _ _ -> wfPtrEIncr ws ws' e1
 
   LNIL _ -> trivial
-  LCONS e1 e2 -> wfWire'_incr ws ws' e1
-              ?? wfWire'_incr (ws  `S.union` wiresE e1)
+  LCONS e1 e2 -> wfPtrEIncr ws ws' e1
+              ?? wfPtrEIncr (ws  `S.union` wiresE e1)
                               (ws' `S.union` wiresE e1)
                               e2
 
 {-@ wfWireLemma :: ws:S.Set i
-                -> e:{LDSL p i | wfWire'_ ws e}
+                -> e:{LDSL p i | wfPtrE ws e}
                 -> { S.isSubsetOf (ptrsE e) (S.union (wiresE e) ws) } @-}
 wfWireLemma :: (Ord i) => S.Set i -> LDSL p i -> Proof
 wfWireLemma ws e = case e of

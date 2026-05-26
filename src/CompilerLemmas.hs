@@ -38,7 +38,7 @@ import Language.Haskell.Liquid.ProofCombinators
                   -> γ:TyEnv' (Btwn 0 m)
                   -> γ1:{TyEnv' (Btwn 0 m) | Just γ1 = tyEnv'_ e1 γ}
 
-                  -> ws:{S.Set (Btwn 0 m) | wfWire'_ ws e1}
+                  -> ws:{S.Set (Btwn 0 m) | wfPtrE ws e1}
 
                   -> π1:( j:{Btwn 0 m | S.member j ws
                                      && M.lookup j γ1 = Just TBool}
@@ -74,7 +74,7 @@ booleanLemma1 m e1 σ γ γ1 ws π1 = outputWireBool e1 γ γ1 ??
                   -> γ2:{TyEnv' (Btwn 0 m) | Just γ2 = tyEnv'_ e2 γ1}
                   -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e  γ}
 
-                  -> ws:{S.Set (Btwn 0 m) | wfWire'_ ws e}
+                  -> ws:{S.Set (Btwn 0 m) | wfPtrE ws e}
 
                   -> π1:( j:{Btwn 0 m | S.member j ws
                                      && M.lookup j γ1 = Just TBool}

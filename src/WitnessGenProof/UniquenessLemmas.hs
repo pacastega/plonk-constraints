@@ -37,7 +37,7 @@ elementLemma2 k v (M.MBin k' v' m') =
 {-@ labelWFWire :: e:TypedDSL p -> m0:Nat
                 -> m:{Nat | m >= m0} -> e':LDSL p (Btwn 0 m)
                 -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 M.empty = (m,e',λ')}
-                -> { wfWire'_ S.empty e' } @-}
+                -> { wfPtrE S.empty e' } @-}
 labelWFWire :: (Ord p, Fractional p) => DSL p -> Int
             -> Int -> LDSL p Int -> LabelEnv p Int -> Proof
 labelWFWire e m0 m e' λ' = labelWFWire' e m0 M.empty m e' λ'
@@ -91,7 +91,7 @@ labelIncrEnv e m0 λ m e' λ' x = case e of
                  -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m,e',λ')}
                  -> { S.isSubsetOf (elemsSet λ') (S.union (elemsSet λ) (wiresE e'))
                       && S.isSubsetOf (elemsSet λ) (elemsSet λ')
-                      && wfWire'_ (elemsSet λ) e' }
+                      && wfPtrE (elemsSet λ) e' }
                   / [size e] @-}
 labelWFWire' :: (Ord p, Fractional p) => DSL p -> Int -> LabelEnv p Int
              -> Int -> LDSL p Int -> LabelEnv p Int -> Proof
@@ -114,7 +114,7 @@ labelWFWire' e m0 λ m e' λ' = case e of
   BIN op e1 e2 -> case op of
     DIV -> labelWFWire' e1 m0 λ  m1 e1' λ1
         ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
-        ?? wfWire'_incr (elemsSet λ1)
+        ?? wfPtrEIncr (elemsSet λ1)
                         (elemsSet λ `S.union` wiresE e1')
                         e2'
       where (m1,e1',λ1) = label' e1 m0 λ
@@ -122,7 +122,7 @@ labelWFWire' e m0 λ m e' λ' = case e of
     EQL -> labelWFWire' (UN (EQLC zero) (BIN SUB e1 e2)) m0 λ m e' λ'
     _ -> labelWFWire' e1 m0 λ  m1 e1' λ1
       ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
-      ?? wfWire'_incr (elemsSet λ1)
+      ?? wfPtrEIncr (elemsSet λ1)
                       (elemsSet λ `S.union` wiresE e1')
                       e2'
       where (m1,e1',λ1) = label' e1 m0 λ
@@ -131,7 +131,7 @@ labelWFWire' e m0 λ m e' λ' = case e of
   NIL _ -> trivial
   CONS e1 e2 -> labelWFWire' e1 m0 λ  m1 e1' λ1
              ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
-             ?? wfWire'_incr (elemsSet λ1)
+             ?? wfPtrEIncr (elemsSet λ1)
                              (elemsSet λ `S.union` wiresE e1')
                              e2'
     where (m1,e1',λ1) = label' e1 m0 λ
