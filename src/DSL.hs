@@ -472,6 +472,19 @@ wfPtrE ws e = case e of
   LCONS e1 e2 -> wfPtrE ws                       e1
               && wfPtrE (ws `S.union` wiresE e1) e2
 
+{-@ reflect wfPtrA @-}
+wfPtrA :: (Ord i) => S.Set i -> LAss p i -> Bool
+wfPtrA ws a = case a of
+  LNZERO e1 _ -> wfPtrE ws e1
+  LBOOLEAN e1 -> wfPtrE ws e1
+  LEQA e1 e2 -> wfPtrE ws e1 && wfPtrE (ws `S.union` wiresE e1) e2
+
+{-@ reflect wfPtr @-}
+wfPtr :: (Ord i) => S.Set i -> LProg p i -> Bool
+wfPtr ws pr = case pr of
+  LExpr e -> wfPtrE ws e
+  LAss a -> wfPtrA ws a
+
 
 {-@ wfPtrEIncr :: ws:S.Set i -> ws':{S.Set i | S.isSubsetOf ws ws'}
                  -> e:{LDSL p i | wfPtrE ws e}
