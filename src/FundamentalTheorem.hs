@@ -101,7 +101,7 @@ fundamentalThmB m0 e ρ m e' λ v σ π =
     wf = labelWF e m0 λ0 m e' λ
     wt = labelTyped e m0 λ0 m e' λ
 
-    γ = wt ?? case tyEnv'_ e' γ0 of Just g -> g
+    γ = wt ?? case tyEnvE e' γ0 of Just g -> g
 
     {-@ h_bool :: j:{Btwn 0 m | S.member j (elemsSet λ)
                              && M.lookup j γ = Just TBool}

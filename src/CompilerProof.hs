@@ -60,7 +60,7 @@ compileProofE m e σ = case tyEnv' e of
 {-@ compileProofE_ :: m:Nat
                   -> e:TypedLDSL p (Btwn 0 m)
                   -> γ:TyEnv' (Btwn 0 m)
-                  -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e γ}
+                  -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnvE e γ}
                   -> {σ:WireValuation p m | closedExpr m σ e}
 
                   -> ws:{S.Set (Btwn 0 m) | wfPtrE ws e}
@@ -81,8 +81,8 @@ compileProofE_ m e γ γ' σ ws π = case e of
     TBool -> trivial
   LCONST x i -> trivial
   LBOOL  b i -> trivial
-  LDIV e1 e2 w i -> case tyEnv'_ e1 γ of
-    Just γ1 -> case tyEnv'_ e2 γ1 of
+  LDIV e1 e2 w i -> case tyEnvE e1 γ of
+    Just γ1 -> case tyEnvE e2 γ1 of
       Just γ2 -> case insertIfCompatible w TF γ2 of
         Just γw -> ih1 ? ih2 ? satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
           where
@@ -103,7 +103,7 @@ compileProofE_ m e γ γ' σ ws π = case e of
                            -> { boolean (M.lookup' j σ) } @-}
             π1 j = elementLemma j TBool γ1   -- j ∈ γ1
                 ?? lookupLemma j γ1          -- γ1[j] = TBool
-                ?? tyEnv'_incr e2 γ1 γ2 j    -- γ2[j] = γ1[j] since γ2 ≥ γ1
+                ?? tyEnvEIncr e2 γ1 γ2 j    -- γ2[j] = γ1[j] since γ2 ≥ γ1
                 ?? insertICIncr w TF γ2 γw j -- γw[j] = γ2[j] since γw ≥ γ2
                 ?? insertICIncr i TF γw γ' j -- γ'[j] = γ2[j] since γ' ≥ γ2
                 ?? lookupLemma j γ'          -- M.lookup j γ' = Just γ'[j]
@@ -123,12 +123,12 @@ compileProofE_ m e γ γ' σ ws π = case e of
                      ?? π j                       -- σ[j] ∈ {0,1} since j ∈ ws
 
                    -- if j ∈ wires(e1) (considering wires(e1) ⊆ keys(γ1))
-                   else tyEnv'_incr e2 γ1 γ2 j -- γ2[j] = γ1[j] since γ2 ≥ γ1
+                   else tyEnvEIncr e2 γ1 γ2 j -- γ2[j] = γ1[j] since γ2 ≥ γ1
                      ?? lookupLemma j γ1       -- M.lookup j γ1 = Just γ1[j]
                      ?? booleanProof' m σ e1 γ γ1 j -- σ ⊢ e1 ⇒ σ[j] ∈ {0,1}
 
 
-  LUN op e1 i -> case tyEnv'_ e1 γ of
+  LUN op e1 i -> case tyEnvE e1 γ of
     Just γ1 -> case op of
       ADDC _ -> proof; MULC _ -> proof;
       NOT -> proof
@@ -151,8 +151,8 @@ compileProofE_ m e γ γ' σ ws π = case e of
             ?? lookupLemma j γ'         -- M.lookup j γ' = Just γ'[j]
             ?? π j
 
-  LBIN op e1 e2 i -> case tyEnv'_ e1 γ of
-    Just γ1 -> case tyEnv'_ e2 γ1 of
+  LBIN op e1 e2 i -> case tyEnvE e1 γ of
+    Just γ1 -> case tyEnvE e2 γ1 of
       Just γ2 -> case op of
         ADD -> proof; SUB -> proof; MUL -> proof; LINCOMB _ _ -> proof;
         AND -> proof
@@ -185,7 +185,7 @@ compileProofE_ m e γ γ' σ ws π = case e of
                          -> { boolean (M.lookup' j σ) } @-}
           π1 j = elementLemma j TBool γ1  -- j ∈ γ1
               ?? lookupLemma j γ1         -- γ1[j] = TBool
-              ?? tyEnv'_incr e2 γ1 γ2 j   -- γ2[j] = γ1[j] since γ2 ≥ γ1
+              ?? tyEnvEIncr e2 γ1 γ2 j   -- γ2[j] = γ1[j] since γ2 ≥ γ1
               ?? insertICIncr i τ γ2 γ' j -- γ'[j] = γ2[j] since γ' ≥ γ2
               ?? lookupLemma j γ'         -- M.lookup j γ' = Just γ'[j]
               ?? π j
@@ -203,13 +203,13 @@ compileProofE_ m e γ γ' σ ws π = case e of
                    ?? π j                      -- σ[j] ∈ {0,1} since j ∈ ws
 
                  -- if j ∈ wires(e1) (considering wires(e1) ⊆ keys(γ1))
-                 else tyEnv'_incr e2 γ1 γ2 j -- γ2[j] = γ1[j] since γ2 ≥ γ1
+                 else tyEnvEIncr e2 γ1 γ2 j -- γ2[j] = γ1[j] since γ2 ≥ γ1
                    ?? lookupLemma j γ1       -- M.lookup j γ1 = Just γ1[j]
                    ?? booleanProof' m σ e1 γ γ1 j -- σ ⊢ e1 ⇒ σ[j] ∈ {0,1}
 
 
   LBoolToF e1 -> compileProofE_ m e1 γ γ' σ ws π
-  LEQLC e1 k w i -> case tyEnv'_ e1 γ of
+  LEQLC e1 k w i -> case tyEnvE e1 γ of
     Just γ1 -> case insertIfCompatible w TF γ1 of
       Just γw -> compileProofE_ m e1 γ γ1 σ ws π1
 
@@ -225,7 +225,7 @@ compileProofE_ m e γ γ' σ ws π = case e of
               ?? π j
 
   LNIL _ -> trivial
-  LCONS e1 e2 -> case tyEnv'_ e1 γ of
+  LCONS e1 e2 -> case tyEnvE e1 γ of
     Just γ1 -> ih1 ?? ih2
             ?? satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
       where
@@ -245,7 +245,7 @@ compileProofE_ m e γ γ' σ ws π = case e of
                              && M.lookup j γ1 = Just TBool}
                        -> { boolean (M.lookup' j σ) } @-}
         π1 j = elementLemma j TBool γ1
-            ?? tyEnv'_incr e2 γ1 γ' j
+            ?? tyEnvEIncr e2 γ1 γ' j
             ?? lookupLemma j γ1 ?? lookupLemma j γ'
             ?? π j
 
@@ -260,7 +260,7 @@ compileProofE_ m e γ γ' σ ws π = case e of
                then π j -- σ[j] ∈ {0,1} since j ∈ ws
 
                -- if j ∈ wires(e1) (considering wires(e1) ⊆ keys(γ1))
-               else tyEnv'_incr e2 γ1 γ' j -- γ'[j] = γ1[j] since γ' ≥ γ1
+               else tyEnvEIncr e2 γ1 γ' j -- γ'[j] = γ1[j] since γ' ≥ γ1
                  ?? lookupLemma j γ1       -- M.lookup j γ1 = Just γ1[j]
                  ?? booleanProof' m σ e1 γ γ1 j -- σ ⊢ e1 ⇒ σ[j] ∈ {0,1}
 

@@ -273,9 +273,9 @@ coherentCons m0 m' e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 σ = trivial
              -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ = (m1, e1', λ1)}
 
              -> γ:TyEnv' (Btwn 0 m0)
-             -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' γ}
+             -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnvE e' γ}
 
-             -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ} @-}
+             -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ} @-}
 tyEnvUn1 :: (Fractional p, Ord p) => Int -> UnOp p -> DSL p
            -> DSL p -> LabelEnv p Int
 
@@ -287,10 +287,10 @@ tyEnvUn1 m0 op e1 e λ m e' λ' m1 e1' λ1 γ γ' =
   labelTyped e1 m0 λ  m1 e1' λ1 ??
   -- labelTyped e2 m1 λ1 m2 e2' λ2 ??
   case op of
-    ISZERO -> case tyEnv'_ e1' γ of Just γ1 -> γ1
-    EQLC _ -> case tyEnv'_ e1' γ of Just γ1 -> γ1
-    BoolToF -> case tyEnv'_ e1' γ of Just γ1 -> γ1
-    _   -> case tyEnv'_ e1' γ of Just γ1 -> γ1
+    ISZERO -> case tyEnvE e1' γ of Just γ1 -> γ1
+    EQLC _ -> case tyEnvE e1' γ of Just γ1 -> γ1
+    BoolToF -> case tyEnvE e1' γ of Just γ1 -> γ1
+    _   -> case tyEnvE e1' γ of Just γ1 -> γ1
 
 {-@ tyEnvBin1 :: m0:Nat -> op:BinOp p -> e1:TypedDSL p -> e2:TypedDSL p
                -> e:{TypedDSL p | e = BIN op e1 e2}
@@ -309,9 +309,9 @@ tyEnvUn1 m0 op e1 e λ m e' λ' m1 e1' λ1 γ γ' =
                -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
 
                -> γ:TyEnv' (Btwn 0 m0)
-               -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' γ}
+               -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnvE e' γ}
 
-               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ} @-}
+               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ} @-}
 tyEnvBin1 :: (Fractional p, Ord p) => Int -> BinOp p -> DSL p -> DSL p
            -> DSL p -> LabelEnv p Int
 
@@ -324,9 +324,9 @@ tyEnvBin1 m0 op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' =
   labelTyped e1 m0 λ  m1 e1' λ1 ??
   -- labelTyped e2 m1 λ1 m2 e2' λ2 ??
   case op of
-    DIV -> case tyEnv'_ e1' γ of Just γ1 -> γ1
-    EQL -> case tyEnv'_ e1' γ of Just γ1 -> γ1
-    _   -> case tyEnv'_ e1' γ of Just γ1 -> γ1
+    DIV -> case tyEnvE e1' γ of Just γ1 -> γ1
+    EQL -> case tyEnvE e1' γ of Just γ1 -> γ1
+    _   -> case tyEnvE e1' γ of Just γ1 -> γ1
 
 {-@ tyEnvBin2 :: m0:Nat -> op:BinOp p -> e1:TypedDSL p -> e2:TypedDSL p
                -> e:{TypedDSL p | e = BIN op e1 e2}
@@ -345,10 +345,10 @@ tyEnvBin1 m0 op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' =
                -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
 
                -> γ:TyEnv' (Btwn 0 m0)
-               -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' γ}
-               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ}
+               -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnvE e' γ}
+               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ}
 
-               -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnv'_ e2' γ1} @-}
+               -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnvE e2' γ1} @-}
 tyEnvBin2 :: (Fractional p, Ord p) => Int -> BinOp p -> DSL p -> DSL p
            -> DSL p -> LabelEnv p Int
 
@@ -361,12 +361,12 @@ tyEnvBin2 m0 op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' γ1 =
   labelTyped e1 m0 λ  m1 e1' λ1 ??
   labelTyped e2 m1 λ1 m2 e2' λ2 ??
   case op of
-    DIV -> case tyEnv'_ e1' γ of
-      Just γ1 -> case tyEnv'_ e2' γ1 of Just γ2 -> γ2
-    EQL -> case tyEnv'_ e1' γ of
-      Just γ1 -> case tyEnv'_ e2' γ1 of Just γ2 -> γ2
-    _   -> case tyEnv'_ e1' γ of
-      Just γ1 -> case tyEnv'_ e2' γ1 of Just γ2 -> γ2
+    DIV -> case tyEnvE e1' γ of
+      Just γ1 -> case tyEnvE e2' γ1 of Just γ2 -> γ2
+    EQL -> case tyEnvE e1' γ of
+      Just γ1 -> case tyEnvE e2' γ1 of Just γ2 -> γ2
+    _   -> case tyEnvE e1' γ of
+      Just γ1 -> case tyEnvE e2' γ1 of Just γ2 -> γ2
 
 
 {-@ tyEnvCons1 :: m0:Nat -> e1:TypedDSL p -> e2:TypedDSL p
@@ -386,9 +386,9 @@ tyEnvBin2 m0 op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' γ1 =
                -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
 
                -> γ:TyEnv' (Btwn 0 m0)
-               -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' γ}
+               -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnvE e' γ}
 
-               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ} @-}
+               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ} @-}
 tyEnvCons1 :: (Fractional p, Ord p) => Int -> DSL p -> DSL p
            -> DSL p -> LabelEnv p Int
 
@@ -399,7 +399,7 @@ tyEnvCons1 :: (Fractional p, Ord p) => Int -> DSL p -> DSL p
            -> TyEnv' Int -> TyEnv' Int -> TyEnv' Int
 tyEnvCons1 m0 e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' =
   labelTyped e1 m0 λ  m1 e1' λ1 ??
-  case tyEnv'_ e1' γ of Just γ1 -> γ1
+  case tyEnvE e1' γ of Just γ1 -> γ1
 
 {-@ tyEnvCons2 :: m0:Nat -> e1:TypedDSL p -> e2:TypedDSL p
                -> e:{TypedDSL p | e = CONS e1 e2}
@@ -418,10 +418,10 @@ tyEnvCons1 m0 e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' =
                -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
 
                -> γ:TyEnv' (Btwn 0 m0)
-               -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e' γ}
-               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ}
+               -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnvE e' γ}
+               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ}
 
-               -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnv'_ e2' γ1} @-}
+               -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnvE e2' γ1} @-}
 tyEnvCons2 :: (Fractional p, Ord p) => Int -> DSL p -> DSL p
            -> DSL p -> LabelEnv p Int
 
@@ -433,8 +433,8 @@ tyEnvCons2 :: (Fractional p, Ord p) => Int -> DSL p -> DSL p
 tyEnvCons2 m0 e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' γ1 =
   labelTyped e1 m0 λ  m1 e1' λ1 ??
   labelTyped e2 m1 λ1 m2 e2' λ2 ??
-  case tyEnv'_ e1' γ of
-    Just γ1 -> case tyEnv'_ e2' γ1 of
+  case tyEnvE e1' γ of
+    Just γ1 -> case tyEnvE e2' γ1 of
       Just γ2 -> γ2
 
 
@@ -451,8 +451,8 @@ tyEnvCons2 m0 e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ' γ1 =
                -> λ1:{LabelEnv p (Btwn 0 m1) | label' e1 m0 λ = (m1, e1', λ1)}
 
                -> γ:TyEnv' (Btwn 0 m0)
-               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ}
-               -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnv'_ e'  γ}
+               -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ}
+               -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnvE e'  γ}
 
                -> σ:{WireValuation p m' | closedExpr m' σ e'}
 
@@ -475,11 +475,11 @@ booleanUn1 :: (Fractional p, Ord p) => Int -> Int -> UnOp p -> DSL p
            -> (Int -> Proof) -> (Int -> Proof)
 booleanUn1 m0 m' op e1 e λ m e' λ' m1 e1' λ1 γ γ1 γ' σ h_bool j =
   labelTyped e m0 λ m e' λ' ?? case op of
-    ISZERO -> case tyEnv'_ e1' γ of
+    ISZERO -> case tyEnvE e1' γ of
                 Just γ1 -> case insertIfCompatible w TF γ1 of
                   Just γw -> elementLemma j TBool γ1
                           -- ?? insertICIncr w TF γ2 γw j
-                          -- ?? tyEnv'_incr e2' γ1 γ2 j
+                          -- ?? tyEnvEIncr e2' γ1 γ2 j
                           ?? insertICIncr w TF    γ1 γw j -- new
                           ?? insertICIncr i TBool γw γ' j -- new
                           ?? lookupLemma j γ1 ?? lookupLemma j γ'
@@ -487,11 +487,11 @@ booleanUn1 m0 m' op e1 e λ m e' λ' m1 e1' λ1 γ γ1 γ' σ h_bool j =
                           ?? h_bool j
       where (w,i) = labelIs0 m0 e1 λ m1 e1' λ1 m e' λ'
 
-    EQLC k -> case tyEnv'_ e1' γ of
+    EQLC k -> case tyEnvE e1' γ of
                 Just γ1 -> case insertIfCompatible w TF γ1 of
                   Just γw -> elementLemma j TBool γ1
                           -- ?? insertICIncr w TF γ2 γw j
-                          -- ?? tyEnv'_incr e2' γ1 γ2 j
+                          -- ?? tyEnvEIncr e2' γ1 γ2 j
                           ?? insertICIncr w TF    γ1 γw j -- new
                           ?? insertICIncr i TBool γw γ' j -- new
                           ?? lookupLemma j γ1 ?? lookupLemma j γ'
@@ -501,10 +501,10 @@ booleanUn1 m0 m' op e1 e λ m e' λ' m1 e1' λ1 γ γ1 γ' σ h_bool j =
 
     BoolToF -> h_bool j
 
-    _   -> case tyEnv'_ e1' γ of
+    _   -> case tyEnvE e1' γ of
              Just γ1 -> case inferType' e' of
                Just τ -> elementLemma j TBool γ1
-                      -- ?? tyEnv'_incr e2' γ1 γ2 j
+                      -- ?? tyEnvEIncr e2' γ1 γ2 j
                       ?? insertICIncr i τ γ1 γ' j -- new
                       ?? lookupLemma j γ1 ?? lookupLemma j γ'
                       -- ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
@@ -529,9 +529,9 @@ booleanUn1 m0 m' op e1 e λ m e' λ' m1 e1' λ1 γ γ1 γ' σ h_bool j =
                 -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
 
                 -> γ:TyEnv' (Btwn 0 m0)
-                -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ}
-                -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnv'_ e2' γ1}
-                -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnv'_ e'  γ}
+                -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ}
+                -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnvE e2' γ1}
+                -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnvE e'  γ}
 
                 -> σ:{WireValuation p m' | closedExpr m' σ e'}
 
@@ -555,34 +555,34 @@ booleanBin1 :: (Fractional p, Ord p) => Int -> Int -> BinOp p -> DSL p -> DSL p
             -> (Int -> Proof) -> (Int -> Proof)
 booleanBin1 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h_bool j =
   labelTyped e m0 λ m e' λ' ?? case op of
-    DIV -> case tyEnv'_ e1' γ of
-             Just γ1 -> case tyEnv'_ e2' γ1 of
+    DIV -> case tyEnvE e1' γ of
+             Just γ1 -> case tyEnvE e2' γ1 of
                Just γ2 -> case insertIfCompatible w TF γ2 of
                  Just γw -> elementLemma j TBool γ1
                          ?? insertICIncr w TF γ2 γw j
-                         ?? tyEnv'_incr e2' γ1 γ2 j
+                         ?? tyEnvEIncr e2' γ1 γ2 j
                          ?? lookupLemma j γ1 ?? lookupLemma j γ2
                          ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
                          ?? h_2 j
       where (w,_) = labelDiv m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-    EQL -> case tyEnv'_ e1' γ of
-             Just γ1 -> case tyEnv'_ e2' γ1 of
+    EQL -> case tyEnvE e1' γ of
+             Just γ1 -> case tyEnvE e2' γ1 of
                Just γ2 -> case insertIfCompatible d TF γ2 of
                  Just γd -> case insertIfCompatible w TF γd of
                    Just γw -> elementLemma j TBool γ1
                            ?? insertICIncr d TF γ2 γd j
                            ?? insertICIncr w TF γd γw j
-                           ?? tyEnv'_incr e2' γ1 γ2 j
+                           ?? tyEnvEIncr e2' γ1 γ2 j
                            ?? lookupLemma j γ1 ?? lookupLemma j γ2
                            ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
                            ?? h_2 j
       where (d,w,_) = labelEql m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-    _   -> case tyEnv'_ e1' γ of
-             Just γ1 -> case tyEnv'_ e2' γ1 of
+    _   -> case tyEnvE e1' γ of
+             Just γ1 -> case tyEnvE e2' γ1 of
                Just γ2 -> elementLemma j TBool γ1
-                       ?? tyEnv'_incr e2' γ1 γ2 j
+                       ?? tyEnvEIncr e2' γ1 γ2 j
                        ?? lookupLemma j γ1 ?? lookupLemma j γ2
                        ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
                        ?? h_2 j
@@ -606,9 +606,9 @@ booleanBin1 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ
                 -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
 
                 -> γ:TyEnv' (Btwn 0 m0)
-                -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ}
-                -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnv'_ e2' γ1}
-                -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnv'_ e'  γ}
+                -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ}
+                -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnvE e2' γ1}
+                -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnvE e'  γ}
 
                 -> σ:{WireValuation p m' | closedExpr m' σ e'}
 
@@ -632,8 +632,8 @@ booleanBin2 :: (Fractional p, Ord p) => Int -> Int -> BinOp p -> DSL p -> DSL p
             -> (Int -> Proof) -> (Int -> Proof)
 booleanBin2 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h_bool j =
   labelTyped e m0 λ m e' λ' ?? case op of
-    DIV -> case tyEnv'_ e1' γ of
-      Just γ1 -> case tyEnv'_ e2' γ1 of
+    DIV -> case tyEnvE e1' γ of
+      Just γ1 -> case tyEnvE e2' γ1 of
         Just γ2 -> case insertIfCompatible w TF γ2 of
           Just γw -> elementLemma j TBool γ2
                   ?? insertICIncr w TF γ2 γw j
@@ -642,8 +642,8 @@ booleanBin2 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ
                   ?? h_bool j
       where (w,i) = labelDiv m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-    EQL -> case tyEnv'_ e1' γ of
-      Just γ1 -> case tyEnv'_ e2' γ1 of
+    EQL -> case tyEnvE e1' γ of
+      Just γ1 -> case tyEnvE e2' γ1 of
         Just γ2 -> case insertIfCompatible d TF γ2 of
           Just γd -> case insertIfCompatible w TF γd of
             Just γw -> elementLemma j TBool γ2
@@ -654,8 +654,8 @@ booleanBin2 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ
                     ?? h_bool j
       where (d,w,i) = labelEql m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
-    _ -> case tyEnv'_ e1' γ of
-      Just γ1 -> case tyEnv'_ e2' γ1 of
+    _ -> case tyEnvE e1' γ of
+      Just γ1 -> case tyEnvE e2' γ1 of
         Just γ2 -> case inferType' e' of
           Just τ -> elementLemma j TBool γ2
                  ?? insertICIncr i τ γ2 γ' j
@@ -680,9 +680,9 @@ booleanBin2 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ
                  -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
 
                  -> γ:TyEnv' (Btwn 0 m0)
-                 -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ}
-                 -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnv'_ e2' γ1}
-                 -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnv'_ e'  γ}
+                 -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ}
+                 -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnvE e2' γ1}
+                 -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnvE e'  γ}
 
                  -> σ:{WireValuation p m' | closedExpr m' σ e'}
 
@@ -706,10 +706,10 @@ booleanCons1 :: (Fractional p, Ord p) => Int -> Int -> DSL p -> DSL p
              -> (Int -> Proof) -> (Int -> Proof)
 booleanCons1 m0 m' e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h_bool j =
   labelTyped e m0 λ m e' λ' ??
-    case tyEnv'_ e1' γ of
-      Just γ1 -> case tyEnv'_ e2' γ1 of
+    case tyEnvE e1' γ of
+      Just γ1 -> case tyEnvE e2' γ1 of
         Just γ2 -> elementLemma j TBool γ1
-                ?? tyEnv'_incr e2' γ1 γ2 j
+                ?? tyEnvEIncr e2' γ1 γ2 j
                 ?? lookupLemma j γ1 ?? lookupLemma j γ2
                 ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
                 ?? h_bool j
@@ -732,9 +732,9 @@ booleanCons1 m0 m' e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h
                  -> λ2:{LabelEnv p (Btwn 0 m2) | label' e2 m1 λ1 = (m2, e2', λ2)}
 
                  -> γ:TyEnv' (Btwn 0 m0)
-                 -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnv'_ e1' γ}
-                 -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnv'_ e2' γ1}
-                 -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnv'_ e'  γ}
+                 -> γ1:{TyEnv' (Btwn 0 m1) | Just γ1 = tyEnvE e1' γ}
+                 -> γ2:{TyEnv' (Btwn 0 m2) | Just γ2 = tyEnvE e2' γ1}
+                 -> γ':{TyEnv' (Btwn 0 m)  | Just γ' = tyEnvE e'  γ}
 
                  -> σ:{WireValuation p m' | closedExpr m' σ e'}
 
@@ -758,10 +758,10 @@ booleanCons2 :: (Fractional p, Ord p) => Int -> Int -> DSL p -> DSL p
              -> (Int -> Proof) -> (Int -> Proof)
 booleanCons2 m0 m' e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h_bool j =
     labelTyped e m0 λ m e' λ' ??
-    case tyEnv'_ e1' γ of
-      Just γ1 -> case tyEnv'_ e2' γ1 of
+    case tyEnvE e1' γ of
+      Just γ1 -> case tyEnvE e2' γ1 of
         Just γ2 -> elementLemma j TBool γ2
-                -- ?? tyEnv'_incr e2' γ1 γ2 j
+                -- ?? tyEnvEIncr e2' γ1 γ2 j
                 ?? lookupLemma j γ2 ?? lookupLemma j γ'
                 -- ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
                 ?? h_bool j

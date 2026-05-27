@@ -68,40 +68,40 @@ insertICIncr k v m m' j = case M.lookup k m of
 {-@ tyEnv' :: e:TypedLDSL p i -> Maybe ({γ:TyEnv' i | M.keysSet γ =
                                            S.union (wiresE e) (ptrsE e)}) @-}
 tyEnv' :: (Ord i) => LDSL p i -> Maybe (TyEnv' i)
-tyEnv' e = tyEnv'_ e M.MTip --FIXME: this should be M.empty instead, but that crashes
+tyEnv' e = tyEnvE e M.MTip --FIXME: this should be M.empty instead, but that crashes
 
-{-@ reflect tyEnv'_ @-}
-{-@ tyEnv'_ :: e:TypedLDSL p i -> γ:TyEnv' i
+{-@ reflect tyEnvE @-}
+{-@ tyEnvE :: e:TypedLDSL p i -> γ:TyEnv' i
             -> Maybe ({γ':TyEnv' i |
                       M.keysSet γ' = S.union (M.keysSet γ)
                                              (S.union (wiresE e) (ptrsE e))}) @-}
-tyEnv'_ :: (Ord i) => LDSL p i -> TyEnv' i -> Maybe (TyEnv' i)
-tyEnv'_ e γ = case inferType' e of --FIXME: this could be a let binding, but that crashes
+tyEnvE :: (Ord i) => LDSL p i -> TyEnv' i -> Maybe (TyEnv' i)
+tyEnvE e γ = case inferType' e of --FIXME: this could be a let binding, but that crashes
   Just τ -> case e of
     PTR    _ i -> insertIfCompatible i τ γ
     LVAR _ _ i -> insertIfCompatible i τ γ
     LCONST _ i -> insertIfCompatible i τ γ
     LBOOL  _ i -> insertIfCompatible i τ γ
 
-    LDIV e1 e2 w i | Just γ1 <- tyEnv'_ e1 γ
-                   , Just γ2 <- tyEnv'_ e2 γ1
+    LDIV e1 e2 w i | Just γ1 <- tyEnvE e1 γ
+                   , Just γ2 <- tyEnvE e2 γ1
                    , Just γw <- insertIfCompatible w TF γ2
                   -> insertIfCompatible i τ γw
 
-    LUN _ e1 i | Just γ1 <- tyEnv'_ e1 γ
+    LUN _ e1 i | Just γ1 <- tyEnvE e1 γ
               -> insertIfCompatible i τ γ1
-    LBIN _ e1 e2 i | Just γ1 <- tyEnv'_ e1 γ
-                   , Just γ2 <- tyEnv'_ e2 γ1
+    LBIN _ e1 e2 i | Just γ1 <- tyEnvE e1 γ
+                   , Just γ2 <- tyEnvE e2 γ1
                   -> insertIfCompatible i τ γ2
 
-    LBoolToF e1 -> tyEnv'_ e1 γ
-    LEQLC e1 _ w i | Just γ1 <- tyEnv'_ e1 γ
+    LBoolToF e1 -> tyEnvE e1 γ
+    LEQLC e1 _ w i | Just γ1 <- tyEnvE e1 γ
                    , Just γw <- insertIfCompatible w TF γ1
                   -> insertIfCompatible i τ γw
 
     LNIL _ -> Just γ
-    LCONS e1 e2 | Just γ1 <- tyEnv'_ e1 γ
-               -> tyEnv'_ e2 γ1
+    LCONS e1 e2 | Just γ1 <- tyEnvE e1 γ
+               -> tyEnvE e2 γ1
 
     _ -> Nothing
 
@@ -115,7 +115,7 @@ wfEWire e = ptrsE e `S.isSubsetOf` wiresE e --FIXME: this should be `wfPtrE S.em
 
 {-@ outputWireBool :: e:{LDSL p i | booleanE e}
                    -> γ:TyEnv' i
-                   -> γ':{TyEnv' i | Just γ' = tyEnv'_ e γ}
+                   -> γ':{TyEnv' i | Just γ' = tyEnvE e γ}
                    -> { M.lookup (outputWire e) γ' = Just TBool } @-}
 outputWireBool :: (Ord i) => LDSL p i -> TyEnv' i -> TyEnv' i -> Proof
 outputWireBool e γ γ' = case e of
@@ -123,13 +123,13 @@ outputWireBool e γ γ' = case e of
   LVAR _ _ i -> lookupInsertIC i TBool γ γ' i
   LBOOL  _ i -> lookupInsertIC i TBool γ γ' i
 
-  LUN  _  e1   i -> case tyEnv'_ e1 γ of
+  LUN  _  e1   i -> case tyEnvE e1 γ of
     Just γ1 -> lookupInsertIC i TBool γ1 γ' i
-  LBIN _ e1 e2 i -> case tyEnv'_ e1 γ of
-    Just γ1 -> case tyEnv'_ e2 γ1 of
+  LBIN _ e1 e2 i -> case tyEnvE e1 γ of
+    Just γ1 -> case tyEnvE e2 γ1 of
       Just γ2 -> lookupInsertIC i TBool γ2 γ' i
 
-  LEQLC e1 _ w i -> case tyEnv'_ e1 γ of
+  LEQLC e1 _ w i -> case tyEnvE e1 γ of
     Just γ1 -> case insertIfCompatible w TF γ1 of
       Just γw -> lookupInsertIC i TBool γw γ' i
 
@@ -144,53 +144,53 @@ booleanProof'' m σ e = case tyEnv' e of
   Just γ -> outputWireBool e M.MTip γ ?? booleanProof' m σ e M.MTip γ (outputWire e)
 
 
-{-@ tyEnv'_incr :: e:TypedLDSL p Int -> γ:TyEnv' Int
-                -> γ':{TyEnv' Int | Just γ' = tyEnv'_ e γ}
+{-@ tyEnvEIncr :: e:TypedLDSL p Int -> γ:TyEnv' Int
+                -> γ':{TyEnv' Int | Just γ' = tyEnvE e γ}
                 -> MapGE γ' γ @-}
-tyEnv'_incr :: LDSL p Int -> TyEnv' Int -> TyEnv' Int -> (Int -> Proof)
-tyEnv'_incr e γ γ' j = case inferType' e of
+tyEnvEIncr :: LDSL p Int -> TyEnv' Int -> TyEnv' Int -> (Int -> Proof)
+tyEnvEIncr e γ γ' j = case inferType' e of
   Just τ -> case e of
     PTR    _ i -> insertICIncr i τ γ γ' j
     LVAR _ _ i -> insertICIncr i τ γ γ' j
     LCONST _ i -> insertICIncr i τ γ γ' j
     LBOOL  _ i -> insertICIncr i τ γ γ' j
 
-    LDIV e1 e2 w i -> case tyEnv'_ e1 γ of
-      Just γ1 -> case tyEnv'_ e2 γ1 of
+    LDIV e1 e2 w i -> case tyEnvE e1 γ of
+      Just γ1 -> case tyEnvE e2 γ1 of
         Just γ2 -> case insertIfCompatible w TF γ2 of
-          Just γw -> tyEnv'_incr e1 γ  γ1 j
-                  ?? tyEnv'_incr e2 γ1 γ2 j
+          Just γw -> tyEnvEIncr e1 γ  γ1 j
+                  ?? tyEnvEIncr e2 γ1 γ2 j
                   ?? insertICIncr w TF γ2 γw j
                   ?? insertICIncr i τ  γw γ' j
 
-    LUN _ e1 i -> case tyEnv'_ e1 γ of
-      Just γ1 -> tyEnv'_incr e1 γ γ1 j
+    LUN _ e1 i -> case tyEnvE e1 γ of
+      Just γ1 -> tyEnvEIncr e1 γ γ1 j
               ?? insertICIncr i τ γ1 γ' j
-    LBIN _ e1 e2 i -> case tyEnv'_ e1 γ of
-      Just γ1 -> case tyEnv'_ e2 γ1 of
-        Just γ2 -> tyEnv'_incr e1 γ  γ1 j
-                ?? tyEnv'_incr e2 γ1 γ2 j
+    LBIN _ e1 e2 i -> case tyEnvE e1 γ of
+      Just γ1 -> case tyEnvE e2 γ1 of
+        Just γ2 -> tyEnvEIncr e1 γ  γ1 j
+                ?? tyEnvEIncr e2 γ1 γ2 j
                 ?? insertICIncr i τ γ2 γ' j
 
-    LBoolToF e1 -> tyEnv'_incr e1 γ γ' j
-    LEQLC e1 _ w i -> case tyEnv'_ e1 γ of
+    LBoolToF e1 -> tyEnvEIncr e1 γ γ' j
+    LEQLC e1 _ w i -> case tyEnvE e1 γ of
       Just γ1 -> case insertIfCompatible w TF γ1 of
-        Just γw -> tyEnv'_incr e1 γ γ1 j
+        Just γw -> tyEnvEIncr e1 γ γ1 j
                 ?? insertICIncr w TF γ1 γw j
                 ?? insertICIncr i τ  γw γ' j
 
     LNIL _ -> trivial
-    LCONS e1 e2 -> case tyEnv'_ e1 γ of
-      Just γ1 -> case tyEnv'_ e2 γ1 of
-        Just γ2 -> tyEnv'_incr e1 γ  γ1 j
-                ?? tyEnv'_incr e2 γ1 γ2 j
+    LCONS e1 e2 -> case tyEnvE e1 γ of
+      Just γ1 -> case tyEnvE e2 γ1 of
+        Just γ2 -> tyEnvEIncr e1 γ  γ1 j
+                ?? tyEnvEIncr e2 γ1 γ2 j
 
 
 {-@ booleanProof' :: m:Nat
                   -> σ:WireValuation p m
                   -> e:TypedLDSL p (Btwn 0 m)
                   -> γ:TyEnv' (Btwn 0 m)
-                  -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnv'_ e γ}
+                  -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnvE e γ}
                   -> j:{Btwn 0 m | S.member j (wiresE e)
                                 && M.lookup j γ' = Just TBool}
                   -> { coherentE m e σ => boolean (M.lookup' j σ) } @-}
@@ -205,8 +205,8 @@ booleanProof' m σ e γ γ' j = case inferType' e of
     LCONST _ i -> lookupInsertIC i TF γ γ' j ?? error ""
     LBOOL _ _ -> trivial
 
-    LDIV e1 e2 w i -> case tyEnv'_ e1 γ of
-      Just γ1 -> case tyEnv'_ e2 γ1 of
+    LDIV e1 e2 w i -> case tyEnvE e1 γ of
+      Just γ1 -> case tyEnvE e2 γ1 of
         Just γ2 -> case insertIfCompatible w TF γ2 of
           Just γw -> if j == i
                      then lookupInsertIC i TF γw γ' j ?? error ""
@@ -216,19 +216,19 @@ booleanProof' m σ e γ γ' j = case inferType' e of
                        ?? if S.member j (wiresE e2)
                           then booleanProof' m σ e2 γ1 γ2 j
                           else if S.member j (wiresE e1)
-                               then tyEnv'_incr e2 γ1 γ2 j
+                               then tyEnvEIncr e2 γ1 γ2 j
                                  ?? lookupLemma j γ1
                                  ?? booleanProof' m σ e1 γ  γ1 j
-                               else tyEnv'_incr e γ γ' j
+                               else tyEnvEIncr e γ γ' j
 
-    LUN _ e1 i -> case tyEnv'_ e1 γ of
+    LUN _ e1 i -> case tyEnvE e1 γ of
       Just γ1 -> if j == i
                  then lookupInsertIC i τ γ1 γ' j
                  else lookupInsertIC i τ γ1 γ' j
                    ?? booleanProof' m σ e1 γ γ1 j
 
-    LBIN _ e1 e2 i -> case tyEnv'_ e1 γ of
-      Just γ1 -> case tyEnv'_ e2 γ1 of
+    LBIN _ e1 e2 i -> case tyEnvE e1 γ of
+      Just γ1 -> case tyEnvE e2 γ1 of
         Just γ2 -> if j == i
                    then lookupInsertIC i τ γ2 γ' j
                    else lookupInsertIC i τ γ2 γ' j
@@ -236,13 +236,13 @@ booleanProof' m σ e γ γ' j = case inferType' e of
                      ?? if S.member j (wiresE e2)
                         then booleanProof' m σ e2 γ1 γ2 j
                         else if S.member j (wiresE e1)
-                             then tyEnv'_incr e2 γ1 γ2 j
+                             then tyEnvEIncr e2 γ1 γ2 j
                                ?? lookupLemma j γ1
                                ?? booleanProof' m σ e1 γ  γ1 j
-                             else tyEnv'_incr e γ γ' j
+                             else tyEnvEIncr e γ γ' j
 
     LBoolToF e1 -> booleanProof' m σ e1 γ γ' j
-    LEQLC e1 _ w i -> case tyEnv'_ e1 γ of
+    LEQLC e1 _ w i -> case tyEnvE e1 γ of
       Just γ1 -> case insertIfCompatible w TF γ1 of
         Just γw -> if j == i
                    then trivial
@@ -253,15 +253,15 @@ booleanProof' m σ e γ γ' j = case inferType' e of
                      ?? booleanProof' m σ e1 γ γ1 j
 
     LNIL _ -> trivial
-    LCONS e1 e2 -> case tyEnv'_ e1 γ of
+    LCONS e1 e2 -> case tyEnvE e1 γ of
        Just γ1 -> if S.member j (wiresE e2)
                   then booleanProof' m σ e2 γ1 γ' j
                   else if S.member j (wiresE e1)
-                       then tyEnv'_incr e2 γ1 γ' j
+                       then tyEnvEIncr e2 γ1 γ' j
                          ?? lookupLemma j γ'
                          ?? lookupLemma j γ1
                          ?? booleanProof' m σ e1 γ γ1 j
-                       else tyEnv'_incr e γ γ' j
+                       else tyEnvEIncr e γ γ' j
 
 
 -- workarounds to fix "crash: unknown constant"

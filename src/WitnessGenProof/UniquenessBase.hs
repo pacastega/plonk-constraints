@@ -49,7 +49,7 @@ import Language.Haskell.Liquid.ProofCombinators
               -> v:{DSLValue p | evalWire m' e' σ = v}
 
               -> γ:TyEnv' (Btwn 0 m')
-              -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnv'_ e' γ}
+              -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnvE e' γ}
               -> ( j:{Btwn 0 m | S.member j (elemsSet λ')
                               && M.lookup j γ' = Just TBool}
                      -> { boolean (M.lookup' j σ) } )
@@ -97,7 +97,7 @@ uniqueVar m0 m' s τ e ρ λ m e' λ' σ π v γ γ' h_boolean =
                 -> v:{DSLValue p | evalWire m' e' σ = v}
 
                 -> γ:TyEnv' (Btwn 0 m')
-                -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnv'_ e' γ}
+                -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnvE e' γ}
                 -> ( j:{Btwn 0 m | S.member j (elemsSet λ')
                                 && M.lookup j γ' = Just TBool}
                        -> { boolean (M.lookup' j σ) } )
@@ -134,7 +134,7 @@ uniqueConst m0 m' x e ρ λ m e' λ' σ π v γ γ' h_boolean = trivial
                -> v:{DSLValue p | evalWire m' e' σ = v}
 
                -> γ:TyEnv' (Btwn 0 m')
-               -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnv'_ e' γ}
+               -> γ':{TyEnv' (Btwn 0 m') | Just γ' = tyEnvE e' γ}
                -> ( j:{Btwn 0 m | S.member j (elemsSet λ')
                                && M.lookup j γ' = Just TBool}
                       -> { boolean (M.lookup' j σ) } )
