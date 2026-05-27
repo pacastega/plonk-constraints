@@ -47,13 +47,13 @@ import Language.Haskell.Liquid.ProofCombinators
 
 
 {-@ compileProofE :: m:Nat
-                  -> e:{TypedLDSL p (Btwn 0 m) | isJust (tyEnv' e) && wfPtrE S.empty e}
+                  -> e:{TypedLDSL p (Btwn 0 m) | isJust (tyEnvE e M.MTip) && wfPtrE S.empty e}
                   -> {σ:WireValuation p m | closedExpr m σ e}
                   -> { coherentE m e σ <=>
                         satisfies (nGatesE e) m σ (compileE m e) } @-}
 compileProofE :: (Eq p, Fractional p) => Int -> LDSL p Int
               -> WireValuation p -> Proof
-compileProofE m e σ = case tyEnv' e of
+compileProofE m e σ = case tyEnvE e M.MTip of
   Just γ -> compileProofE_ m e M.MTip γ σ S.empty (\_ -> ())
 
 

@@ -70,7 +70,7 @@ fundamentalThmA m0 e ρ m e' λ v = ( σ ? sound
                     -> ρ:NameValuation p
 
                     -> m:{Nat | m0 <= m}
-                    -> e':{LDSL p (Btwn 0 m) | isJust (tyEnv' e')}
+                    -> e':{LDSL p (Btwn 0 m) | isJust (tyEnvE e' M.MTip)}
                     -> λ:{LabelEnv p (Btwn 0 m) | label' e m0 M.MTip = (m, e', λ)}
 
                     -> v:DSLValue p

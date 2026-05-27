@@ -65,10 +65,14 @@ insertICIncr k v m m' j = case M.lookup k m of
 
 
 {-@ reflect tyEnv' @-}
-{-@ tyEnv' :: e:TypedLDSL p i -> Maybe ({γ:TyEnv' i | M.keysSet γ =
-                                           S.union (wiresE e) (ptrsE e)}) @-}
-tyEnv' :: (Ord i) => LDSL p i -> Maybe (TyEnv' i)
-tyEnv' e = tyEnvE e M.MTip --FIXME: this should be M.empty instead, but that crashes
+{-@ tyEnv' :: a:LProg p i -> γ:TyEnv' i
+           -> Maybe ({γ':TyEnv' i |
+                       M.keysSet γ' = S.union (M.keysSet γ)
+                                              (S.union (wires a) (ptrs a))}) @-}
+tyEnv' :: (Ord i) => LProg p i -> TyEnv' i -> Maybe (TyEnv' i)
+tyEnv' pr γ = case pr of
+  LExpr e -> tyEnvE e γ
+  LAss a -> tyEnvA a γ
 
 {-@ reflect tyEnvE @-}
 {-@ tyEnvE :: e:TypedLDSL p i -> γ:TyEnv' i
@@ -105,12 +109,30 @@ tyEnvE e γ = case inferType' e of --FIXME: this could be a let binding, but tha
 
     _ -> Nothing
 
+{-@ reflect tyEnvA @-}
+{-@ tyEnvA :: a:LAss p i -> γ:TyEnv' i
+           -> Maybe ({γ':TyEnv' i |
+                       M.keysSet γ' = S.union (M.keysSet γ)
+                                              (S.union (wiresA a) (ptrsA a))}) @-}
+tyEnvA :: (Ord i) => LAss p i -> TyEnv' i -> Maybe (TyEnv' i)
+tyEnvA a γ = case a of
+  LNZERO e1 w | Just _ <- inferType' e1
+              , Just γ1 <- tyEnvE e1 γ
+             -> insertIfCompatible w TF γ1
+  LBOOLEAN e1 | Just _ <- inferType' e1
+             -> tyEnvE e1 γ
+  LEQA e1 e2 | Just _ <- inferType' e1
+             , Just _ <- inferType' e2
+             , Just γ1 <- tyEnvE e1 γ
+            -> tyEnvE e2 γ1
+  _ -> Nothing
+
 
 {-@ reflect wfEWire @-}
 {-@ wfEWire :: TypedLDSL p i -> Bool @-}
 wfEWire :: (Ord i) => LDSL p i -> Bool
 wfEWire e = ptrsE e `S.isSubsetOf` wiresE e --FIXME: this should be `wfPtrE S.empty e`
-         && isJust (tyEnv' e)
+         && isJust (tyEnvE e M.MTip)
 
 
 {-@ outputWireBool :: e:{LDSL p i | booleanE e}
@@ -140,7 +162,7 @@ outputWireBool e γ γ' = case e of
                    -> { coherentE m e σ => boolean (M.lookup' (outputWire e) σ) } @-}
 booleanProof'' :: (Fractional p, Eq p)
                => Int -> WireValuation p -> LDSL p Int -> Proof
-booleanProof'' m σ e = case tyEnv' e of
+booleanProof'' m σ e = case tyEnvE e M.MTip of
   Just γ -> outputWireBool e M.MTip γ ?? booleanProof' m σ e M.MTip γ (outputWire e)
 
 
