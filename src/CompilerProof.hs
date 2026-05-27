@@ -35,15 +35,18 @@ import CompilerLemmas
 import Language.Haskell.Liquid.ProofCombinators
 
 -- This is Theorem 1 from the paper
--- {-@ compileProof :: m:Nat
---                  -> pr:LProg p (Btwn 0 m)
---                  -> {σ:WireValuation p m | closedProg m σ pr}
---                  -> { coherent m pr σ <=>
---                       satisfies (nGates pr) m σ (compile m pr) } @-}
--- compileProof :: (Eq p, Fractional p)
---              => Int -> LProg p Int -> WireValuation p -> Proof
--- compileProof m (LExpr e) σ = compileProofE m e σ
--- compileProof m (LAss a) σ = compileProofA m a σ
+{-@ compileProof :: m:Nat
+                 -> pr:{LProg p (Btwn 0 m) | isJust (tyEnv' pr M.MTip)
+                                          && wfPtr S.empty pr}
+                 -> {σ:WireValuation p m | closedProg m σ pr}
+                 -> { coherent m pr σ <=>
+                      satisfies (nGates pr) m σ (compile m pr) } @-}
+compileProof :: (Eq p, Fractional p)
+             => Int -> LProg p Int -> WireValuation p -> Proof
+compileProof m (LExpr e) σ = case tyEnvE e M.MTip of
+  Just γ -> compileProofE m e σ
+compileProof m (LAss a) σ = case tyEnvA a M.MTip of
+  Just γ -> compileProofA m a M.MTip γ σ
 
 
 {-@ compileProofE :: m:Nat
@@ -264,24 +267,42 @@ compileProofE_ m e γ γ' σ ws π = case e of
                  ?? lookupLemma j γ1       -- M.lookup j γ1 = Just γ1[j]
                  ?? booleanProof' m σ e1 γ γ1 j -- σ ⊢ e1 ⇒ σ[j] ∈ {0,1}
 
--- -- {-@ compileProofA :: m:Nat
--- --                   -> a:LAss p (Btwn 0 m)
--- --                   -> {σ:WireValuation p m | closedAssertion m σ a}
--- --                   -> { coherentA m a σ <=>
--- --                        satisfies (nGatesA a) m σ (compileA m a) } @-}
--- -- compileProofA :: (Eq p, Fractional p)
--- --               => Int -> LAss p Int -> WireValuation p -> Proof
--- -- compileProofA m a σ = case a of
--- --   LNZERO e1 w -> scalar' e1 ?? compileProofE m eTotal e1 σ
--- --                ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
--- --   LBOOLEAN e1 -> scalar' e1 ?? compileProofE m eTotal e1 σ
--- --                ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
--- --   LEQA e1 e2  -> scalar' e1 ?? compileProofE m eTotal e1 σ
--- --                ? scalar' e2 ?? compileProofE m eTotal e2 σ
--- --                ? satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
--- --                ? closedExpr m σ e1 ?? M.lookup' (outputWire e1) σ
--- --                ? closedExpr m σ e2 ?? M.lookup' (outputWire e2) σ
--- --     where n1 = nGatesE e1; n2 = nGatesE e2
+
+{-@ compileProofA :: m:Nat
+                  -> a:{LAss p (Btwn 0 m) | wfPtrA S.empty a}
+                  -> γ:TyEnv' (Btwn 0 m)
+                  -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnvA a γ}
+                  -> {σ:WireValuation p m | closedAssertion m σ a}
+                  -> { coherentA m a σ <=>
+                       satisfies (nGatesA a) m σ (compileA m a) } @-}
+compileProofA :: (Eq p, Fractional p)
+              => Int -> LAss p Int -> TyEnv' Int -> TyEnv' Int
+              -> WireValuation p -> Proof
+compileProofA m a γ γ' σ = case a of
+  LNZERO e1 w -> case tyEnvE e1 γ of
+    Just γ1 -> compileProofE_ m e1 γ γ1 σ S.empty (\_ -> ())
+  LBOOLEAN e1 -> compileProofE_ m e1 γ γ' σ S.empty (\_ -> ())
+
+  LEQA e1 e2  -> case tyEnvE e1 γ of
+    Just γ1 -> ih1 ? ih2
+             ? satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
+      where n1 = nGatesE e1; n2 = nGatesE e2
+
+            {-@ ih1 :: { coherentE m e1 σ <=> satisfies n1 m σ (compileE m e1) } @-}
+            ih1 = compileProofE_ m e1 γ γ1 σ S.empty (\_ -> ()) ? n1
+
+            {-@ ih2 :: { coherentE m e1 σ =>
+                        (coherentE m e2 σ <=> satisfies n2 m σ (compileE m e2) ) } @-}
+            ih2 = if coherentE m e1 σ
+                  then compileProofE_ m e2 γ1 γ' σ (wiresE e1) π2
+                  else trivial
+                  ? n2
+
+            {-@ π2 :: j:{Btwn 0 m | S.member j (wiresE e1) && M.lookup j γ' = Just TBool}
+                   -> { coherentE m e1 σ => boolean (M.lookup' j σ) } @-}
+            π2 j = tyEnvEIncr e2 γ1 γ' j
+                ?? lookupLemma j γ1 ?? lookupLemma j γ'
+                ?? booleanProof' m σ e1 γ γ1 j
 
 {-@ satisfiesDistr :: n1:Nat -> n2:Nat -> m:Nat
                    -> σ:WireValuation p m
