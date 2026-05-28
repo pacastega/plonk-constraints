@@ -80,7 +80,7 @@ tyEnv' pr γ = case pr of
                       M.keysSet γ' = S.union (M.keysSet γ)
                                              (S.union (wiresE e) (ptrsE e))}) @-}
 tyEnvE :: (Ord i) => LDSL p i -> TyEnv' i -> Maybe (TyEnv' i)
-tyEnvE e γ = case inferType' e of --FIXME: this could be a let binding, but that crashes
+tyEnvE e γ = case inferType' e of -- this could be a let binding, but that crashes
   Just τ -> case e of
     PTR    _ i -> insertIfCompatible i τ γ
     LVAR _ _ i -> insertIfCompatible i τ γ
@@ -128,13 +128,6 @@ tyEnvA a γ = case a of
   _ -> Nothing
 
 
-{-@ reflect wfEWire @-}
-{-@ wfEWire :: TypedLDSL p i -> Bool @-}
-wfEWire :: (Ord i) => LDSL p i -> Bool
-wfEWire e = ptrsE e `S.isSubsetOf` wiresE e --FIXME: this should be `wfPtrE S.empty e`
-         && isJust (tyEnvE e M.MTip)
-
-
 {-@ outputWireBool :: e:{LDSL p i | booleanE e}
                    -> γ:TyEnv' i
                    -> γ':{TyEnv' i | Just γ' = tyEnvE e γ}
@@ -158,7 +151,8 @@ outputWireBool e γ γ' = case e of
 
 {-@ booleanProof'' :: m:Nat
                    -> σ:WireValuation p m
-                   -> e:{LDSL p (Btwn 0 m) | booleanE e && wfEWire e}
+                   -> e:{LDSL p (Btwn 0 m) | booleanE e && wfPtrE S.empty e
+                                          && isJust (tyEnvE e M.MTip)}
                    -> { coherentE m e σ => boolean (M.lookup' (outputWire e) σ) } @-}
 booleanProof'' :: (Fractional p, Eq p)
                => Int -> WireValuation p -> LDSL p Int -> Proof
