@@ -96,7 +96,7 @@ removeConstantsProof ρ p@(BIN op arg1 arg2) p' = case op of
       p2             -> case (eval p1 ρ, eval p2 ρ) of (Just _, Just _) -> (); _ -> ()
 
     CONST 0 -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
-    CONST _ -> trivial
+    CONST _ -> case (eval arg2 ρ) of (Just _) -> ()
 
     p1 -> case arg2 of
       UN (MULC _) p2 -> case (eval p1 ρ, eval p2 ρ) of (Just _, Just _) -> (); _ -> ()
@@ -113,7 +113,7 @@ removeConstantsProof ρ p@(BIN op arg1 arg2) p' = case op of
   MUL -> case arg1 of
     CONST 1 -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
     CONST 0 -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
-    CONST _ -> trivial
+    CONST _ -> case (eval arg2 ρ) of (Just _) -> ()
 
     p1 -> case arg2 of
       CONST 1 -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
