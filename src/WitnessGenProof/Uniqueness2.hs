@@ -478,24 +478,18 @@ booleanUn1 m0 m' op e1 e λ m e' λ' m1 e1' λ1 γ γ1 γ' σ h_bool j =
     ISZERO -> case tyEnvE e1' γ of
                 Just γ1 -> case insertIfCompatible w TF γ1 of
                   Just γw -> elementLemma j TBool γ1
-                          -- ?? insertICIncr w TF γ2 γw j
-                          -- ?? tyEnvEIncr e2' γ1 γ2 j
                           ?? insertICIncr w TF    γ1 γw j -- new
                           ?? insertICIncr i TBool γw γ' j -- new
                           ?? lookupLemma j γ1 ?? lookupLemma j γ'
-                          -- ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
                           ?? h_bool j
       where (w,i) = labelIs0 m0 e1 λ m1 e1' λ1 m e' λ'
 
     EQLC k -> case tyEnvE e1' γ of
                 Just γ1 -> case insertIfCompatible w TF γ1 of
                   Just γw -> elementLemma j TBool γ1
-                          -- ?? insertICIncr w TF γ2 γw j
-                          -- ?? tyEnvEIncr e2' γ1 γ2 j
                           ?? insertICIncr w TF    γ1 γw j -- new
                           ?? insertICIncr i TBool γw γ' j -- new
                           ?? lookupLemma j γ1 ?? lookupLemma j γ'
-                          -- ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
                           ?? h_bool j
       where (w,i) = labelIsk m0 e1 λ k m1 e1' λ1 m e' λ'
 
@@ -504,10 +498,8 @@ booleanUn1 m0 m' op e1 e λ m e' λ' m1 e1' λ1 γ γ1 γ' σ h_bool j =
     _   -> case tyEnvE e1' γ of
              Just γ1 -> case inferType' e' of
                Just τ -> elementLemma j TBool γ1
-                      -- ?? tyEnvEIncr e2' γ1 γ2 j
                       ?? insertICIncr i τ γ1 γ' j -- new
                       ?? lookupLemma j γ1 ?? lookupLemma j γ'
-                      -- ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
                       ?? h_bool j
       where i = labelUn m0 e1 λ op m1 e1' λ1 m e' λ'
 
@@ -761,9 +753,7 @@ booleanCons2 m0 m' e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h
     case tyEnvE e1' γ of
       Just γ1 -> case tyEnvE e2' γ1 of
         Just γ2 -> elementLemma j TBool γ2
-                -- ?? tyEnvEIncr e2' γ1 γ2 j
                 ?? lookupLemma j γ2 ?? lookupLemma j γ'
-                -- ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
                 ?? h_bool j
 
 -- workarounds to fix "crash: unknown constant" --------------------------------
