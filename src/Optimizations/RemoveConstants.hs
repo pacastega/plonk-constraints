@@ -2,7 +2,6 @@
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple"                       @-}
 {-@ LIQUID "--ple-with-undecided-guards" @-}
-{-@ LIQUID "--skip-module"               @-}
 module Optimizations.RemoveConstants (removeConstants) where
 
 import TypeAliases
