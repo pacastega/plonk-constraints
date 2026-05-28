@@ -7,7 +7,6 @@
 
 module CompilerProof where
 
---TODO: copy this over to BooleanProof.hs
 #if LiquidOn
 import qualified Liquid.Data.Map as M
 #else

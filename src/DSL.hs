@@ -431,7 +431,6 @@ ptrs :: (Ord i) => LProg p i -> S.Set i
 ptrs (LExpr e) = ptrsE e
 ptrs (LAss a) = ptrsA a
 
---TODO: not sure if this is _really_ needed
 {-@ reflect wiress @-}
 wiress :: (Ord i) => [LProg p i] -> S.Set i
 wiress [] = S.empty
