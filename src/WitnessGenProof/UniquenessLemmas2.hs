@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
-module WitnessGenProof.Uniqueness2 where
+module WitnessGenProof.UniquenessLemmas2 where
 
 import Constraints
 import TypeAliases

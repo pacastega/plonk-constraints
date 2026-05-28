@@ -29,9 +29,9 @@ import LabelingProof.RecursiveLemmas
 import WitnessGenProof.WitnessGenLemmas
 import WitnessGenProof.SemanticsLemmas
 import WitnessGenProof.UniquenessLemmas
+import WitnessGenProof.UniquenessLemmas2
 
 import WitnessGenProof.UniquenessBase
-import WitnessGenProof.Uniqueness2 --FIXME: these lemmas should go somewhere else
 
 import Language.Haskell.Liquid.ProofCombinators
 

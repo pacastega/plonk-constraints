@@ -79,8 +79,8 @@ library
       WitnessGenProof.SoundnessBase
       WitnessGenProof.WitnessGenLemmas
       WitnessGenProof.UniquenessLemmas
+      WitnessGenProof.UniquenessLemmas2
       WitnessGenProof.Uniqueness
-      WitnessGenProof.Uniqueness2
       WitnessGenProof.UniquenessBase
       WitnessGenProof.UniquenessOps
   other-modules:
