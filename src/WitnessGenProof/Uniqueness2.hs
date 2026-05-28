@@ -562,7 +562,7 @@ booleanBin1 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ
                          ?? insertICIncr w TF γ2 γw j
                          ?? tyEnvEIncr e2' γ1 γ2 j
                          ?? lookupLemma j γ1 ?? lookupLemma j γ2
-                         ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
+                         ?? labelElems e2 m1 λ1 m2 e2' λ2
                          ?? h_2 j
       where (w,_) = labelDiv m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
@@ -575,7 +575,7 @@ booleanBin1 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ
                            ?? insertICIncr w TF γd γw j
                            ?? tyEnvEIncr e2' γ1 γ2 j
                            ?? lookupLemma j γ1 ?? lookupLemma j γ2
-                           ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
+                           ?? labelElems e2 m1 λ1 m2 e2' λ2
                            ?? h_2 j
       where (d,w,_) = labelEql m0 e1 e2 λ m1 e1' λ1 m2 e2' λ2 m e' λ'
 
@@ -584,7 +584,7 @@ booleanBin1 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ
                Just γ2 -> elementLemma j TBool γ1
                        ?? tyEnvEIncr e2' γ1 γ2 j
                        ?? lookupLemma j γ1 ?? lookupLemma j γ2
-                       ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
+                       ?? labelElems e2 m1 λ1 m2 e2' λ2
                        ?? h_2 j
   where h_2 = booleanBin2 m0 m' op e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h_bool
 
@@ -711,7 +711,7 @@ booleanCons1 m0 m' e1 e2 e λ m e' λ' m1 e1' λ1 m2 e2' λ2 γ γ1 γ2 γ' σ h
         Just γ2 -> elementLemma j TBool γ1
                 ?? tyEnvEIncr e2' γ1 γ2 j
                 ?? lookupLemma j γ1 ?? lookupLemma j γ2
-                ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
+                ?? labelElems e2 m1 λ1 m2 e2' λ2
                 ?? h_bool j
 
 

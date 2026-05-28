@@ -106,7 +106,7 @@ fundamentalThmB m0 e ρ m e' λ v σ π =
     {-@ h_bool :: j:{Btwn 0 m | S.member j (elemsSet λ)
                              && M.lookup j γ = Just TBool}
                -> { boolean (M.lookup' j σ) } @-}
-    h_bool j = labelWFWire' e m0 λ0 m e' λ
+    h_bool j = labelElems e m0 λ0 m e' λ
             ?? liquidAssert (S.isSubsetOf (elemsSet λ) (S.union (elemsSet λ0) (wiresE e')))
             ?? wt
             ?? booleanProof' m σ e' γ0 γ j

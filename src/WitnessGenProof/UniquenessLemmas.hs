@@ -34,13 +34,13 @@ elementLemma2 k v (M.MBin k' v' m') =
   if k == k' then trivial else elementLemma2 k v m'
 
 
-{-@ labelWFWire :: e:TypedDSL p -> m0:Nat
-                -> m:{Nat | m >= m0} -> e':LDSL p (Btwn 0 m)
-                -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 M.empty = (m,e',λ')}
-                -> { wfPtrE S.empty e' } @-}
-labelWFWire :: (Ord p, Fractional p) => DSL p -> Int
-            -> Int -> LDSL p Int -> LabelEnv p Int -> Proof
-labelWFWire e m0 m e' λ' = labelWFWire' e m0 M.empty m e' λ'
+{-@ labelWFPtr :: e:TypedDSL p -> m0:Nat
+               -> m:{Nat | m >= m0} -> e':LDSL p (Btwn 0 m)
+               -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 M.empty = (m,e',λ')}
+               -> { wfPtrE S.empty e' } @-}
+labelWFPtr :: (Ord p, Fractional p) => DSL p -> Int
+           -> Int -> LDSL p Int -> LabelEnv p Int -> Proof
+labelWFPtr e m0 m e' λ' = labelElems e m0 M.empty m e' λ'
 
 
 {-@ labelIncrEnv :: e:TypedDSL p -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
@@ -84,18 +84,16 @@ labelIncrEnv e m0 λ m e' λ' x = case e of
           (m2,e2',λ2) = label' e2 m1 λ1
 
 
-
---TODO: this feels like it belongs in LabelingLemmas
-{-@ labelWFWire' :: e:TypedDSL p -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
-                 -> m:{Nat | m >= m0} -> e':LDSL p (Btwn 0 m)
-                 -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m,e',λ')}
-                 -> { S.isSubsetOf (elemsSet λ') (S.union (elemsSet λ) (wiresE e'))
-                      && S.isSubsetOf (elemsSet λ) (elemsSet λ')
-                      && wfPtrE (elemsSet λ) e' }
-                  / [size e] @-}
-labelWFWire' :: (Ord p, Fractional p) => DSL p -> Int -> LabelEnv p Int
-             -> Int -> LDSL p Int -> LabelEnv p Int -> Proof
-labelWFWire' e m0 λ m e' λ' = case e of
+{-@ labelElems :: e:TypedDSL p -> m0:Nat -> λ:LabelEnv p (Btwn 0 m0)
+               -> m:{Nat | m >= m0} -> e':LDSL p (Btwn 0 m)
+               -> λ':{LabelEnv p (Btwn 0 m) | label' e m0 λ = (m,e',λ')}
+               -> { S.isSubsetOf (elemsSet λ') (S.union (elemsSet λ) (wiresE e'))
+                    && S.isSubsetOf (elemsSet λ) (elemsSet λ')
+                    && wfPtrE (elemsSet λ) e' }
+                / [size e] @-}
+labelElems :: (Ord p, Fractional p) => DSL p -> Int -> LabelEnv p Int
+           -> Int -> LDSL p Int -> LabelEnv p Int -> Proof
+labelElems e m0 λ m e' λ' = case e of
   VAR s τ -> case M.lookup s λ of
     Nothing -> trivial
     Just j -> elementLemma2 s j λ -- ? liquidAssert (S.member j (elemsSet λ))
@@ -103,36 +101,36 @@ labelWFWire' e m0 λ m e' λ' = case e of
   BOOL  _ -> trivial
 
   UN op e1 -> case op of
-    BoolToF -> labelWFWire' e1 m0 λ m1 e1' λ1
+    BoolToF -> labelElems e1 m0 λ m1 e1' λ1
       where (m1,e1',λ1) = label' e1 m0 λ
-    ISZERO -> labelWFWire' (UN (EQLC zero) e1) m0 λ m e' λ'
-    EQLC _ -> labelWFWire' e1 m0 λ m1 e1' λ1
+    ISZERO -> labelElems (UN (EQLC zero) e1) m0 λ m e' λ'
+    EQLC _ -> labelElems e1 m0 λ m1 e1' λ1
       where (m1,e1',λ1) = label' e1 m0 λ
-    _ -> labelWFWire' e1 m0 λ m1 e1' λ1
+    _ -> labelElems e1 m0 λ m1 e1' λ1
       where (m1,e1',λ1) = label' e1 m0 λ
 
   BIN op e1 e2 -> case op of
-    DIV -> labelWFWire' e1 m0 λ  m1 e1' λ1
-        ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
+    DIV -> labelElems e1 m0 λ  m1 e1' λ1
+        ?? labelElems e2 m1 λ1 m2 e2' λ2
         ?? wfPtrEIncr (elemsSet λ1)
-                        (elemsSet λ `S.union` wiresE e1')
-                        e2'
-      where (m1,e1',λ1) = label' e1 m0 λ
-            (m2,e2',λ2) = label' e2 m1 λ1
-    EQL -> labelWFWire' (UN (EQLC zero) (BIN SUB e1 e2)) m0 λ m e' λ'
-    _ -> labelWFWire' e1 m0 λ  m1 e1' λ1
-      ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
-      ?? wfPtrEIncr (elemsSet λ1)
                       (elemsSet λ `S.union` wiresE e1')
                       e2'
       where (m1,e1',λ1) = label' e1 m0 λ
             (m2,e2',λ2) = label' e2 m1 λ1
+    EQL -> labelElems (UN (EQLC zero) (BIN SUB e1 e2)) m0 λ m e' λ'
+    _ -> labelElems e1 m0 λ  m1 e1' λ1
+      ?? labelElems e2 m1 λ1 m2 e2' λ2
+      ?? wfPtrEIncr (elemsSet λ1)
+                    (elemsSet λ `S.union` wiresE e1')
+                    e2'
+      where (m1,e1',λ1) = label' e1 m0 λ
+            (m2,e2',λ2) = label' e2 m1 λ1
 
   NIL _ -> trivial
-  CONS e1 e2 -> labelWFWire' e1 m0 λ  m1 e1' λ1
-             ?? labelWFWire' e2 m1 λ1 m2 e2' λ2
+  CONS e1 e2 -> labelElems e1 m0 λ  m1 e1' λ1
+             ?? labelElems e2 m1 λ1 m2 e2' λ2
              ?? wfPtrEIncr (elemsSet λ1)
-                             (elemsSet λ `S.union` wiresE e1')
-                             e2'
+                           (elemsSet λ `S.union` wiresE e1')
+                           e2'
     where (m1,e1',λ1) = label' e1 m0 λ
           (m2,e2',λ2) = label' e2 m1 λ1
