@@ -157,7 +157,9 @@ outputWireBool e γ γ' = case e of
 booleanProof'' :: (Fractional p, Eq p)
                => Int -> WireValuation p -> LDSL p Int -> Proof
 booleanProof'' m σ e = case tyEnvE e M.MTip of
-  Just γ -> outputWireBool e M.MTip γ ?? booleanProof' m σ e M.MTip γ (outputWire e)
+  Just γ -> outputWireBool e M.MTip γ
+         ?? wfPtrELemma S.empty e
+         ?? booleanProof' m σ e M.MTip γ (outputWire e)
 
 
 {-@ tyEnvEIncr :: e:TypedLDSL p Int -> γ:TyEnv' Int
