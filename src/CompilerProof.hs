@@ -43,23 +43,12 @@ import Language.Haskell.Liquid.ProofCombinators
 compileProof :: (Eq p, Fractional p)
              => Int -> LProg p Int -> WireValuation p -> Proof
 compileProof m (LExpr e) σ = case tyEnvE e M.MTip of
-  Just γ -> compileProofE m e σ
+  Just γ -> compileProofE m e M.MTip γ σ S.empty (\_ -> ())
 compileProof m (LAss a) σ = case tyEnvA a M.MTip of
   Just γ -> compileProofA m a M.MTip γ σ
 
 
 {-@ compileProofE :: m:Nat
-                  -> e:{TypedLDSL p (Btwn 0 m) | isJust (tyEnvE e M.MTip) && wfPtrE S.empty e}
-                  -> {σ:WireValuation p m | closedExpr m σ e}
-                  -> { coherentE m e σ <=>
-                        satisfies (nGatesE e) m σ (compileE m e) } @-}
-compileProofE :: (Eq p, Fractional p) => Int -> LDSL p Int
-              -> WireValuation p -> Proof
-compileProofE m e σ = case tyEnvE e M.MTip of
-  Just γ -> compileProofE_ m e M.MTip γ σ S.empty (\_ -> ())
-
-
-{-@ compileProofE_ :: m:Nat
                   -> e:TypedLDSL p (Btwn 0 m)
                   -> γ:TyEnv' (Btwn 0 m)
                   -> γ':{TyEnv' (Btwn 0 m) | Just γ' = tyEnvE e γ}
@@ -73,10 +62,10 @@ compileProofE m e σ = case tyEnvE e M.MTip of
 
                   -> { coherentE m e σ <=>
                        satisfies (nGatesE e) m σ (compileE m e) } @-}
-compileProofE_ :: (Eq p, Fractional p) => Int -> LDSL p Int
+compileProofE :: (Eq p, Fractional p) => Int -> LDSL p Int
               -> TyEnv' Int -> TyEnv' Int
               -> WireValuation p -> S.Set Int -> (Int -> Proof) -> Proof
-compileProofE_ m e γ γ' σ ws π = case e of
+compileProofE m e γ γ' σ ws π = case e of
   PTR _ i -> trivial
   LVAR s τ i -> case τ of
     TF -> trivial
@@ -91,12 +80,12 @@ compileProofE_ m e γ γ' σ ws π = case e of
             n1 = nGatesE e1; n2 = nGatesE e2
 
             {-@ ih1 :: { coherentE m e1 σ <=> satisfies n1 m σ (compileE m e1) } @-}
-            ih1 = compileProofE_ m e1 γ  γ1 σ ws π1 ? n1
+            ih1 = compileProofE m e1 γ  γ1 σ ws π1 ? n1
 
             {-@ ih2 :: { coherentE m e1 σ =>
                         (coherentE m e2 σ <=> satisfies n2 m σ (compileE m e2) ) } @-}
             ih2 = if coherentE m e1 σ
-                  then compileProofE_ m e2 γ1 γ2 σ (ws `S.union` wiresE e1) π2
+                  then compileProofE m e2 γ1 γ2 σ (ws `S.union` wiresE e1) π2
                   else trivial
                   ? n2
 
@@ -138,7 +127,7 @@ compileProofE_ m e γ γ' σ ws π = case e of
 
       where
         {-@ ih1 :: { coherentE m e1 σ <=> satisfies n1 m σ (compileE m e1) } @-}
-        ih1 = compileProofE_ m e1 γ γ1 σ ws π1 ? n1
+        ih1 = compileProofE m e1 γ γ1 σ ws π1 ? n1
 
         proof = ih1
         n1 = nGatesE e1
@@ -169,12 +158,12 @@ compileProofE_ m e γ γ' σ ws π = case e of
 
         where
           {-@ ih1 :: { coherentE m e1 σ <=> satisfies n1 m σ (compileE m e1) } @-}
-          ih1 = compileProofE_ m e1 γ  γ1 σ ws π1
+          ih1 = compileProofE m e1 γ  γ1 σ ws π1
 
           {-@ ih2 :: { coherentE m e1 σ =>
                       (coherentE m e2 σ <=> satisfies n2 m σ (compileE m e2) ) } @-}
           ih2 = if coherentE m e1 σ
-                then compileProofE_ m e2 γ1 γ2 σ (ws `S.union` wiresE e1) π2
+                then compileProofE m e2 γ1 γ2 σ (ws `S.union` wiresE e1) π2
                 else trivial
 
           proof = ih1 ? ih2 ? satisfiesDistr n1 n2 m σ (compileE m e1) (compileE m e2)
@@ -210,10 +199,10 @@ compileProofE_ m e γ γ' σ ws π = case e of
                    ?? booleanProof' m σ e1 γ γ1 j -- σ ⊢ e1 ⇒ σ[j] ∈ {0,1}
 
 
-  LBoolToF e1 -> compileProofE_ m e1 γ γ' σ ws π
+  LBoolToF e1 -> compileProofE m e1 γ γ' σ ws π
   LEQLC e1 k w i -> case tyEnvE e1 γ of
     Just γ1 -> case insertIfCompatible w TF γ1 of
-      Just γw -> compileProofE_ m e1 γ γ1 σ ws π1
+      Just γw -> compileProofE m e1 γ γ1 σ ws π1
 
         where
           {-@ π1 :: j:{Btwn 0 m | S.member j ws
@@ -234,12 +223,12 @@ compileProofE_ m e γ γ' σ ws π = case e of
         n1 = nGatesE e1; n2 = nGatesE e2
 
         {-@ ih1 :: { coherentE m e1 σ <=> satisfies n1 m σ (compileE m e1) } @-}
-        ih1 = compileProofE_ m e1 γ  γ1 σ ws π1 ? n1
+        ih1 = compileProofE m e1 γ  γ1 σ ws π1 ? n1
 
         {-@ ih2 :: { coherentE m e1 σ =>
                     (coherentE m e2 σ <=> satisfies n2 m σ (compileE m e2) ) } @-}
         ih2 = if coherentE m e1 σ
-              then compileProofE_ m e2 γ1 γ' σ (ws `S.union` wiresE e1) π2
+              then compileProofE m e2 γ1 γ' σ (ws `S.union` wiresE e1) π2
               else trivial
               ? n2
 
@@ -279,8 +268,8 @@ compileProofA :: (Eq p, Fractional p)
               -> WireValuation p -> Proof
 compileProofA m a γ γ' σ = case a of
   LNZERO e1 w -> case tyEnvE e1 γ of
-    Just γ1 -> compileProofE_ m e1 γ γ1 σ S.empty (\_ -> ())
-  LBOOLEAN e1 -> compileProofE_ m e1 γ γ' σ S.empty (\_ -> ())
+    Just γ1 -> compileProofE m e1 γ γ1 σ S.empty (\_ -> ())
+  LBOOLEAN e1 -> compileProofE m e1 γ γ' σ S.empty (\_ -> ())
 
   LEQA e1 e2  -> case tyEnvE e1 γ of
     Just γ1 -> ih1 ? ih2
@@ -288,12 +277,12 @@ compileProofA m a γ γ' σ = case a of
       where n1 = nGatesE e1; n2 = nGatesE e2
 
             {-@ ih1 :: { coherentE m e1 σ <=> satisfies n1 m σ (compileE m e1) } @-}
-            ih1 = compileProofE_ m e1 γ γ1 σ S.empty (\_ -> ()) ? n1
+            ih1 = compileProofE m e1 γ γ1 σ S.empty (\_ -> ()) ? n1
 
             {-@ ih2 :: { coherentE m e1 σ =>
                         (coherentE m e2 σ <=> satisfies n2 m σ (compileE m e2) ) } @-}
             ih2 = if coherentE m e1 σ
-                  then compileProofE_ m e2 γ1 γ' σ (wiresE e1) π2
+                  then compileProofE m e2 γ1 γ' σ (wiresE e1) π2
                   else trivial
                   ? n2
 
