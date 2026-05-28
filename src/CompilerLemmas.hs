@@ -56,7 +56,7 @@ booleanLemma1 :: (Fractional p, Eq p) => Int -> LDSL p Int -> WireValuation p
 booleanLemma1 m e1 σ γ γ1 ws π1 = outputWireBool e1 γ γ1 ??
   if S.member i1 (wiresE e1)
   then booleanProof' m σ e1 γ γ1 i1
-  else wfWireLemma ws e1 ?? π1 i1
+  else wfPtrELemma ws e1 ?? π1 i1
 
   where i1 = outputWire e1
 
@@ -99,7 +99,7 @@ booleanLemma2 :: (Fractional p, Eq p)
 booleanLemma2 m op e1 e2 i e σ γ γ1 γ2 γ' ws π1 π2 = outputWireBool e2 γ1 γ2 ??
   if S.member i2 (wiresE e2)
   then booleanProof' m σ e2 γ1 γ2 i2
-  else wfWireLemma (ws `S.union` wiresE e1) e2
+  else wfPtrELemma (ws `S.union` wiresE e1) e2
     ?? π2 i2
 
   where i2 = outputWire e2

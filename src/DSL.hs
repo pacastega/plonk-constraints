@@ -486,8 +486,8 @@ wfPtr ws pr = case pr of
 
 
 {-@ wfPtrEIncr :: ws:S.Set i -> ws':{S.Set i | S.isSubsetOf ws ws'}
-                 -> e:{LDSL p i | wfPtrE ws e}
-                 -> { wfPtrE ws' e } @-}
+               -> e:{LDSL p i | wfPtrE ws e}
+               -> { wfPtrE ws' e } @-}
 wfPtrEIncr :: (Ord i) => S.Set i -> S.Set i -> LDSL p i -> Proof
 wfPtrEIncr ws ws' e = case e of
   PTR _ _ -> trivial
@@ -497,14 +497,14 @@ wfPtrEIncr ws ws' e = case e of
 
   LDIV e1 e2 _ _ -> wfPtrEIncr ws ws' e1
                  ?? wfPtrEIncr (ws  `S.union` wiresE e1)
-                                 (ws' `S.union` wiresE e1)
-                                 e2
+                               (ws' `S.union` wiresE e1)
+                               e2
 
   LUN _ e1 _ -> wfPtrEIncr ws ws' e1
   LBIN _ e1 e2 _ -> wfPtrEIncr ws ws' e1
                  ?? wfPtrEIncr (ws  `S.union` wiresE e1)
-                                 (ws' `S.union` wiresE e1)
-                                 e2
+                               (ws' `S.union` wiresE e1)
+                               e2
 
   LBoolToF e1 -> wfPtrEIncr ws ws' e1
   LEQLC e1 _ _ _ -> wfPtrEIncr ws ws' e1
@@ -512,32 +512,32 @@ wfPtrEIncr ws ws' e = case e of
   LNIL _ -> trivial
   LCONS e1 e2 -> wfPtrEIncr ws ws' e1
               ?? wfPtrEIncr (ws  `S.union` wiresE e1)
-                              (ws' `S.union` wiresE e1)
-                              e2
+                            (ws' `S.union` wiresE e1)
+                            e2
 
-{-@ wfWireLemma :: ws:S.Set i
+{-@ wfPtrELemma :: ws:S.Set i
                 -> e:{LDSL p i | wfPtrE ws e}
                 -> { S.isSubsetOf (ptrsE e) (S.union (wiresE e) ws) } @-}
-wfWireLemma :: (Ord i) => S.Set i -> LDSL p i -> Proof
-wfWireLemma ws e = case e of
+wfPtrELemma :: (Ord i) => S.Set i -> LDSL p i -> Proof
+wfPtrELemma ws e = case e of
   PTR _ j -> trivial
   LVAR _ _ _ -> trivial
   LCONST _ _ -> trivial
   LBOOL _ _ -> trivial
 
-  LDIV e1 e2 _ _ -> wfWireLemma ws e1
-                 ?? wfWireLemma (ws `S.union` wiresE e1) e2
+  LDIV e1 e2 _ _ -> wfPtrELemma ws e1
+                 ?? wfPtrELemma (ws `S.union` wiresE e1) e2
 
-  LUN _ e1 _ -> wfWireLemma ws e1
-  LBIN _ e1 e2 _ -> wfWireLemma ws e1
-                 ?? wfWireLemma (ws `S.union` wiresE e1) e2
+  LUN _ e1 _ -> wfPtrELemma ws e1
+  LBIN _ e1 e2 _ -> wfPtrELemma ws e1
+                 ?? wfPtrELemma (ws `S.union` wiresE e1) e2
 
-  LBoolToF e1 -> wfWireLemma ws e1
-  LEQLC e1 _ _ _ -> wfWireLemma ws e1
+  LBoolToF e1 -> wfPtrELemma ws e1
+  LEQLC e1 _ _ _ -> wfPtrELemma ws e1
 
   LNIL _ -> trivial
-  LCONS e1 e2 -> wfWireLemma ws e1
-              ?? wfWireLemma (ws `S.union` wiresE e1) e2
+  LCONS e1 e2 -> wfPtrELemma ws e1
+              ?? wfPtrELemma (ws `S.union` wiresE e1) e2
 
 
 {-@ reflect outputWire @-}
