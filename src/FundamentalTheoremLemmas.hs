@@ -7,6 +7,7 @@ import Constraints
 import TypeAliases
 import DSL
 import Semantics
+import Semantics2 hiding (foo, barOp)
 import Label
 import WitnessGeneration
 
@@ -24,6 +25,7 @@ import qualified MapFunctions as M
 #endif
 
 import MapLemmas
+import SetLemmas
 import LabelingProof.LabelingLemmas
 import LabelingProof.AgreeLemma
 import WitnessGenProof.UniquenessLemmas
@@ -32,24 +34,6 @@ import WitnessGenProof.Completeness
 import WitnessGenProof.Uniqueness
 
 import Language.Haskell.Liquid.ProofCombinators
-
-
---TODO: move this to Semantics
-{-@ reflect holds @-}
-{-@ holds :: a:Assertion p -> NameValuation p -> Bool @-}
-holds :: (Fractional p, Eq p) => Assertion p -> NameValuation p -> Bool
-holds a ρ = case a of
-  NZERO e1 | Just _ <- inferType e1
-           , Just (VF v1) <- eval e1 ρ
-          -> v1 /= 0
-  BOOLEAN e1 | Just _ <- inferType e1
-             , Just (VF v1) <- eval e1 ρ
-            -> boolean v1
-  EQA e1 e2 | Just _ <- inferType e1 , Just _ <- inferType e2
-            , Just (VF v1) <- eval e1 ρ
-            , Just (VF v2) <- eval e2 ρ
-           -> v1 == v2
-  _ -> False
 
 
 {-@ fundamentalThmA1' :: m0:Nat -> a:Assertion p
@@ -77,7 +61,6 @@ fundamentalThmA1' m0 a ρ m a' λ = case a of
     (m1,e1',λ1) = label' e1 m0 λ0
 
     wf = labelWF e1 m0 λ0 m1 e1' λ
-    -- wt = labelTyped e1 m0 λ0 m1 e1' λ
 
     v1 = case eval e1 ρ of Just v -> v
     v1' = case v1 of VF v -> v
@@ -116,17 +99,23 @@ fundamentalThmA1' m0 a ρ m a' λ = case a of
     wf1 = labelWF e1 m0 λ0 m1 e1' λ1
     wf2 = labelWF e2 m1 λ1 m2 e2' λ
 
+    {-@ fresh2 :: { freshE e2' σ1 } @-}
+    fresh2 = disjLemma 0 m1 m2 (M.keysSet σ1) (wiresE e2')
+
     v1 = case eval e1 ρ of Just v -> v
     v2 = case eval e2 ρ of Just v -> v
 
     σ1 = wf1 ?? wgCompleteE m0 e1 ρ v1 λ0 σ0 (\_ -> ()) m1 e1' λ1
-    σ  = wf2 ?? wgCompleteE m1 e2 ρ v2 λ1 σ1 π1         m2 e2' λ
+    σ  = wf2 ?? fresh2
+      ?? wgCompleteE m1 e2 ρ v2 λ1 σ1 π1 m2 e2' λ
 
     {-@ π1 :: Agree λ1 ρ σ1 @-}
-    π1 j = agreeLemma m0 m1 e1 ρ λ0 σ0 (\_ -> ()) λ1 e1' σ  j
+    π1 :: String -> Proof
+    π1 j = agreeLemma m0 m1 e1 ρ λ0 σ0 (\_ -> ()) λ1 e1' σ1 j
 
     {-@ π2 :: Agree λ  ρ σ @-}
-    π2 j = agreeLemma m1 m2 e2 ρ λ1 σ1 π1         λ2 e2' σ1 j
+    π2 :: String -> Proof
+    π2 j = fresh2 ?? agreeLemma m1 m2 e2 ρ λ1 σ1 π1 λ2 e2' σ j
 
 
 -- {-@ fundamentalThmA2' :: m0:Nat -> e:TypedDSL p
