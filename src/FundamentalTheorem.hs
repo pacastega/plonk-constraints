@@ -34,28 +34,28 @@ import WitnessGenProof.Uniqueness
 import Language.Haskell.Liquid.ProofCombinators
 
 
-{-@ fundamentalThmA :: m0:Nat -> e:TypedDSL p
-                   -> ρ:NameValuation p
+{-@ fundamentalThmE1 :: m0:Nat -> e:TypedDSL p
+                     -> ρ:NameValuation p
 
-                   -> m:{Nat | m0 <= m}
-                   -> e':LDSL p (Btwn 0 m)
-                   -> λ:{LabelEnv p (Btwn 0 m) | label' e m0 M.MTip = (m, e', λ)}
+                     -> m:{Nat | m0 <= m}
+                     -> e':LDSL p (Btwn 0 m)
+                     -> λ:{LabelEnv p (Btwn 0 m) | label' e m0 M.MTip = (m, e', λ)}
 
-                   -> v:{DSLValue p | eval e ρ = Just v}
+                     -> v:{DSLValue p | eval e ρ = Just v}
 
-                   -> (σ::{σ:WireValuation p m | coherentE m e' σ
-                                              && evalWire m e' σ = v},
-                       x:{String | M.member x λ} ->
-                          { v:() | M.lookup x ρ = M.lookup (M.lookup' x λ) σ }) @-}
-fundamentalThmA :: (Fractional p, Ord p) => Int -> DSL p
-               -> NameValuation p
+                     -> (σ::{σ:WireValuation p m | coherentE m e' σ
+                                                && evalWire m e' σ = v},
+                         x:{String | M.member x λ} ->
+                            { v:() | M.lookup x ρ = M.lookup (M.lookup' x λ) σ }) @-}
+fundamentalThmE1 :: (Fractional p, Ord p) => Int -> DSL p
+                 -> NameValuation p
 
-               -> Int -> LDSL p Int -> LabelEnv p Int
-               -> DSLValue p
+                 -> Int -> LDSL p Int -> LabelEnv p Int
+                 -> DSLValue p
 
-               -> (WireValuation p, String -> Proof)
-fundamentalThmA m0 e ρ m e' λ v = ( σ ? sound
-                                  , agreeLemma m0 m e ρ λ0 σ0 (\_ -> ()) λ e' σ )
+                 -> (WireValuation p, String -> Proof)
+fundamentalThmE1 m0 e ρ m e' λ v =
+  ( σ ? sound, agreeLemma m0 m e ρ λ0 σ0 (\_ -> ()) λ e' σ )
   where
     λ0 = M.MTip
     σ0 = M.MTip
@@ -66,31 +66,31 @@ fundamentalThmA m0 e ρ m e' λ v = ( σ ? sound
     σ = wf ?? wgCompleteE m0 e ρ v λ0 σ0 (\_ -> ()) m e' λ
 
 
-{-@ fundamentalThmB :: m0:Nat -> e:TypedDSL p
-                    -> ρ:NameValuation p
+{-@ fundamentalThmE2 :: m0:Nat -> e:TypedDSL p
+                     -> ρ:NameValuation p
 
-                    -> m:{Nat | m0 <= m}
-                    -> e':{LDSL p (Btwn 0 m) | isJust (tyEnvE e' M.MTip)}
-                    -> λ:{LabelEnv p (Btwn 0 m) | label' e m0 M.MTip = (m, e', λ)}
+                     -> m:{Nat | m0 <= m}
+                     -> e':{LDSL p (Btwn 0 m) | isJust (tyEnvE e' M.MTip)}
+                     -> λ:{LabelEnv p (Btwn 0 m) | label' e m0 M.MTip = (m, e', λ)}
 
-                    -> v:DSLValue p
+                     -> v:DSLValue p
 
-                    -> σ:{WireValuation p m | closedExpr m σ e'
-                                           && coherentE m e' σ
-                                           && evalWire m e' σ = v}
-                    -> Agree λ ρ σ
+                     -> σ:{WireValuation p m | closedExpr m σ e'
+                                            && coherentE m e' σ
+                                            && evalWire m e' σ = v}
+                     -> Agree λ ρ σ
 
-                    -> { eval e ρ = Just v } @-}
-fundamentalThmB :: (Fractional p, Ord p) => Int -> DSL p
-                -> NameValuation p
+                     -> { eval e ρ = Just v } @-}
+fundamentalThmE2 :: (Fractional p, Ord p) => Int -> DSL p
+                 -> NameValuation p
 
-                -> Int -> LDSL p Int -> LabelEnv p Int
-                -> DSLValue p
+                 -> Int -> LDSL p Int -> LabelEnv p Int
+                 -> DSLValue p
 
-                -> WireValuation p -> (String -> Proof)
+                 -> WireValuation p -> (String -> Proof)
 
-                -> Proof
-fundamentalThmB m0 e ρ m e' λ v σ π =
+                 -> Proof
+fundamentalThmE2 m0 e ρ m e' λ v σ π =
   wf ?? evalWireUnique m0 m e ρ λ0 m e' λ σ π v γ0 γ h_bool
   where
     λ0 = M.MTip
