@@ -49,12 +49,10 @@ removeConstants e@(BIN op arg1 arg2) = case op of
 
   MUL -> case arg1 of
     CONST 1 -> Just arg2
-    CONST 0 -> Just (CONST 0)
     CONST k -> Just (UN (MULC k) arg2)
 
     _ -> case arg2 of
       CONST 1 -> Just arg1
-      CONST 0 -> Just (CONST 0)
       CONST k -> Just (UN (MULC k) arg1)
 
       _ -> Nothing
@@ -75,14 +73,13 @@ removeConstants e@(BIN op arg1 arg2) = case op of
   _ -> Nothing -- not a redex
 removeConstants (UN op p1) = case op of
   (ADDC 0) -> Just p1
-  (MULC 0) -> Just (CONST 0)
   (MULC 1) -> Just p1
 
   _ -> Nothing
 removeConstants _ = Nothing -- any other pattern is not a redex
 
 {-@ removeConstantsProof :: ρ:NameValuation p
-         -> e1:{TypedDSL p | isJust (eval e1 ρ)}
+         -> e1:TypedDSL p
          -> e2:{TypedDSL p | removeConstants e1 = Just e2}
          -> { eval e1 ρ = eval e2 ρ } @-}
 removeConstantsProof :: (Fractional p, Eq p)
@@ -92,11 +89,11 @@ removeConstantsProof ρ p@(BIN op arg1 arg2) p' = case op of
     -- linear combinations
     UN (MULC k1) p1 -> case arg2 of
       UN (MULC k2) p2 -> case (eval p1 ρ, eval p2 ρ) of
-        (Just (VF v1), Just (VF v2)) -> ()
+        (Just (VF v1), Just (VF v2)) -> (); _ -> ()
       p2             -> case (eval p1 ρ, eval p2 ρ) of (Just _, Just _) -> (); _ -> ()
 
     CONST 0 -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
-    CONST _ -> case (eval arg2 ρ) of (Just _) -> ()
+    CONST _ -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
 
     p1 -> case arg2 of
       UN (MULC _) p2 -> case (eval p1 ρ, eval p2 ρ) of (Just _, Just _) -> (); _ -> ()
@@ -113,7 +110,7 @@ removeConstantsProof ρ p@(BIN op arg1 arg2) p' = case op of
   MUL -> case arg1 of
     CONST 1 -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
     CONST 0 -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
-    CONST _ -> case (eval arg2 ρ) of (Just _) -> ()
+    CONST _ -> case (eval arg2 ρ) of (Just _) -> (); _ -> ()
 
     p1 -> case arg2 of
       CONST 1 -> case (eval p1 ρ) of (Just _) -> (); _ -> ()
